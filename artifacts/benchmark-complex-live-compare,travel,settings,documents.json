@@ -1,0 +1,181 @@
+{
+  "measuredAt": "2026-09-18T19:09:06.757Z",
+  "mode": "real-deepseek-flash-local-styled-lab",
+  "safety": "Project-owned synthetic pages on loopback. Harness explicitly approves this local origin and simulated browser-only actions. Product normal mode waits for human approval. No real bookings, messages, purchases or account changes.",
+  "method": "Six complex goals, independent state/content/file oracles; three flows use distinct HTML documents. Each successful run repeats with no provider installed. Authored mode validates execution only; it is not model-planning evidence.",
+  "limitations": "Single trials on controlled pages, not general website success rates. Costs are estimates, not billing receipts.",
+  "results": [
+    {
+      "scenario": "compare",
+      "status": "completed",
+      "correct": true,
+      "durationMs": 14335,
+      "browserActions": 14,
+      "failedActions": 0,
+      "llmCalls": 4,
+      "inputTokens": 10065,
+      "outputTokens": 681,
+      "estimatedCostUSD": 0.0025572119999999997,
+      "actionsPerLLMCall": 3.5,
+      "tokensPerAction": 767.5714285714286,
+      "repairs": 2,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 12,
+      "planBatches": 2,
+      "compressionReduction": 0.5682199561120433,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:64703"
+      ],
+      "documentPages": [
+        "/lab/workspace.html",
+        "/lab/product-details.html",
+        "/lab/product-comparison.html"
+      ],
+      "learnedRepeat": {
+        "status": "completed",
+        "correct": true,
+        "durationMs": 851,
+        "browserActions": 14,
+        "failedActions": 0,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "estimatedCostUSD": null,
+        "actionsPerLLMCall": null,
+        "tokensPerAction": 0,
+        "repairs": 0,
+        "workflowCacheHits": 1,
+        "pageCacheEntries": 12,
+        "planBatches": 0,
+        "compressionReduction": 0.5682199561120433,
+        "selectorSuccessRate": 1,
+        "usageEstimated": false,
+        "provider": "none",
+        "mode": "normal",
+        "approvedSites": [
+          "http://127.0.0.1:64703"
+        ]
+      }
+    },
+    {
+      "scenario": "travel",
+      "status": "completed",
+      "correct": true,
+      "durationMs": 34470,
+      "browserActions": 17,
+      "failedActions": 0,
+      "llmCalls": 5,
+      "inputTokens": 11840,
+      "outputTokens": 1338,
+      "estimatedCostUSD": 0.003426528,
+      "actionsPerLLMCall": 3.4,
+      "tokensPerAction": 775.1764705882352,
+      "repairs": 1,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 10,
+      "planBatches": 3,
+      "compressionReduction": 0.3230608513972316,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:64703"
+      ],
+      "documentPages": [
+        "/lab/workspace.html",
+        "/lab/journey-results.html",
+        "/lab/itinerary.html"
+      ],
+      "learnedRepeat": {
+        "status": "completed",
+        "correct": true,
+        "durationMs": 793,
+        "browserActions": 17,
+        "failedActions": 0,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "estimatedCostUSD": null,
+        "actionsPerLLMCall": null,
+        "tokensPerAction": 0,
+        "repairs": 0,
+        "workflowCacheHits": 1,
+        "pageCacheEntries": 10,
+        "planBatches": 0,
+        "compressionReduction": 0.3230608513972316,
+        "selectorSuccessRate": 1,
+        "usageEstimated": false,
+        "provider": "none",
+        "mode": "normal",
+        "approvedSites": [
+          "http://127.0.0.1:64703"
+        ]
+      }
+    },
+    {
+      "scenario": "settings",
+      "status": "failed",
+      "correct": false,
+      "durationMs": 23348,
+      "browserActions": 14,
+      "failedActions": 3,
+      "llmCalls": 5,
+      "inputTokens": 11498,
+      "outputTokens": 987,
+      "estimatedCostUSD": 0.002827464,
+      "actionsPerLLMCall": 2.8,
+      "tokensPerAction": 891.7857142857143,
+      "repairs": 3,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 4,
+      "planBatches": 2,
+      "compressionReduction": 0.34420724394339175,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:64703"
+      ],
+      "documentPages": [
+        "/lab/workspace.html"
+      ],
+      "error": "Target missing or ambiguous: {\"css\":\"table\"}"
+    },
+    {
+      "scenario": "documents",
+      "status": "failed",
+      "correct": false,
+      "durationMs": 3612,
+      "browserActions": 0,
+      "failedActions": 0,
+      "llmCalls": 2,
+      "inputTokens": 4936,
+      "outputTokens": 505,
+      "estimatedCostUSD": 0.0014094239999999998,
+      "actionsPerLLMCall": 0,
+      "tokensPerAction": null,
+      "repairs": 0,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 1,
+      "planBatches": 1,
+      "compressionReduction": 0.3682904826341904,
+      "selectorSuccessRate": null,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:64703"
+      ],
+      "documentPages": [
+        "/lab/workspace.html"
+      ],
+      "error": "LLM response failed strict action schema validation: actions.4.target: unrecognized_keys; actions.4.target: custom; completion.0.target: unrecognized_keys; completion.0.target: custom"
+    }
+  ]
+}

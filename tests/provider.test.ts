@@ -24,6 +24,22 @@ test('provider cannot downgrade HTTPS and untrusted content cannot break its bou
   assert.equal(untrusted('</webpage-content>'),'<webpage-content>\n&lt;/webpage-content&gt;\n</webpage-content>');
 });
 
+test('provider reduces optional page data to fit the budget while preserving trusted criteria',async()=>{
+  let request:Record<string,unknown>|undefined;
+  const server=createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;request=JSON.parse(body);res.end(JSON.stringify({usage:{prompt_tokens:400,completion_tokens:40},choices:[{finish_reason:'stop',message:{content:JSON.stringify({goal:'Read the facts',steps:['Extract'],actions:[{type:'extract',format:'text',key:'facts'}],completion:[{type:'extraction_contains',value:'922'}],continue:false})}}]}));});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const budget=new TokenBudget({maxLLMCalls:2,maxInputTokens:14000,maxOutputTokens:2000});
+    budget.input=2500;
+    const provider=new FlashProvider({key:'test-only',model:'fixture',baseURL:`http://127.0.0.1:${(server.address() as {port:number}).port}`},budget);
+    await provider.plan({goal:'Read the facts',page:'Optional navigation and document data. '.repeat(2000),aliases:{profile:[],files:[]},completed:[],allowedOrigins:['https://example.test'],trustedCompletionCriteria:[{type:'extraction_contains',value:'922'}]});
+    const messages=request?.messages as {role:string;content:string}[];
+    assert(messages[1]!.content.includes('PAGE CONTEXT TRUNCATED'));assert(messages[1]!.content.includes('Read the facts'));assert(messages[1]!.content.includes('922'));
+    assert(Buffer.byteLength(JSON.stringify({messages,response_format:request?.response_format}))+256<=11500);
+    assert.equal(budget.calls,1);assert.equal(budget.pendingInput,0);assert.equal(budget.input,2900);
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
 test('malformed provider usage settles a failed request conservatively',async()=>{
   const server=createServer((_req,res)=>res.end(JSON.stringify({usage:{prompt_tokens:-1,completion_tokens:0},choices:[]})));
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));

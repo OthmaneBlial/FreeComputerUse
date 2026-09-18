@@ -8,7 +8,7 @@ import {startServer} from '../src/server/index.js';
 import {startFixtures} from '../fixtures/server.js';
 import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 
-test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',async()=>{
+test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true,provider:new FixtureProvider()}),fixture=await startFixtures();
   const browser=await new Browser().launch();const errors:string[]=[],consoleErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));
@@ -20,6 +20,17 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     await browser.page.locator('#start-url').fill(fixture.url+'/demo');await browser.page.locator('#goal').fill('Fill the contact form and send the message using my profile.');
     await browser.page.getByRole('button',{name:'Run task',exact:true}).click();
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});
+    for(const [width,height] of [[1440,900],[1280,720],[1024,768],[390,844]] as const){
+      await browser.page.setViewportSize({width,height});
+      assert(await browser.page.locator('#approve').evaluate(el=>{const rect=el.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight&&rect.left>=0&&rect.right<=innerWidth;}),'Approval stays in view');
+      assert(await browser.page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth),'No page scroll');
+    }
+    await browser.page.setViewportSize({width:1440,height:900});
+    await browser.page.getByRole('button',{name:'Full screen browser',exact:true}).click();
+    await browser.page.waitForFunction(()=>document.fullscreenElement?.id==='browser-panel'||document.querySelector('#browser-panel')?.classList.contains('expanded'));
+    assert(await browser.page.locator('#approve').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
+    await browser.page.getByRole('button',{name:'Exit full screen browser',exact:true}).click();
+    await browser.page.waitForFunction(()=>!document.fullscreenElement&&!document.querySelector('#browser-panel')?.classList.contains('expanded'));
     assert.equal(dashboard.getAgent()?.browser.page.url(),'about:blank');
     assert.match(await browser.page.locator('#approval-reason').innerText(),/Allow browser access/);
     await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
@@ -34,15 +45,17 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     const screenshot=await browser.page.evaluate(async()=>{const response=await fetch('/api/preview');return {status:response.status,pageId:response.headers.get('X-FCU-Page-ID')};});
     assert.equal(screenshot.status,200);assert.equal(Number(screenshot.pageId),dashboard.getAgent()?.browser.interaction.snapshot()?.pageId);
     await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
-    await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:15000});
+    await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:25000});
     assert.equal(await browser.page.locator('#actions').innerText(),'7');
     assert.equal(await browser.page.locator('#calls').innerText(),'0'); // Scripted fixture is not a model.
     await browser.page.waitForFunction(()=>(document.querySelector('#preview') as HTMLImageElement)?.naturalWidth>0,undefined,{timeout:8000});
+    await browser.page.getByRole('button',{name:'Execution log',exact:true}).click();await browser.page.locator('#stream-dialog').waitFor({state:'visible'});assert(await browser.page.locator('#events li').count()>0);await browser.page.getByRole('button',{name:'Close execution log'}).click();
+    await browser.page.getByRole('button',{name:'Recent runs',exact:false}).click();
     await browser.page.getByRole('button',{name:/Fill the contact form and send/}).click();
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>!document.querySelector('#approval-reason')?.textContent?.includes('Allow browser access'),undefined,{timeout:15000});
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
-    await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:15000});
+    await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:25000});
     assert.equal(dashboard.getAgent()?.trace?.metrics.llmCalls,0);
     for(const width of [1440,390]){
       await browser.page.setViewportSize({width,height:900});assert(await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

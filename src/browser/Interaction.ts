@@ -48,14 +48,15 @@ export class Interaction extends EventEmitter {
     const viewport=page.viewportSize()??{width:1280,height:720};
     if(x<0||y<0||x>=viewport.width||y>=viewport.height)throw new Error('Pointer destination is outside the browser viewport');
     const start=this.positions.get(page)??{x:viewport.width/2,y:viewport.height/2};
-    const pageId=this.pageId(page),steps=this.enabled?16:1;
+    const pageId=this.pageId(page),steps=this.enabled?24:1;
+    const duration=Math.min(1000,500+Math.hypot(x-start.x,y-start.y)*.55);
     for(let step=1;step<=steps;step++){
       await options.checkpoint();
       if(this.currentPage()!==page||this.pageId(page)!==pageId)throw new Error('Browser page changed during pointer movement; review a new action');
       const fraction=step/steps,eased=fraction*fraction*(3-2*fraction);
       const point={x:start.x+(x-start.x)*eased,y:start.y+(y-start.y)*eased};
       await page.mouse.move(point.x,point.y);this.positions.set(page,point);this.cue('moving',page);
-      if(this.enabled)await delay(25);
+      if(this.enabled)await delay(duration/steps);
     }
   }
   private async prepare(locator:Locator,kind:InteractionKind,options:InteractionOptions) {
@@ -79,11 +80,11 @@ export class Interaction extends EventEmitter {
     const page=this.currentPage(),pageId=this.pageId(page);
     const target=this.enabled?await locator.elementHandle({timeout:options.timeout}):null;
     try{
-    await this.prepare(locator,'moving',options);await options.checkpoint();
+    await this.prepare(locator,'moving',options);if(this.enabled)await delay(120);await options.checkpoint();
     await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();
     const result=await operation();
     if(page===this.currentPage()&&pageId===this.pageId(page))this.cue(kind,page);
-    if(this.enabled){await delay(180);await options.checkpoint();}
+    if(this.enabled){await delay(260);await options.checkpoint();}
     return result;
     }finally{await target?.dispose();}
   }
@@ -95,9 +96,9 @@ export class Interaction extends EventEmitter {
     }
     const page=this.currentPage(),pageId=this.pageId(page),target=await locator.elementHandle({timeout:options.timeout});
     try{
-    await this.prepare(locator,'moving',options);await options.checkpoint();
+    await this.prepare(locator,'moving',options);await delay(120);await options.checkpoint();
     await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();
-    const canType=await locator.evaluate(el=>el.matches('textarea,input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel]')||(el as HTMLElement).isContentEditable);
+    const canType=await locator.evaluate(el=>el.matches('textarea,input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=number]')||(el as HTMLElement).isContentEditable);
     await locator.click({timeout:options.timeout});this.cue('click');
     await options.checkpoint();await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();this.cue(replace?'fill':'type');
     // Native date/select/file inputs keep their native semantics. Passwords and
@@ -110,10 +111,10 @@ export class Interaction extends EventEmitter {
       if(replace&&!value)await locator.press('Backspace',{timeout:options.timeout});
       for(const character of value){
         await options.checkpoint();await this.assertTarget(locator,target,page,pageId);await locator.pressSequentially(character,{timeout:options.timeout});
-        await delay(30);
+        await delay(70+(' .,;:'.includes(character)?40:0));
       }
     }
-    await delay(180);await options.checkpoint();
+    await delay(260);await options.checkpoint();
     }finally{await target?.dispose();}
   }
   async scroll(pixels:number,options:InteractionOptions) {
@@ -125,7 +126,7 @@ export class Interaction extends EventEmitter {
     this.cue('scroll',page);
     for(let step=0;step<steps;step++){
       await options.checkpoint();if(page!==this.currentPage())throw new Error('Browser page changed during scrolling');await page.mouse.wheel(0,pixels/steps);
-      if(this.enabled)await delay(40);
+      if(this.enabled)await delay(65);
     }
   }
   async manualClick(x:number,y:number,options:InteractionOptions) {

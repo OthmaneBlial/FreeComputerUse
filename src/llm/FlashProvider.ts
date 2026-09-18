@@ -25,7 +25,16 @@ export class FlashProvider implements LLMProvider {
       {role:'user',content:JSON.stringify({operation,...task})+'\n'+untrusted(page??'')}];
     const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:z.toJSONSchema(schema,{unrepresentable:'any',reused:'ref'}),strict:false}}:{type:'json_object'};
     // UTF-8 byte count is a deliberately conservative token admission bound.
-    const inputBound=Buffer.byteLength(JSON.stringify({messages,response_format}))+256;
+    const bound=()=>Buffer.byteLength(JSON.stringify({messages,response_format}))+256;
+    const available=this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
+    // Preserve the goal, policy, repair contract and user criteria. Reduce only
+    // optional webpage data when the next conservative reservation will not fit.
+    let pageText=page??'';
+    while(bound()>available&&pageText.length){
+      pageText=pageText.slice(0,Math.max(0,pageText.length-Math.max(128,bound()-available)));
+      messages[1]!.content=JSON.stringify({operation,...task})+'\n'+untrusted(pageText+'\n[PAGE CONTEXT TRUNCATED TO FIT REMAINING INPUT BUDGET]');
+    }
+    const inputBound=bound();
     const reservation=this.budget.reserve(inputBound,operation==='CLASSIFY'?100:1800),max_tokens=reservation.maxOutput;
     const controller=new AbortController();this.controllers.add(controller);
     const started=Date.now();let usage:Usage|undefined,validationFailure=false;
@@ -52,7 +61,7 @@ export class FlashProvider implements LLMProvider {
       const safeError=(error instanceof Error?error.message:'LLM request failed').split(this.config.key).join('[redacted key]');
       if(!usage){usage={input:inputBound,output:max_tokens,estimated:true};this.budget.record(usage,reservation.id);}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:false,error:safeError});
-      if(validationFailure&&!correcting)return await this.request(operation,context,schema,format+'\nYour previous JSON failed strict schema validation. Return corrected JSON using only the listed keys. closeTab/back/forward/reload have type only (optional sensitive/verify/timeoutMs); no index or target.',true);
+      if(validationFailure&&!correcting)return await this.request(operation,context,schema,format+'\nYour previous JSON failed strict schema validation. Use only the listed keys. steps has at most 12 entries. An observed ref is a target STRING, never an object {ref:...}. Semantic target objects allow role,name,label,placeholder,testId,id,attributeName,text,css,frame only. download has type,target,filename? (not value,format,key or url). extract has type,target?,format,key,fields?,match?,limit? (not filename). closeTab/back/forward/reload have type only (optional sensitive/verify/timeoutMs); no index or target. REPAIR has actions,replace,completion?,continue? only; never goal,steps,reason or explanations.',true);
       throw new Error(safeError);
     }finally{this.controllers.delete(controller);}
   }

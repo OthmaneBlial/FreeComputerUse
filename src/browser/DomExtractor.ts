@@ -17,6 +17,8 @@ export class DomExtractor {
           const [clean] = [(s: string | null | undefined, max = 180) => (s ?? '').replace(/\s+/g,' ').trim().slice(0,max)];
           const [visible] = [(el: Element) => {
             if (el.closest('[hidden],[inert],[aria-hidden="true"]')) return false;
+            const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]');
+            if(modal&&modal.getClientRects().length&&!modal.contains(el)&&modal!==el)return false;
             const style = getComputedStyle(el);
             return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && el.getClientRects().length > 0;
           }];
@@ -82,7 +84,7 @@ export class DomExtractor {
             };
           });
           const headings = all.filter(el=>included(el)&&visible(el)&&el.matches('h1,h2,h3,[role=heading]')).slice(0,24).map(el=>clean(el.textContent));
-          const paragraphs = all.filter(el=>included(el)&&visible(el)&&el.matches('p,li,dt,dd,output,[role=status],[role=alert]')).slice(0,100).map(el=>clean(el.textContent,300));
+          const paragraphs = all.filter(el=>included(el)&&visible(el)&&el.matches('p,li,dt,dd,output,[role=status],[role=alert]')).sort((a,b)=>Number(!!b.closest('main,article,[role=main]'))-Number(!!a.closest('main,article,[role=main]'))).slice(0,100).map(el=>clean(el.textContent,300));
           const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].filter(visible).slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>clean(cell.textContent))));
           const dialogs = all.filter(el=>included(el)&&visible(el)&&el.matches('dialog,[role=dialog],[role=menu]')).map(el=>clean(el.getAttribute('aria-label') || el.textContent,250));
           return { elements,headings,text:[...new Set(paragraphs)].join('\n').slice(0,8000),tables,dialogs,htmlBytes,truncated:candidates.length>500 };

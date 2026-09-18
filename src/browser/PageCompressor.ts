@@ -9,14 +9,19 @@ export interface Compression { text:string; bytes:number; rawBytes:number; reduc
 export class PageCompressor {
   compress(state:PageState, options:{goal?:string;maxChars?:number;level?:1|2|3;region?:string}={}):Compression {
     const max=options.maxChars??12000;
-    const brief=(e:PageElement)=>`[${e.ref}] ${e.role} ${JSON.stringify(e.name)}${e.type?` type=${e.type}`:''}${e.required?' required':''}${e.disabled?' disabled':''}${e.form?` form=${JSON.stringify(e.form)}`:''}${e.hasValue?' populated':''}${e.checked?' checked':''}${e.error?` error=${JSON.stringify(e.error)}`:''}${e.options?` options=${JSON.stringify(e.options)}`:''}`;
+    const brief=(e:PageElement)=>`[${e.ref}] ${e.role} ${JSON.stringify(e.name)}${e.href?` href=${JSON.stringify(e.href)}`:''}${e.selectors.id?` id=${JSON.stringify(e.selectors.id)}`:''}${e.type?` type=${e.type}`:''}${e.required?' required':''}${e.disabled?' disabled':''}${e.form?` form=${JSON.stringify(e.form)}`:''}${e.hasValue?' populated':''}${e.checked?' checked':''}${e.error?` error=${JSON.stringify(e.error)}`:''}${e.options?` options=${JSON.stringify(e.options)}`:''}`;
     const elements=state.elements.filter(e=>!options.region||e.region===options.region||e.form===options.region);
     const ranked=options.goal ? [...elements].sort((a,b)=>similarity(options.goal!,[b.name,b.form,b.role].join(' '))-similarity(options.goal!,[a.name,a.form,a.role].join(' '))) : elements;
     const lines=[`PAGE ${state.title}`,`URL ${state.url}`,`STATE ${state.hash}`,`HEADINGS ${state.headings.join(' | ')}`,`WARNINGS ${state.warnings.join(' | ')}`];
     if (options.level!==1) {
-      lines.push('INTERACTIVE',...ranked.map(brief));
-      if (state.dialogs.length) lines.push('DIALOGS',...state.dialogs);
-      if (state.tables.length) lines.push('TABLES',JSON.stringify(state.tables));
+      // Reserve space for document data even when navigation contains hundreds
+      // of links. Reading tasks must not lose all facts behind the nav list.
+      const controlBudget=Math.max(300,Math.floor(max*.45));let used=0,retained=0;
+      lines.push('INTERACTIVE');
+      for(const element of ranked){const line=brief(element);if(used+line.length+1>controlBudget)continue;lines.push(line);used+=line.length+1;retained++;}
+      if(retained<ranked.length)lines.push(`[${ranked.length-retained} controls omitted]`);
+      if(state.dialogs.length)lines.push('DIALOGS',...state.dialogs);
+      if(state.tables.length)lines.push('TABLES',JSON.stringify(state.tables).slice(0,Math.floor(max*.2)));
     } else lines.push(`INTERACTIVE COUNT ${elements.length}`,`REGIONS ${[...new Set(elements.map(e=>e.region).filter(Boolean))].join(' | ')}`);
     lines.push('VISIBLE TEXT',state.text);
     const full=lines.join('\n');

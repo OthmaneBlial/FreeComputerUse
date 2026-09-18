@@ -1,0 +1,52 @@
+{
+  "measuredAt": "2026-09-18T19:05:13.706Z",
+  "mode": "real-deepseek-flash-public-primary-websites",
+  "safety": "Read-only public GitHub/GOV.UK pages. Harness approves only each selected origin; all sensitive external actions and other origins are rejected. No messages, purchases, logins, downloads or changes.",
+  "method": "No supplied action plans. Independent browser reads obtain release and PDF evidence before trials. User-owned completion criteria plus independent oracles check extracted facts and actual document visits. Successful tasks repeat without a provider installed.",
+  "limitations": "Single trials; changing sources, network failures and automation restrictions can break tasks. Passing is not general support for the entire site. Costs are estimates, not billing receipts.",
+  "results": [
+    {
+      "scenario": "github",
+      "url": "https://github.com/microsoft/playwright",
+      "status": "failed",
+      "correct": false,
+      "durationMs": 23616,
+      "browserActions": 3,
+      "failedActions": 3,
+      "llmCalls": 6,
+      "inputTokens": 14217,
+      "outputTokens": 906,
+      "estimatedCostUSD": 0.0035083319999999994,
+      "actionsPerLLMCall": 0.5,
+      "tokensPerAction": 5041,
+      "repairs": 3,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 2,
+      "planBatches": 4,
+      "compressionReduction": 0.9715433980920121,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "https://github.com"
+      ],
+      "siteApprovals": 1,
+      "documentURLs": [
+        "https://github.com/microsoft/playwright",
+        "https://github.com/microsoft/playwright/releases"
+      ],
+      "evidence": {
+        "releaseURL": "https://github.com/microsoft/playwright/releases/tag/v1.63.0",
+        "version": "v1.63.0",
+        "releaseDate": "2026-09-04T22:40:31Z",
+        "firstThreeHeadings": [
+          "🔒 Test locks",
+          "🪟 Locate across frames",
+          "👁️ Visible-only locators"
+        ]
+      },
+      "error": "LLM input budget cannot admit this request; narrow context or raise the explicit budget"
+    }
+  ]
+}

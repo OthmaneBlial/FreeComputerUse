@@ -60,3 +60,24 @@ test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
   assert(!PlanSchema.safeParse({goal:'task',steps:['Fill'],actions:[],completion:[]}).success);
   assert(similarity('apply to job','Apply job')>.5);
 });
+
+test('document facts survive long navigation and native disclosures resolve by exact name',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent(`<nav><ul>${Array.from({length:160},(_,i)=>`<li><a href="https://example.test/section-${i}">Documentation section ${i}</a></li>`).join('')}</ul></nav><main><h1>Travel facts</h1><p>England: 922 trips and 6082 miles in 2024.</p><details><summary>Accessibility &amp; route preferences</summary><label><input type="checkbox">Step-free routes only</label></details></main>`);
+    const observer=new Observer(),state=await observer.inspect(browser.page),context=observer.compressor.compress(state,{goal:'Read the England travel facts and open Accessibility & route preferences',maxChars:3000});
+    assert(context.text.includes('922 trips and 6082 miles'));assert(context.text.includes('controls omitted'));assert(context.text.length<=3000);
+    const target=await observer.selectors.resolve(browser.page,{role:'button',name:'Accessibility & route preferences'},100);
+    assert.equal(target.strategy,'disclosure');await target.locator.click();assert(await browser.page.getByLabel('Step-free routes only').isVisible());
+  }finally{await browser.close();}
+});
+
+test('an open modal exposes its controls and excludes the blocked background',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<main><button>Background action</button><p>Background data</p></main><dialog aria-label="Journey details"><p>Regional route evidence</p><button>Close Journey details</button></dialog>');
+    await browser.page.locator('dialog').evaluate(el=>(el as HTMLDialogElement).showModal());
+    const state=await new Observer().inspect(browser.page);
+    assert.deepEqual(state.elements.map(e=>e.name),['Close Journey details']);assert(state.text.includes('Regional route evidence'));assert(!state.text.includes('Background data'));
+  }finally{await browser.close();}
+});

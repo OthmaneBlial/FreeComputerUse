@@ -11,7 +11,7 @@ try{
   await browser.page.setViewportSize({width:1600,height:1000});await browser.navigate(dashboard.url);
   await browser.page.locator('#start-url').fill(`https://othmaneblial.github.io/FreeComputerUse/lab/${interaction?'catalogue':'reports'}.html`);
   await browser.page.locator('#goal').fill(interaction?'Type keyboard into Search products, open Trail keyboard, then extract the product name, price and stock availability.':'Extract the revenue dashboard table, including all three months and their revenues.');
-  if(interaction){await browser.page.locator('.options summary').click();await browser.page.locator('#use-workflows').uncheck();await browser.page.locator('.options summary').click();}
+  if(interaction){await browser.page.getByRole('button',{name:'Run options'}).click();await browser.page.locator('#use-workflows').uncheck();await browser.page.getByRole('button',{name:'Close run options'}).click();}
   await browser.page.getByRole('button',{name:'Run task',exact:true}).click();
   await browser.page.locator('#approval').waitFor({state:'visible',timeout:20000});
   if(dashboard.getAgent()?.browser.page.url()!=='about:blank')throw new Error('Site visited before dashboard approval');
@@ -23,10 +23,12 @@ try{
   await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
   await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:90000});
   try{await browser.page.waitForFunction(()=>(document.querySelector('#preview') as HTMLImageElement)?.naturalWidth>0,undefined,{timeout:10000});}catch(error){console.log(JSON.stringify({errors,preview:await browser.page.locator('#preview').evaluate(el=>({src:(el as HTMLImageElement).src,width:(el as HTMLImageElement).naturalWidth,hidden:(el as HTMLImageElement).hidden})),status:dashboard.getAgent()?.trace?.status}));throw error;}
+  await browser.page.getByRole('button',{name:'View result'}).click();
   const output=await browser.page.locator('#result-output').innerText();
   if(!output.includes(interaction?'Trail keyboard':'March'))throw new Error('Dashboard did not show extracted results');
   if(interaction&&(!output.includes('$39')||!output.includes('Available in stock')||!dashboard.getAgent()?.browser.page.url().endsWith('/product.html')))throw new Error('Product details or destination failed the independent oracle');
   const capture=await cursorCapture;if(capture&&!capture.captured)throw new Error('Visible typing cursor was not captured: '+capture.error);
+  await browser.page.getByRole('button',{name:'Close task result'}).click();
   for(const [name,width] of [['desktop',1600],['mobile',390]] as const){
     await browser.page.setViewportSize({width,height:1000});await browser.page.waitForTimeout(600);
     if(!await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))throw new Error('Responsive overflow');

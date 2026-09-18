@@ -10,7 +10,7 @@ every click. MIT licensed. Runs locally. Model API usage is separately billed.
 [Free public browser lab](https://othmaneblial.github.io/FreeComputerUse/) ·
 [Measured results](artifacts/benchmark-public.json) · [Security model](SECURITY.md)
 
-![The local workspace moving its cursor and typing into a real browser task](artifacts/ui/interaction.png)
+![The local workspace with a dedicated browser, visible controls and an original cursor-route mark](artifacts/ui/workspace.png)
 
 ## How it works
 
@@ -55,6 +55,9 @@ The live preview shows progressive typing, click indicators and scrolling alongs
 the plan, events, tokens and estimated cost. Cursor coordinates come from local
 browser operations; this visual interaction adds no model calls. CLI and benchmarks
 keep their fast execution; the dashboard uses a visible pace by default.
+The workspace fits the window; approvals stay beside the browser controls.
+Use **Full screen** to watch the browser at full size, and **Execution log** to
+open its stream in a dialog. Results, history and run options open on demand.
 Use **Take control** to pause, click/type manually or edit the plan, then resume.
 Completed history entries replay their successful actions without a provider.
 
@@ -121,10 +124,14 @@ npm run agent -- run "Start the delayed content and extract the final visible me
   --debug --expect-text "Hello World!"
 ```
 
-The [public lab](https://othmaneblial.github.io/FreeComputerUse/) covers product
-catalogues, travel search, invoice downloads, dashboards, preferences, simulated
-sessions, modals, frames, tabs and changing controls. Its forms change browser
-state only. Job applications are one local illustration, alongside broader tasks.
+The [styled task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html)
+has ten sourced real-world research goals and six complex practice workflows.
+Product comparison, travel planning and invoice retrieval navigate through
+**actual separate pages**, with filters, details, extraction and downloads.
+Analytics, preferences and documents cover scoped data and saved state.
+Read [the examples guide](docs/USEFUL_EXAMPLES.md) for sources, page sequences,
+verification and trial limits. Original focused browser checks remain available.
+Job applications are one local illustration, alongside these broader tasks.
 
 ## Local profile
 
@@ -183,6 +190,12 @@ npm run demo                     # labeled scripted fixture provider; no LLM
 npm run demo -- --live            # real Flash job/contact demo, synthetic local data
 npm run benchmark -- --live       # six local scenarios plus learned repeats
 npm run benchmark:public          # real Flash on 14 free public scenarios plus repeats
+npm run lab:build
+npm run lab:serve                 # styled local workspace, port 4319
+npm run lab:smoke                 # desktop/mobile render checks, no API spend
+npm run benchmark:complex         # authored plans, six complex cases and repeats
+npm run benchmark:complex -- --live # real Flash planning on the complex cases
+npm run benchmark:real            # read-only GitHub/GOV.UK research trials
 ```
 
 The public suite is opt-in and spends API tokens. Its harness explicitly approves
@@ -210,8 +223,9 @@ validation, uploads/downloads, tabs, verification, bounded repair, workflow/repl
 permissions, redaction, token reservations and the rendered dashboard.
 
 **Evidence limits:** these are individual runs on specified test sites, not a
-universal success rate. The local lab deliberately contains large decorative HTML
-to exercise compression. Context reduction varies by page. No screenshot-agent
+universal success rate. Earlier fixtures deliberately contained large decorative
+HTML to exercise compression; the redesigned public lab uses shared styling.
+Context reduction varies by page. No screenshot-agent
 baseline was measured, so no token/cost savings percentage is claimed.
 
 ## Runtime and extension points

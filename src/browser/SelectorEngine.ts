@@ -25,6 +25,9 @@ export class SelectorEngine {
     if(t.attributeName)list.push({strategy:'attributeName',locator:root.locator(`[name=${attr(t.attributeName)}]`)});
     if(t.text)list.push({strategy:'text',locator:root.getByText(t.text,{exact:true})});
     if(t.css)list.push({strategy:'css',locator:root.locator(t.css)});
+    // Native disclosure summaries are clickable controls, but Chromium does not
+    // expose them through Playwright's button role. Preserve exact-name matching.
+    if(t.role==='button'&&t.name)list.push({strategy:'disclosure',locator:root.locator('summary').and(root.getByText(t.name,{exact:true}))});
     if(t.role==='button'&&/^(next( step)?|continue|proceed|advance)$/i.test(t.name??''))list.push({strategy:'local-synonym',locator:root.getByRole('button',{name:/^(next( step)?|continue|proceed|advance)$/i})});
     return list;
   }

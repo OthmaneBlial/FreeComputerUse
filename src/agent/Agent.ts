@@ -60,7 +60,8 @@ export class Agent extends EventEmitter {
     return state;
   }
   private context(goal:string,state:PageState,completed:string[],previous?:PageState):PlanningContext{
-    const maxChars=this.budget.tight?3000:9000;
+    const remaining=this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
+    const maxChars=Math.min(this.budget.tight?3000:9000,Math.max(1200,remaining-9000));
     const full=this.observer.compressor.compress(state,{goal,maxChars});
     let page=full.text;
     if(previous){const diff=JSON.stringify(diffPages(previous,state));if(diff.length<page.length)page=`PAGE DIFF\n${diff}`;}
@@ -117,7 +118,9 @@ export class Agent extends EventEmitter {
           const after=await this.observe();
           if(before.url!==after.url){const loops=(navigations.get(after.url)??0)+1;navigations.set(after.url,loops);if(loops>(this.options.maxNavigationLoops??3))throw new Error('Navigation loop detected');}
           if(result.success){
-            completed.push(`${action.type}${'target'in result.action?' '+JSON.stringify(result.action.target):''}`);index++;this.event('VERIFY','Action completed locally',{action:action.type,durationMs:result.durationMs,strategy:result.strategy});continue;
+            const descriptor='target'in result.action&&typeof result.action.target==='object'?result.action.target:undefined;
+            completed.push(this.variables.redact(JSON.stringify({type:action.type,...('url'in result.action?{url:result.action.url}:{}),...(descriptor?{target:{role:descriptor.role,name:descriptor.name??descriptor.label??descriptor.id??descriptor.css}}:{}),...('key'in result.action?{key:result.action.key}:{})})));
+            index++;this.event('VERIFY','Action completed locally',{action:action.type,durationMs:result.durationMs,strategy:result.strategy});continue;
           }
           if(this.control.stopped||/rejected by human|stopped by human/.test(result.error??''))throw new Error(result.error);
           if(result.uncertain){

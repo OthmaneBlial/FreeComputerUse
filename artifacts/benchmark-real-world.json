@@ -1,0 +1,123 @@
+{
+  "measuredAt": "2026-09-18T19:06:40.976Z",
+  "mode": "real-deepseek-flash-public-primary-websites",
+  "safety": "Read-only public GitHub/GOV.UK pages. Harness approves only each selected origin; all sensitive external actions and other origins are rejected. No messages, purchases, logins, downloads or changes.",
+  "method": "No supplied action plans. Independent browser reads obtain release and PDF evidence before trials. User-owned completion criteria plus independent oracles check extracted facts and actual document visits. Successful tasks repeat without a provider installed.",
+  "limitations": "Single trials; changing sources, network failures and automation restrictions can break tasks. Passing is not general support for the entire site. Costs are estimates, not billing receipts.",
+  "results": [
+    {
+      "scenario": "github",
+      "url": "https://github.com/microsoft/playwright",
+      "status": "failed",
+      "correct": false,
+      "durationMs": 21549,
+      "browserActions": 10,
+      "failedActions": 0,
+      "llmCalls": 5,
+      "inputTokens": 13964,
+      "outputTokens": 826,
+      "estimatedCostUSD": 0.003524592,
+      "actionsPerLLMCall": 2,
+      "tokensPerAction": 1479,
+      "repairs": 2,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 4,
+      "planBatches": 3,
+      "compressionReduction": 0.9715437346541961,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "https://github.com"
+      ],
+      "siteApprovals": 1,
+      "documentURLs": [
+        "https://github.com/microsoft/playwright",
+        "https://github.com/microsoft/playwright/releases/latest",
+        "https://github.com/microsoft/playwright/releases/tag/v1.63.0",
+        "https://github.com/microsoft/playwright/blob/main/LICENSE",
+        "https://github.com/microsoft/playwright/security/policy"
+      ],
+      "evidence": {
+        "releaseURL": "https://github.com/microsoft/playwright/releases/tag/v1.63.0",
+        "version": "v1.63.0",
+        "releaseDate": "2026-09-04T22:40:31Z",
+        "firstThreeHeadings": [
+          "🔒 Test locks",
+          "🪟 Locate across frames",
+          "👁️ Visible-only locators"
+        ]
+      },
+      "error": "Repeated state/action loop detected"
+    },
+    {
+      "scenario": "statistics",
+      "url": "https://www.gov.uk/government/statistics/national-travel-survey-2024",
+      "status": "completed",
+      "correct": true,
+      "durationMs": 7398,
+      "browserActions": 5,
+      "failedActions": 1,
+      "llmCalls": 3,
+      "inputTokens": 10319,
+      "outputTokens": 630,
+      "estimatedCostUSD": 0.0029109,
+      "actionsPerLLMCall": 1.6666666666666667,
+      "tokensPerAction": 2189.8,
+      "repairs": 1,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 3,
+      "planBatches": 2,
+      "compressionReduction": 0.9188719249842534,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "https://www.gov.uk"
+      ],
+      "siteApprovals": 2,
+      "documentURLs": [
+        "https://www.gov.uk/government/statistics/national-travel-survey-2024",
+        "https://www.gov.uk/government/statistics/national-travel-survey-2024/nts-2024-factsheet"
+      ],
+      "evidence": {
+        "year": 2024,
+        "published": "27 August 2025",
+        "geography": "England",
+        "annualTrips": 922,
+        "annualMiles": 6082,
+        "annualHours": 362,
+        "cyclingTrips": 15,
+        "carOwningHouseholdsPercent": 78,
+        "pdfURL": "https://assets.publishing.service.gov.uk/media/68e8f5af57038b5739b98656/NTS_Factsheet_2024.pdf"
+      },
+      "learnedRepeat": {
+        "status": "completed",
+        "correct": true,
+        "durationMs": 1967,
+        "browserActions": 5,
+        "failedActions": 0,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "estimatedCostUSD": null,
+        "actionsPerLLMCall": null,
+        "tokensPerAction": 0,
+        "repairs": 0,
+        "workflowCacheHits": 1,
+        "pageCacheEntries": 3,
+        "planBatches": 0,
+        "compressionReduction": 0.9188719249842534,
+        "selectorSuccessRate": 1,
+        "usageEstimated": false,
+        "provider": "none",
+        "mode": "normal",
+        "approvedSites": [
+          "https://www.gov.uk"
+        ]
+      }
+    }
+  ]
+}

@@ -16,7 +16,7 @@
     "build": "tsc && node scripts/copy-ui.mjs",
     "check": "tsc --noEmit && tsc -p tsconfig.tests.json",
     "test": "tsx --test tests/*.test.ts",
-    "validate": "npm run check && npm test && npm run build && npm run security && npm audit --omit=dev --audit-level=high",
+    "validate": "npm run lab:build && npm run check && npm test && npm run build && npm run security && npm audit --omit=dev --audit-level=high",
     "agent": "tsx src/cli/index.ts",
     "dev": "tsx src/cli/index.ts ui",
     "demo": "tsx scripts/demo.ts",
@@ -25,6 +25,10 @@
     "security": "node scripts/security-check.mjs --history",
     "benchmark:public": "tsx scripts/public-benchmark.ts",
     "lab:build": "tsx scripts/build-lab.ts",
+    "lab:serve": "tsx scripts/lab-server.ts",
+    "lab:smoke": "tsx scripts/lab-smoke.ts",
+    "benchmark:complex": "tsx scripts/complex-benchmark.ts",
+    "benchmark:real": "tsx scripts/real-world-benchmark.ts",
     "ui:smoke": "tsx scripts/ui-smoke.ts"
   },
   "files": [

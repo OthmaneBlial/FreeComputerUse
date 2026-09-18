@@ -10,7 +10,7 @@ Run the checks locally:
 npm run validate
 ```
 
-This checks TypeScript, runs Chromium tests, builds the package, scans tracked
+This rebuilds the static lab, checks TypeScript, runs Chromium tests, builds the package, scans tracked
 files/history for recognizable secrets, and audits production dependencies.
 Browser smoke tests and live-provider benchmarks are also run locally and are
 separate opt-in commands because they can spend API tokens.

@@ -33,6 +33,27 @@ External sites are read-only scraping/automation sandboxes. Forms, settings, ses
 
 One measured trial per case. Individual failures during development led to fixes for table row extraction, downloads, popup timing, schema correction and the demo cookie's expiry; these results describe the final trial, not all development attempts or a general success rate. The live JSON reports remain the source of truth. Execution repair counts do not include provider schema-correction calls; those calls are included in total calls/tokens.
 
-Costs use configured peak rates ($0.30/M uncached input, $0.006/M cached input, $1.20/M output), verified against the [provider pricing page](https://api-docs.deepseek.com/quick_start/pricing/) on 2026-09-18. These are conservative estimates, not billing receipts; off-peak charges can be lower. Context reduction varies by site. Decorative CSS intentionally enlarges the local/static lab. No screenshot-agent baseline, benchmark savings percentage or universal success rate was measured.
+Costs use configured peak rates ($0.30/M uncached input, $0.006/M cached input, $1.20/M output), verified against the [provider pricing page](https://api-docs.deepseek.com/quick_start/pricing/) on 2026-09-18. These are conservative estimates, not billing receipts; off-peak charges can be lower. Context reduction varies by site. Decorative CSS intentionally enlarged the original local/static fixtures used for the earlier measurements above; the redesigned public lab now uses shared styling. No screenshot-agent baseline, benchmark savings percentage or universal success rate was measured.
+
+## Complex styled workflows and real-world research
+
+The new lab has six complex browser-only practice cases. Three use separate HTML
+documents: product details/comparison, journey results/itinerary, invoice details.
+Local execution tests supply validated action plans, check independent data/state/
+download oracles, and repeat all six without a provider. This validates execution
+and reuse, not model planning.
+
+Real Flash trials are in [the complex report](../artifacts/benchmark-complex-live.json)
+and the dated subset reports beside it. Outcomes vary across trials; failures from
+strict schema validation, guessed controls, intermediate criteria and budget
+limits remain recorded. Do not substitute an earlier pass for a later failure.
+All listed cases have independent correctness checks; a runtime completion alone
+does not establish correctness.
+
+[Real-world trials](../artifacts/benchmark-real-world.json) run the full sourced
+GitHub and GOV.UK goals without supplied plans. GOV.UK completed and repeated
+without a provider. The GitHub audit remained unsuccessful in the recorded trial,
+including a repeated extraction loop. Other researched website goals are source
+checks, not completed-agent evidence. See [the examples guide](USEFUL_EXAMPLES.md).
 
 Reproduce with npm run benchmark -- --live and npm run benchmark:public. Both opt into API spend. Public selection: npm run benchmark:public -- --only=travel. Reports: [public](../artifacts/benchmark-public.json), [local](../artifacts/benchmark-live.json), [earlier demo measurements](../artifacts/demo-measurements.json).

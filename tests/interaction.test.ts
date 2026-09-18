@@ -11,11 +11,13 @@ test('visible interaction moves the real pointer, types progressively, clicks an
   const browser=await new Browser({visualInteraction:true}).launch();
   const events:PointerState[]=[];browser.interaction.on('pointer',event=>events.push(event));
   try{
-    await browser.page.setContent(`<input aria-label="Search" oninput="(window.inputs??=[]).push(this.value)"><button onclick="document.body.dataset.clicked='yes'">Find</button><iframe srcdoc="<button onclick=&quot;document.body.dataset.clicked='yes'&quot;>Frame action</button>"></iframe><script>window.moves=[];addEventListener('mousemove',event=>moves.push([event.clientX,event.clientY]));</script>`);
+    await browser.page.setContent(`<input aria-label="Search" oninput="(window.inputs??=[]).push(this.value)"><input aria-label="Budget" type="number" oninput="(window.budgets??=[]).push(this.value)"><button onclick="document.body.dataset.clicked='yes'">Find</button><iframe srcdoc="<button onclick=&quot;document.body.dataset.clicked='yes'&quot;>Frame action</button>"></iframe><script>window.moves=[];addEventListener('mousemove',event=>moves.push([event.clientX,event.clientY]));</script>`);
     const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
     assert((await executor.run({type:'fill',target:{label:'Search'},value:'keyboard'})).success);
     const inputs=await browser.page.evaluate(()=>(window as unknown as {inputs:string[]}).inputs);
     assert.deepEqual(inputs,['k','ke','key','keyb','keybo','keyboa','keyboar','keyboard']);
+    const numeric=await executor.run({type:'fill',target:{label:'Budget'},value:'120'});assert(numeric.success);assert(numeric.durationMs>=800,'Visible motion and entry keep a readable pace');
+    assert.deepEqual(await browser.page.evaluate(()=>(window as unknown as {budgets:string[]}).budgets),['1','12','120']);
     assert((await executor.run({type:'click',target:{role:'button',name:'Find'}})).success);
     assert.equal(await browser.page.locator('body').getAttribute('data-clicked'),'yes');
     const moves=await browser.page.evaluate(()=>(window as unknown as {moves:number[][]}).moves);
