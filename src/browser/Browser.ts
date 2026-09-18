@@ -2,11 +2,13 @@ import { chromium, type BrowserContext, type Page } from 'playwright';
 import { mkdir, chmod } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type {SemanticTarget} from '../actions/schema.js';
+import { Interaction } from './Interaction.js';
 
 export interface BrowserOptions {
   headless?: boolean; profileDir?: string; timeoutMs?: number;
   allowedOrigins?: string[]; allowExternal?: boolean;
   beforeNavigate?:(url:string)=>Promise<void>;
+  visualInteraction?:boolean;
 }
 export class Browser {
   context!: BrowserContext;
@@ -16,7 +18,8 @@ export class Browser {
   readonly responses: { url: string; status: number; time: number;method:string;resource:string }[] = [];
   readonly formReceipts:{target:SemanticTarget;actionURL:string;method:string;id:string;label:string;unique:boolean;time:number}[]=[];
   private wired = new WeakSet<Page>();
-  constructor(readonly options: BrowserOptions = {}) {}
+  readonly interaction:Interaction;
+  constructor(readonly options: BrowserOptions = {}) {this.interaction=new Interaction(()=>this.page,options.visualInteraction);}
   async launch() {
     if (this.options.profileDir) {
       const folder = resolve(this.options.profileDir);
@@ -53,6 +56,7 @@ export class Browser {
   private wire(page: Page) {
     if (this.wired.has(page)) return;
     this.wired.add(page);
+    this.interaction.wire(page);
     page.on('dialog', dialog => void dialog.dismiss());
     page.on('response', response => {
       this.responses.push({ url: response.url(), status: response.status(), time: Date.now(),method:response.request().method(),resource:response.request().resourceType() });

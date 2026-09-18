@@ -28,6 +28,11 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
       console.log('Dashboard diagnostic',JSON.stringify({notice:await browser.page.locator('#notice').innerText(),agent:dashboard.getAgent()?.trace,events:dashboard.getAgent()?.events,errors}));throw error;
     }
     assert.equal(dashboard.getAgent()?.trace?.status,'running');
+    await browser.page.locator('#agent-cursor').waitFor({state:'visible',timeout:8000});
+    assert((await browser.page.locator('#agent-cursor').getAttribute('data-sequence'))!==null);
+    assert.match(await browser.page.locator('#interaction-label').innerText(),/Waiting for your approval/);
+    const screenshot=await browser.page.evaluate(async()=>{const response=await fetch('/api/preview');return {status:response.status,pageId:response.headers.get('X-FCU-Page-ID')};});
+    assert.equal(screenshot.status,200);assert.equal(Number(screenshot.pageId),dashboard.getAgent()?.browser.interaction.snapshot()?.pageId);
     await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:15000});
     assert.equal(await browser.page.locator('#actions').innerText(),'7');
@@ -39,7 +44,17 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:15000});
     assert.equal(dashboard.getAgent()?.trace?.metrics.llmCalls,0);
-    for(const width of [1440,390]){await browser.page.setViewportSize({width,height:900});assert(await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+    for(const width of [1440,390]){
+      await browser.page.setViewportSize({width,height:900});assert(await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      await browser.page.waitForFunction(point=>{
+        const image=document.querySelector('#preview') as HTMLImageElement,cursor=document.querySelector('#agent-cursor') as HTMLElement,layer=document.querySelector('#pointer-layer') as HTMLElement;
+        const rect=image.getBoundingClientRect(),origin=layer.getBoundingClientRect(),scale=Math.min(rect.width/image.naturalWidth,rect.height/image.naturalHeight);
+        const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
+        const expectedX=rect.left-origin.left+(rect.width-width)/2+point.x/point.width*width,expectedY=rect.top-origin.top+(rect.height-height)/2+point.y/point.height*height;
+        const matrix=new DOMMatrix(getComputedStyle(cursor).transform);
+        return !cursor.hidden&&Math.abs(matrix.m41-expectedX)<1&&Math.abs(matrix.m42-expectedY)<1;
+      },dashboard.getAgent()!.browser.interaction.snapshot()!,{timeout:8000});
+    }
     assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
     const unauthenticated=await fetch(dashboard.url+'/api/state');assert.equal(unauthenticated.status,401);
     const crossOrigin=await browser.page.evaluate(async()=>{const response=await fetch('/api/control/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});return response.status;});assert.equal(crossOrigin,403);

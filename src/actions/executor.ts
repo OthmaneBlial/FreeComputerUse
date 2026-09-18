@@ -34,6 +34,7 @@ export class Executor {
   async run(input:Action):Promise<ActionResult> {
     let action=ActionSchema.parse(input);const startedAt=Date.now();
     let strategy:string|undefined,executed=false,receiptAction=action;
+    let assertApproved:(()=>Promise<void>)|undefined,disposeApproved:(()=>Promise<void>)|undefined;
     try {
       await this.control.checkpoint();
       let locator:Locator|undefined;
@@ -45,19 +46,22 @@ export class Executor {
       if(policy==='always'||policy==='sensitive'&&reason){
         const approvedPage=this.browser.page,approvedURL=approvedPage.url();
         const approvedElement=await locator?.elementHandle();
+        disposeApproved=async()=>{await approvedElement?.dispose();};
         const fingerprint=locator?await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method})):undefined;
-        try{
-          await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(receiptAction)));
+        assertApproved=async()=>{
           if(this.browser.page!==approvedPage||approvedPage.url()!==approvedURL)throw new Error('Browser page changed while awaiting approval; review a new plan');
           if(locator&&approvedElement){
             const same=await locator.evaluate((el,approved)=>el===approved&&el.isConnected,approvedElement);
             const current=await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method}));
             if(!same||current!==fingerprint)throw new Error('Approved target changed while awaiting approval; review a new action');
           }
-        }finally{await approvedElement?.dispose();}
+        };
+        await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(receiptAction)));
+        await assertApproved();
       }
       await this.control.checkpoint();
       const page=this.browser.page;const timeout=action.timeoutMs??4000;let data:unknown;
+      const interaction=this.browser.interaction,interactionOptions={timeout,checkpoint:()=>this.control.checkpoint(),beforeEffect:assertApproved};
       const value='value'in action?this.variables.resolve(action.value):'';
       if(locator&&['click','press','submit'].includes(action.type)){
         const info=await locator.evaluate((el,type)=>{
@@ -77,6 +81,7 @@ export class Executor {
         case 'forward':await page.goForward({waitUntil:'domcontentloaded'});break;
         case 'reload':await page.reload({waitUntil:'domcontentloaded'});break;
         case 'click':{
+          await interaction.perform(locator!,'click',async()=>{
           const newTab=await locator!.evaluate(el=>el.matches('a[target="_blank"]'));
           if(newTab){
             const both=await Promise.allSettled([page.waitForEvent('popup',{timeout}),locator!.click({timeout})]);
@@ -84,30 +89,32 @@ export class Executor {
             if(both[1].status==='rejected')throw both[1].reason;
             await both[0].value.waitForLoadState('domcontentloaded',{timeout});this.browser.page=both[0].value;
           }else await locator!.click({timeout});
+          },interactionOptions);
           break;
         }
-        case 'doubleClick':await locator!.dblclick({timeout});break;
-        case 'hover':await locator!.hover({timeout});break;
-        case 'fill':await locator!.fill(value,{timeout});if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
-        case 'type':await locator!.pressSequentially(value,{timeout});break;
+        case 'doubleClick':await interaction.perform(locator!,'doubleClick',()=>locator!.dblclick({timeout}),interactionOptions);break;
+        case 'hover':await interaction.perform(locator!,'hover',()=>locator!.hover({timeout}),interactionOptions);break;
+        case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
+        case 'type':await interaction.enter(locator!,value,false,interactionOptions);break;
         case 'select':{
           const options=await locator!.evaluate(el=>[...(el as HTMLSelectElement).options].map(o=>({label:o.label,value:o.value})));
           const option=options.find(o=>o.value===value)||options.find(o=>o.label===value);
           if(!option)throw new Error('Select option not found');
-          await locator!.selectOption(option.value,{timeout});break;
+          await interaction.perform(locator!,'select',()=>locator!.selectOption(option.value,{timeout}),interactionOptions);break;
         }
-        case 'check':await locator!.check({timeout});if(!await locator!.isChecked())throw new Error('Check postcondition failed');break;
-        case 'uncheck':await locator!.uncheck({timeout});if(await locator!.isChecked())throw new Error('Uncheck postcondition failed');break;
-        case 'press':await locator!.press(value,{timeout});break;
-        case 'scroll':if(locator)await locator.scrollIntoViewIfNeeded({timeout});else await page.mouse.wheel(0,action.pixels*(action.direction==='up'?-1:1));break;
+        case 'check':await interaction.perform(locator!,'check',()=>locator!.check({timeout}),interactionOptions);if(!await locator!.isChecked())throw new Error('Check postcondition failed');break;
+        case 'uncheck':await interaction.perform(locator!,'uncheck',()=>locator!.uncheck({timeout}),interactionOptions);if(await locator!.isChecked())throw new Error('Uncheck postcondition failed');break;
+        case 'press':await interaction.perform(locator!,'press',()=>locator!.press(value,{timeout}),interactionOptions);break;
+        case 'scroll':if(locator)await interaction.perform(locator,'scroll',()=>locator!.scrollIntoViewIfNeeded({timeout}),interactionOptions);else await interaction.scroll(action.pixels*(action.direction==='up'?-1:1),interactionOptions);break;
         case 'upload':{
           const file=this.variables.file(action.file);
           if(!(await stat(file)).isFile())throw new Error('Upload alias is not a regular file');
-          await locator!.setInputFiles(file,{timeout});break;
+          // Hidden native file controls have no pointer target.
+          if(await locator!.isVisible())await interaction.perform(locator!,'upload',()=>locator!.setInputFiles(file,{timeout}),interactionOptions);
+          else {await assertApproved?.();await locator!.setInputFiles(file,{timeout});}break;
         }
         case 'download':{
-          const waiting=page.waitForEvent('download',{timeout});
-          const both=await Promise.allSettled([waiting,locator!.click({timeout})]);
+          const both=await interaction.perform(locator!,'click',()=>Promise.allSettled([page.waitForEvent('download',{timeout}),locator!.click({timeout})]),interactionOptions);
           if(both[0].status==='rejected')throw both[0].reason;
           if(both[1].status==='rejected')throw both[1].reason;
           const download=both[0].value;const folder=resolve(this.options.downloadDir??'.fcu/downloads');
@@ -124,14 +131,15 @@ export class Executor {
         }
         case 'submit':{
           const form=locator!;
-          await form.evaluate(el=>{
+          await interaction.perform(form,'submit',()=>form.evaluate(el=>{
             const f=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form;
             if(!f)throw new Error('Target is not a form or form control');
             if(!f.reportValidity())throw new Error('Form validation failed');
             f.addEventListener('submit',()=>f.setAttribute('data-fcu-submitted','true'),{once:true});f.requestSubmit();
-          });break;
+          }),interactionOptions);break;
         }
         case 'extract':{
+          interaction.cue('extract');
           const root=locator??page.locator('body');
           if(action.format==='table')data=await root.locator('tr').filter({visible:true}).evaluateAll(rows=>rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>cell.textContent?.trim()??'')));
           else if(action.format==='links')data=await root.evaluateAll(els=>els.flatMap(el=>[...(el.matches('a[href]')?[el]:el.querySelectorAll('a[href]'))].filter(a=>a.getClientRects().length>0).map(a=>({text:a.textContent?.trim(),url:(a as HTMLAnchorElement).href}))));
@@ -169,6 +177,6 @@ export class Executor {
       return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:true,strategy,data};
     }catch(error){
       return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&['click','doubleClick','press','submit','download'].includes(action.type)};
-    }
+    }finally{await disposeApproved?.();}
   }
 }

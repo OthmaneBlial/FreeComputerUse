@@ -46,6 +46,17 @@ accessibility and a sanitized component HTML fragment. The UI preview and explic
 CLI screenshot are local. Images are not sent to the provider. Vision control,
 canvas execution, multi-model routing and named external site adapters are planned.
 
+The dashboard executes mouse movement over multiple real Playwright mouse events,
+types short text progressively, and scrolls in increments. Trusted pointer telemetry
+travels over the authenticated event stream; a cursor and click ring are drawn in
+the dashboard, without injecting code into websites or including typed values.
+Preview requests are serialized and refresh continuously while a task runs.
+Cursor projection accounts for image scaling, letterboxing and iframe coordinates;
+document IDs hide stale cursors on navigation. Approval guards are checked again
+after movement, and pause/stop checkpoints interrupt movement and typing. Native
+input types, passwords and long text retain direct entry. CLI/benchmark execution
+keeps its original pace unless visual interaction is explicitly enabled.
+
 ## Evidence
 
 `npm test` runs actual Chromium against deterministic local pages. Real provider

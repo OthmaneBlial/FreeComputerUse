@@ -10,7 +10,7 @@ every click. MIT licensed. Runs locally. Model API usage is separately billed.
 [Free public browser lab](https://othmaneblial.github.io/FreeComputerUse/) ·
 [Measured results](artifacts/benchmark-public.json) · [Security model](SECURITY.md)
 
-![The local workspace with a real browser task and a learned workflow](artifacts/ui/desktop.png)
+![The local workspace moving its cursor and typing into a real browser task](artifacts/ui/interaction.png)
 
 ## How it works
 
@@ -50,7 +50,11 @@ npm run dev
 ```
 
 Open **http://127.0.0.1:4318**. Enter a starting URL and goal. Approve website
-access, then follow the browser preview, plan, events, tokens and estimated cost.
+access, then watch the cursor move to controls, click and type into the browser.
+The live preview shows progressive typing, click indicators and scrolling alongside
+the plan, events, tokens and estimated cost. Cursor coordinates come from local
+browser operations; this visual interaction adds no model calls. CLI and benchmarks
+keep their fast execution; the dashboard uses a visible pace by default.
 Use **Take control** to pause, click/type manually or edit the plan, then resume.
 Completed history entries replay their successful actions without a provider.
 

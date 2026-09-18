@@ -51,15 +51,17 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       if(req.method==='GET'&&path==='/api/state'){
         send(200,{active:agent?.active??false,paused:agent?.control.paused??false,pending:agent?.control.pending,
           trace:agent?.trace?{...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}:undefined,state:agent?.state?{url:agent.state.url,title:agent.state.title,hash:agent.state.hash,warnings:agent.state.warnings,elements:agent.state.elements.length}:undefined,
-          events:agent?.events??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12),workflows:new WorkflowEngine(store).list()});return;
+          pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?.url(),events:agent?.events??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12),workflows:new WorkflowEngine(store).list()});return;
       }
       if(req.method==='GET'&&path==='/api/events'){
         res.writeHead(200,{'Content-Type':'text/event-stream','Connection':'keep-alive'});res.write(': connected\n\n');listeners.add(res);req.on('close',()=>listeners.delete(res));return;
       }
       if(req.method==='GET'&&path==='/api/preview'){
         if(!agent?.browser.page||agent.browser.page.isClosed()){res.writeHead(204);res.end();return;}
-        const screenshot=await agent.browser.page.screenshot({type:'jpeg',quality:65,timeout:2500});
-        res.writeHead(200,{'Content-Type':'image/jpeg'});res.end(screenshot);return;
+        const running=agent,page=running.browser.page,pageId=running.browser.interaction.pageId(page);
+        const screenshot=await page.screenshot({type:'jpeg',quality:70,timeout:2500});
+        if(agent!==running||page!==running.browser.page||pageId!==running.browser.interaction.pageId(page)){res.writeHead(204);res.end();return;}
+        res.writeHead(200,{'Content-Type':'image/jpeg','X-FCU-Page-ID':String(pageId),'X-FCU-Run-ID':running.trace?.id??''});res.end(screenshot);return;
       }
       if(req.method==='GET'&&path==='/api/profile'){send(200,await profiles.load());return;}
       if(req.method==='POST'&&path==='/api/profile'){
@@ -76,9 +78,10 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         await agent?.close();const fresh=runtimeConfig();
         agent=new Agent({store,provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),useWorkflows:request.useWorkflows,confirmation:request.confirmation,mode:request.mode,
           completionCriteria:[...(request.expectText?[{type:'text_exists' as const,value:request.expectText}]:[]),...(request.expectUrl?[{type:'url_contains' as const,value:request.expectUrl}]:[])],
-          downloadDir:join(config.dataDir,'downloads'),browser:{headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(request.url).origin,...request.allowedOrigins.map(url=>new URL(url).origin)]}});
+          downloadDir:join(config.dataDir,'downloads'),browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(request.url).origin,...request.allowedOrigins.map(url=>new URL(url).origin)]}});
         agent.on('event',event=>{for(const listener of listeners)listener.write(`data: ${JSON.stringify(event)}\n\n`);});
         const running=agent;
+        running.browser.interaction.on('pointer',pointer=>{for(const listener of listeners)listener.write(`event: pointer\ndata: ${JSON.stringify({runId:running.trace?.id,pointer})}\n\n`);});
         pending=(replay?running.replay(replay):running.run(request.goal,request.url)).catch(error=>running.event('ERROR',error instanceof Error?error.message:'Task failed')).finally(()=>{pending=undefined;});
         send(202,{started:true});return;
       }
@@ -92,10 +95,11 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
           if(agent.active&&!agent.control.paused)throw new Error('Pause to take manual control');
           const action=Manual.parse(await body(req));const page=agent.browser.page;
           if(!page||page.isClosed())throw new Error('No live browser');
-          if(action.type==='click')await page.mouse.click(action.x,action.y);
+          const manualOptions={timeout:4000,checkpoint:async()=>{if(agent?.active&&!agent.control.paused)throw new Error('Pause to take manual control');}};
+          if(action.type==='click')await agent.browser.interaction.manualClick(action.x,action.y,manualOptions);
           if(action.type==='type')await page.keyboard.insertText(action.value);
           if(action.type==='press')await page.keyboard.press(action.value);
-          if(action.type==='scroll')await page.mouse.wheel(0,action.y);
+          if(action.type==='scroll')await agent.browser.interaction.scroll(action.y,manualOptions);
           if(action.type==='navigate')await agent.browser.navigate(action.url);
           await agent.observe();
         }else throw new Error('Unknown control');send(200,{ok:true});return;
