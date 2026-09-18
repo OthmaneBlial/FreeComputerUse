@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="390" viewBox="0 0 1200 390" role="img" aria-labelledby="title description">
+  <title id="title">FreeComputerUse — Let AI plan. Let code do the clicks.</title>
+  <desc id="description">A local browser agent. A Flash model plans, Playwright executes, and compatible learned workflows can run again with zero model calls.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#34423a" stroke-width="1"/></pattern>
+    <clipPath id="corners"><rect width="1200" height="390" rx="18"/></clipPath>
+  </defs>
+  <g clip-path="url(#corners)">
+    <rect width="1200" height="390" fill="#18251f"/>
+    <rect x="756" width="444" height="390" fill="url(#grid)"/>
+    <path d="M756 0V390" stroke="#34423a"/>
+    <g transform="translate(44 34) scale(.75)">
+      <path d="M48 13H23L9 27V45L22 58H43L56 45V33H42V40L37 45H28L23 40V32L28 27H39L48 13Z" fill="#f1f3e8"/>
+      <path d="M34 4L61 17L47 22L42 37L34 4Z" fill="#c4e967"/>
+      <path d="M5 53L10 48L15 53L10 58L5 53Z" fill="#c4e967"/>
+    </g>
+    <text x="105" y="67" fill="#f1f3e8" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="28" letter-spacing="-1">FreeComputerUse</text>
+    <text x="47" y="139" fill="#b3c2b5" font-family="monospace" font-size="12" letter-spacing="2">YOUR BROWSER. YOUR MACHINE. YOUR CALL.</text>
+    <text x="43" y="207" fill="#f1f3e8" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="57" letter-spacing="-2.3">Let AI plan.</text>
+    <text x="43" y="271" fill="#c4e967" font-family="Georgia, serif" font-style="italic" font-size="56" letter-spacing="-1.6">Let code do the clicks.</text>
+    <text x="47" y="341" fill="#b3c2b5" font-family="Arial, Helvetica, sans-serif" font-size="17">Real browser actions. Visible control. Reusable workflows.</text>
+    <g font-family="Arial, Helvetica, sans-serif">
+      <path d="M837 88V286H1109" fill="none" stroke="#c4e967" stroke-width="2" stroke-dasharray="5 7"/>
+      <rect x="806" y="61" width="331" height="71" rx="8" fill="#22342a" stroke="#405143"/>
+      <circle cx="838" cy="96" r="13" fill="#c4e967"/><text x="834" y="101" font-size="14" fill="#18251f" font-weight="700">1</text>
+      <text x="866" y="91" fill="#f1f3e8" font-size="19" font-weight="700">Plan a batch</text>
+      <text x="866" y="113" fill="#b3c2b5" font-size="13">Small Flash model · bounded context</text>
+      <rect x="806" y="155" width="331" height="71" rx="8" fill="#22342a" stroke="#405143"/>
+      <circle cx="838" cy="190" r="13" fill="#c4e967"/><text x="834" y="195" font-size="14" fill="#18251f" font-weight="700">2</text>
+      <text x="866" y="185" fill="#f1f3e8" font-size="19" font-weight="700">Execute locally</text>
+      <text x="866" y="207" fill="#b3c2b5" font-size="13">Move · click · type · verify</text>
+      <rect x="806" y="249" width="331" height="92" rx="8" fill="#c4e967"/>
+      <text x="828" y="279" fill="#18251f" font-size="19" font-weight="700">Reuse what worked</text>
+      <text x="828" y="314" fill="#18251f" font-size="30" font-weight="700" letter-spacing="-1">0</text>
+      <text x="855" y="311" fill="#26382b" font-size="14">model calls on compatible repeats</text>
+    </g>
+    <path d="M1143 317c-2.2-.8-3.8.8-3 3l9.5 24c1 2.5 4.6 2.2 5.3-.4l2.8-9.5 9.5-2.8c2.6-.7 2.9-4.3.4-5.3Z" fill="#1677ff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</svg>

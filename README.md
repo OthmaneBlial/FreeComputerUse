@@ -1,42 +1,64 @@
 # FreeComputerUse
 
-**An autonomous browser agent that spends tokens on planning, then executes browser actions locally.**
+![FreeComputerUse — Let AI plan. Let code do the clicks.](assets/readme/hero.svg)
 
-A small Flash model creates a batch of actions. TypeScript and Playwright execute it,
-verify the result, and learn a semantic workflow for the next compatible run.
-The model is called again for unknown page content or a bounded repair—not after
-every click. MIT licensed. Runs locally. Model API usage is separately billed.
+<p align="center">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-c4e967?style=flat-square&labelColor=18251f"></a>
+  <img alt="TypeScript" src="https://img.shields.io/badge/built_with-TypeScript-3178c6?style=flat-square&labelColor=18251f">
+  <img alt="Playwright browser automation" src="https://img.shields.io/badge/browser-Playwright-45ba4b?style=flat-square&labelColor=18251f">
+  <img alt="Runs locally" src="https://img.shields.io/badge/runs-on_your_machine-c4e967?style=flat-square&labelColor=18251f">
+</p>
 
-[Free public browser lab](https://othmaneblial.github.io/FreeComputerUse/) ·
-[Measured results](artifacts/benchmark-public.json) · [Security model](SECURITY.md)
+<p align="center">
+  <a href="#quick-start">Get started</a> ·
+  <a href="https://othmaneblial.github.io/FreeComputerUse/lab/index.html">Explore the free task lab</a> ·
+  <a href="#measured-not-guessed">See the measurements</a> ·
+  <a href="SECURITY.md">Security</a>
+</p>
 
-![The local workspace with a dedicated browser, visible controls and an original cursor-route mark](artifacts/ui/workspace.png)
+**Give your browser a goal. Watch the cursor move, click and type. Keep the workflow when it works.**
 
-## How it works
+FreeComputerUse is a local browser agent that uses a small Flash model to plan batches of actions, then executes and verifies them with TypeScript and Playwright. A compatible learned workflow can run again with **zero model calls**.
 
-```mermaid
-flowchart TD
-  Goal[User goal] --> Permission[Website permission]
-  Permission --> DOM[Visible DOM, forms and accessibility]
-  DOM --> Local[Local strategy or compatible learned workflow]
-  Local -->|Unknown task| Planner[Cheap Flash planner: compressed context]
-  Local -->|Known task| DSL[Validated action DSL]
-  Planner --> DSL
-  DSL --> Execute[Playwright executes a batch locally]
-  Execute --> Verify[Deterministic result checks]
-  Verify -->|Unexpected state| Repair[Small repair context]
-  Repair --> DSL
-  Verify -->|Success| Save[Private trace and semantic workflow]
-```
+Research products, find an invoice, extract a dashboard or work through a multi-page task—with website approval, visible execution and the ability to take control.
 
-Repeated screenshot-and-click loops spend model calls interpreting each browser
-step. Here, observation, selectors, form mapping, navigation checks and execution
-are local code. Screenshots power the local preview and manual inspection; they
-are **not sent to the model**. Visual-only/canvas automation remains planned.
+**MIT-licensed software. Bring your own model API key; API usage is billed by your provider.** The browser, profiles and history stay on your machine. Selected webpage context goes to the configured model API.
 
-## Install and run
+## See it work
 
-Requires Node **22.13+**, npm and Chromium. Tested on macOS with real Chromium.
+![Real Flash-planned invoice task: approve website access, filter invoices, open the detail page and retrieve the result](assets/readme/demo.gif)
+
+**One goal → four filters → a separate invoice page → two extracted tables → a verified download.**
+
+**8 browser actions · 2 model calls · 5,263 tokens · no repairs.**
+
+This recording uses real DeepSeek Flash planning and real Playwright actions on our styled, synthetic workspace, at the dashboard’s readable pace. No scripted plan or sped-up actions. The capture harness approves only this local practice site. [Watch the full recording](assets/readme/demo.mp4) · [Inspect this run’s evidence](assets/readme/demo-evidence.json).
+
+<details>
+<summary><strong>See the result: extracted tables and a saved invoice</strong></summary>
+
+![Readable task results with extracted tables and a saved file](assets/readme/results.png)
+
+Results are readable tables, facts and saved files. Copy a summary or save a standalone HTML report. The execution stream opens when you need it; fullscreen lets you focus on the browser.
+
+</details>
+
+## Why this approach?
+
+| What you want | What the runtime does |
+| --- | --- |
+| An agent you can actually watch | Streams the real browser with a visible pointer, progressive typing, clicks and scrolling |
+| Model calls spent on decisions | Plans action batches; handles selectors, execution and checks locally |
+| Less planning for repeat work | Saves successful semantic workflows and reuses compatible ones without a model |
+| A way out when things go wrong | Pauses for manual control or plan editing; uses bounded repairs and stops at configured limits |
+| Evidence you can inspect | Records actions, outcomes, model calls, tokens, repairs and configured cost estimates |
+| Permission before access | Normal mode asks before the first document request to each website origin |
+
+The planner sees compressed DOM and control context. **Preview screenshots are not sent to the model.** This is browser automation for accessible web pages; visual-only canvas and desktop OS control are outside the current scope.
+
+## Quick start
+
+Requires **Node.js 22.13+**, npm and Playwright’s Chromium. Tested on macOS.
 
 ```bash
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git
@@ -45,234 +67,182 @@ npm ci
 npx playwright install chromium
 cp .env.example .env
 chmod 600 .env
-# Edit .env locally with your API key.
-npm run dev
 ```
 
-Open **http://127.0.0.1:4318**. Enter a starting URL and goal. Approve website
-access, then watch the cursor move to controls, click and type into the browser.
-The live preview shows progressive typing, click indicators and scrolling alongside
-the plan, events, tokens and estimated cost. Cursor coordinates come from local
-browser operations; this visual interaction adds no model calls. CLI and benchmarks
-keep their fast execution; the dashboard uses a visible pace by default.
-The workspace fits the window; approvals stay beside the browser controls.
-Use **Full screen** to watch the browser at full size, and **Execution log** to
-open its stream in a dialog. Results, history and run options open on demand.
-Results use readable fact cards, tables and source links, with **Copy summary**
-and **Save report** for a standalone HTML report. Partial runs are labelled;
-only successfully saved files appear as downloads. The last finished trace is
-restored after a server restart. The pointer stays small without a floating label;
-controls near a viewport edge scroll fully into view before the agent clicks.
-The toolbar arrows scroll the real page while idle or after taking control.
-The blue pointer with a white outline stays visible before the first plan arrives
-and across document changes. While a model reply is pending, the workspace shows
-preparation time rather than suggesting that browser actions are running.
-Use **Take control** to pause, click/type manually or edit the plan, then resume.
-Completed history entries replay their successful actions without a provider.
-
-Default model configuration:
+Edit `.env` locally:
 
 ```dotenv
-LLM_API_KEY=
+LLM_API_KEY=your-api-key
 LLM_MODEL=deepseek-flash
 LLM_BASE_URL=https://api.deepseek.com
 LLM_RESPONSE_FORMAT=json_object
 ```
 
-The DeepSeek integration explicitly disables thinking mode. Other
-OpenAI-compatible endpoints are supported through the provider interface; only
-DeepSeek Flash has been validated live here. Optional input/output/cached-input
-prices are USD per million tokens. Leave them blank to display unknown cost.
-Check [the provider's current prices](https://api-docs.deepseek.com/quick_start/pricing/)
-before configuring estimates. Benchmarks use conservative configured peak prices,
-not billing receipts.
+```bash
+npm run dev
+```
 
-## Permissions and privacy
+Open **http://127.0.0.1:4318**. Paste the URL and goal below, click **Run task**, then approve website access.
 
-**Normal mode asks before the first document request to each website origin.**
-New origins need their own permission. Sensitive actions have a separate approval
-step; cached workflows and replay keep those gates. Noninteractive CLI runs reject
-approval requests rather than silently allowing them.
+**Starting page**
 
-**Ultra mode is explicit and off by default.** `--ultra` or the UI checkbox skips
-website/action approval and permits external HTTP(S) destinations. It retains the
-fixed action API, strict validation, token/step limits and upload alias boundary.
+```text
+https://othmaneblial.github.io/FreeComputerUse/lab/workspace.html?view=billing
+```
 
-The model cannot run shell commands or arbitrary JavaScript. Profile values and
-file paths resolve locally through aliases; only alias names are normally sent.
-Known values and key-shaped strings are redacted from prompts, logs and saved
-traces. Webpage content is marked as untrusted data. Cross-origin requests are
-restricted in normal mode, and stale sensitive-action approvals are rejected.
+**What should happen?**
 
-Local `.env`, `.fcu`, sessions, downloads and SQLite history are ignored by Git.
-Private files/directories use restricted permissions. **Storage is not encrypted.**
-The loopback dashboard uses a session cookie, Host/Origin checks, CSRF protection
-and CSP. Sensitive-control detection is heuristic; choose `--confirmation always`
-for action-by-action review. See [SECURITY.md](SECURITY.md) for boundaries and limits.
+```text
+Search invoices for Atlas Studio. Set Invoice status to Overdue,
+Invoice period to September 2026, and Account owner to Maya Chen.
+Extract the matching Invoices table. Open View INV-2609-04,
+extract the Invoice line items table, then click Download this invoice.
+This is a simulation; do not pay or send anything.
+```
 
-## Try useful tasks on free websites
+Check for **INV-2609-04**, **Atlas Studio** and line items totalling **EUR 240**. The download contains the same synthetic invoice. Repeat the same goal from the same starting URL to try learned workflow reuse.
+
+**Want a first run without an API key?** Open [the revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html) with the exact goal `Extract the table`. This narrow task has a deterministic local strategy. General tasks need a configured provider.
+
+<details>
+<summary><strong>Provider configuration and budgets</strong></summary>
+
+DeepSeek Flash is the live-validated default, with thinking mode explicitly disabled. The provider interface supports other OpenAI-compatible endpoints; their behavior has not been validated here.
+
+| Setting | Default |
+| --- | --- |
+| `FCU_MAX_LLM_CALLS` | `10` |
+| `FCU_MAX_INPUT_TOKENS` | `20000` |
+| `FCU_MAX_OUTPUT_TOKENS` | `5000` |
+| `FCU_DATA_DIR` | `.fcu` |
+
+Optional `LLM_INPUT_PRICE`, `LLM_OUTPUT_PRICE` and `LLM_CACHED_INPUT_PRICE` are USD per million tokens. Leave prices blank to show unknown cost; estimates are not billing receipts. Check [current provider pricing](https://api-docs.deepseek.com/quick_start/pricing/) before setting them.
+
+Verify the local browser and model endpoint with `npm run agent -- doctor --api`.
+
+</details>
+
+## Try something useful
+
+The [task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html) has six complex practice workflows and ten sourced real-world research goals. The practice site is free, styled and synthetic; changes stay in its browser session.
+
+| Task | What makes it a useful test |
+| --- | --- |
+| Compare wireless keyboards | Search, combine filters, inspect a separate product page, compare two items and download evidence |
+| Plan an accessible journey | Set dates and passengers, reveal preferences, compare routes, inspect details and save an itinerary across three pages |
+| Retrieve an overdue invoice | Apply four filters, navigate to the invoice, extract line items and verify the saved file |
+| Extract a scoped revenue report | Change quarter and channel, inspect a month’s breakdown and check exported totals |
+| Update local preferences | Review changes, save them and verify persistence after reload |
+| Find a document | Combine folder/format filters, preview the right document and check downloaded content |
+
+For read-only work beyond the lab, try [Books to Scrape](https://books.toscrape.com/) or the sourced public-data tasks in the library. **A researched example is not automatically a passed agent trial.** Cards and [the examples guide](docs/USEFUL_EXAMPLES.md) distinguish validated runs from untested goals.
 
 ```bash
-# Read-only product comparison on a scraping sandbox.
+# Real public scraping sandbox; no account or purchase.
 npm run agent -- run \
   "Extract the full titles and prices of the first five books as structured records" \
   https://books.toscrape.com/
-
-# Synthetic invoice: no real account or payment.
-npm run agent -- run \
-  "Download the synthetic invoice and verify the download was created" \
-  https://othmaneblial.github.io/FreeComputerUse/lab/invoices.html
-
-# A narrow, fully specified task can use local code with zero model calls.
-npm run agent -- run "Extract the table" \
-  https://othmaneblial.github.io/FreeComputerUse/lab/reports.html
-
-# Debug events and an additional final criterion owned by the user.
-npm run agent -- run "Start the delayed content and extract the final visible message" \
-  https://the-internet.herokuapp.com/dynamic_loading/1 \
-  --debug --expect-text "Hello World!"
 ```
 
-The [styled task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html)
-has ten sourced real-world research goals and six complex practice workflows.
-Product comparison, travel planning and invoice retrieval navigate through
-**actual separate pages**, with filters, details, extraction and downloads.
-Analytics, preferences and documents cover scoped data and saved state.
-Read [the examples guide](docs/USEFUL_EXAMPLES.md) for sources, page sequences,
-verification and trial limits. Original focused browser checks remain available.
-Job applications are one local illustration, alongside these broader tasks.
+## Measured, not guessed
 
-## Local profile
+Recorded on **18 September 2026**, using real DeepSeek Flash calls:
 
-Import a JSON file with `npm run agent -- config --profile /absolute/path/profile.json`
-or edit **Local profile** in the dashboard:
+| Focused public suite | First runs | Compatible learned repeats |
+| --- | ---: | ---: |
+| Independent correctness checks passed | **14 / 14** | **14 / 14** |
+| Model calls | 18 | **0** |
+| Total tokens | 31,654 | **0** |
+| Successful browser actions | 30 | 30 |
+
+First-run API usage was **approximately $0.00611 total** at the configured benchmark prices. Repeats ran with **no provider installed**. [Raw public report](artifacts/benchmark-public.json) · [Method and limitations](docs/BENCHMARKS.md).
+
+These are single trials on specified automation sandboxes and project-owned pages, not a general website success rate. The six complex workflows pass with authored plans, which validates execution and reuse—not model planning. Live complex trials have both successes and failures. [Authored execution report](artifacts/benchmark-complex-authored.json) · [Live complex trial, including failures](artifacts/benchmark-complex-live-travel,billing.json) · [Read-only real-world trial](artifacts/benchmark-real-world.json).
+
+No screenshot-agent baseline was measured, so we do not claim a token or cost savings percentage.
+
+## Permission and control are part of the product
+
+**Normal mode asks before accessing each website origin**, then separately gates sensitive actions. Learned workflows and replay retain those checks. Noninteractive CLI runs reject approval requests instead of silently allowing them.
+
+Use **Take control** to pause, interact manually or edit the plan, then resume. Choose `--confirmation always` for action-by-action review. **Ultra mode is explicit and off by default**: it skips website/action approval and permits external HTTP(S) destinations, while retaining the fixed action API and configured limits.
+
+The model cannot execute shell commands or arbitrary JavaScript. Profile values and upload paths resolve locally through explicit aliases. Known secret values are redacted, and webpage content is treated as untrusted data. Sensitive-action detection is heuristic; arbitrary webpage data may still be sent in model context.
+
+Local `.env`, `.fcu`, sessions and downloads are ignored by Git and use restricted permissions. **Local storage is not encrypted.** The dashboard binds to loopback and uses a session cookie, Host/Origin checks, CSRF protection and CSP. Read [SECURITY.md](SECURITY.md) for the full boundaries and private vulnerability reporting.
+
+## Under the hood
+
+```mermaid
+flowchart LR
+  G[Goal + website approval] --> O[Observe DOM locally]
+  O --> W{Compatible workflow?}
+  W -->|Yes: no model| E[Execute with Playwright]
+  W -->|No| P[Flash plans a batch]
+  P --> E
+  E --> V[Verify locally]
+  V -->|Unknown content or bounded repair| O
+  V -->|Success| S[Save result + workflow]
+```
+
+Actions use a strict, validated DSL: navigation, click, fill/type, select, keyboard, scrolling, upload/download, tabs, waits and extraction. Ambiguous mutation targets are rejected. Repairs preserve successful actions and replace the failed portion.
+
+Workflow reuse currently requires the **same origin, path, normalized goal and compatible initial control structure**. It does not transfer an arbitrary task across unrelated websites.
+
+<details>
+<summary><strong>CLI and local profile</strong></summary>
+
+From source, prefix these commands with `npm run agent --`. After `npm run build`, use `node dist/cli/index.js` or `npm link` for a local `agent` command.
+
+| Command | Purpose |
+| --- | --- |
+| `agent run "goal" URL` | Execute with a persistent browser session |
+| `agent open URL` | Open a headed browser with an interactive task prompt |
+| `agent inspect URL` | Inspect compressed DOM; optional accessibility, region and local screenshot |
+| `agent replay RUN_ID` | Replay a completed trace without model calls |
+| `agent history` / `agent workflows` | Inspect outcomes and learned workflows |
+| `agent config` / `agent doctor --api` | Inspect safe configuration or check the model endpoint |
+| `agent ui` | Start the local workspace |
+
+Run `npm run agent -- run --help` for budgets, completion criteria and other flags.
+
+Edit **Local profile** in the dashboard, or import a JSON file:
 
 ```json
 {
   "profile": {
     "firstName": "Alex",
-    "lastName": "Example",
-    "email": "alex@example.test",
-    "country": "France",
-    "message": "A synthetic test message"
+    "email": "alex@example.test"
   },
   "files": {
-    "resume": "/absolute/path/to/your/resume.pdf"
+    "document": "/absolute/path/to/your/document.pdf"
   }
 }
 ```
 
-The planner uses `{{profile.email}}` and `{{files.resume}}`; values resolve in the
-runtime. In normal mode the original goal must authorize profile/local-file use.
-Uploads accept an explicitly defined file alias, never an arbitrary model path.
-
-## CLI
-
-| Command | Purpose |
-| --- | --- |
-| `agent run "goal" URL` | Execute a task; persistent session by default |
-| `agent open URL` | Headed browser and interactive task prompt |
-| `agent inspect URL` | Compressed DOM; `--region`, `--accessibility`, local `--screenshot` |
-| `agent replay RUN_ID` | Replay a completed trace with no model calls |
-| `agent history` | Local outcomes and run IDs |
-| `agent workflows` | Learned semantic workflows and reuse counts |
-| `agent config` | Safe configuration status and alias names |
-| `agent doctor --api` | Verify Chromium and the configured model endpoint |
-| `agent ui` | Start the local dashboard |
-
-From source, prefix commands with `npm run agent --`. After `npm run build`, use
-`node dist/cli/index.js` or `npm link` to install the `agent` command locally.
-`agent open` accepts `:pause`, `:resume`, `:approve`, `:reject`, `:stop`, `:inspect`
-and `:quit`. Run `npm run agent -- run --help` for all task flags.
-
-## Validation and measurements
-
 ```bash
-npm run check
-npm test
-npm run build
-npm run security
-# Optional rendered UI smoke test on the public lab (may spend API tokens):
-# npm run ui:smoke
-npm run fixtures                 # deterministic local lab, port 3000
-npm run demo                     # labeled scripted fixture provider; no LLM
-npm run demo -- --live            # real Flash job/contact demo, synthetic local data
-npm run benchmark -- --live       # six local scenarios plus learned repeats
-npm run benchmark:public          # real Flash on 14 free public scenarios plus repeats
-npm run lab:build
-npm run lab:serve                 # styled local workspace, port 4319
-npm run lab:smoke                 # desktop/mobile render checks, no API spend
-npm run benchmark:complex         # authored plans, six complex cases and repeats
-npm run benchmark:complex -- --live # real Flash planning on the complex cases
-npm run benchmark:real            # read-only GitHub/GOV.UK research trials
+npm run agent -- config --profile /absolute/path/to/profile.json
 ```
 
-The public suite is opt-in and spends API tokens. Its harness explicitly approves
-only each selected test origin and rejects external sensitive actions. It uses
-read-only scraping/automation sandboxes; forms/settings run only in our static
-simulation lab. It does not message people, purchase, create accounts or alter a
-real account. Every scenario has trusted completion criteria **and an independent
-result oracle**. Compatible repeats run with **no provider installed**.
+The planner uses aliases such as `{{profile.email}}` and `{{files.document}}`; values resolve locally. In normal mode, the original goal must authorize profile/local-file use. Uploads require an explicitly configured file alias.
 
-Local real-API demo measurements on 2026-09-18:
+</details>
 
-| Task | Successful actions | Model calls | Total tokens |
-| --- | ---: | ---: | ---: |
-| Contact form | 7 | 1 | 1,207 |
-| Multi-page job application | 11 | 3 | 4,272 |
+## Build with us
 
-These are observed fixture runs in [the demo report](artifacts/demo-measurements.json).
-The final public trial passed **14/14** result checks, and **14/14** learned repeats passed with **zero model calls**. First runs used 30 successful actions, 18 calls and 31,654 tokens (configured peak-price estimate: **$0.00611** total). The six local scenarios and their provider-free repeats also passed. See [the measurement method](docs/BENCHMARKS.md).
+Useful contributions: reproducible failing tasks, clearer result checks, safer permission scopes and domain adapters. Keep examples synthetic or read-only, and remove credentials and personal data from shared traces.
 
-See [the public benchmark report](artifacts/benchmark-public.json) for task
-correctness, calls, tokens, estimated cost, repairs, compression and learned repeat
-results. Validation runs only locally with `npm run validate`; GitHub CI is disabled
-and its workflow has been removed. The tests cover real Chromium extraction, frames/shadow DOM, selectors,
-validation, uploads/downloads, tabs, verification, bounded repair, workflow/replay,
-permissions, redaction, token reservations and the rendered dashboard.
+```bash
+npm run validate          # Local type checks, tests, build, security scan and audit
+npm run lab:serve         # Styled practice site on port 4319
+npm run lab:smoke         # Desktop/mobile render checks; no model usage
+npm run benchmark:complex # Authored execution and reuse checks; no model usage
+```
 
-**Evidence limits:** these are individual runs on specified test sites, not a
-universal success rate. Earlier fixtures deliberately contained large decorative
-HTML to exercise compression; the redesigned public lab uses shared styling.
-Context reduction varies by page. No screenshot-agent
-baseline was measured, so no token/cost savings percentage is claimed.
+Opt-in commands `npm run benchmark:public`, `npm run benchmark:complex -- --live`, `npm run benchmark:real` and `npm run ui:smoke` can spend API tokens. GitHub CI is disabled; validation runs locally.
 
-## Runtime and extension points
+Next: repeated benchmark trials, versioned workflow generalization, optional vision fallback, stronger model routing and encrypted local storage. [Implementation notes](docs/IMPLEMENTATION.md) · [Requirement audit](docs/REQUIREMENTS.md).
 
-| Module | Responsibility |
-| --- | --- |
-| `src/browser` | Persistent Chromium, visible DOM, refs, ranked selectors, compression/diffs |
-| `src/actions` | Strict Zod DSL, normalization, gated Playwright execution |
-| `src/verification` | Local URL, text, field, network, download, extraction and tab checks |
-| `src/agent` | Observe/plan/execute/verify/repair, human control and budgets |
-| `src/llm` | Abstract provider; minimal JSON plan/repair/classify calls |
-| `src/profile` | Private local profile and alias resolution/redaction |
-| `src/history`, `src/workflows` | SQLite traces and compatible semantic workflow reuse |
-| `src/adapters` | Narrow deterministic strategies and optional adapter interface |
-| `src/server`, `src/ui` | Loopback workspace, live preview and controls |
+If this is the kind of browser agent you want to use, **star the repo** and try a task. A reproducible failure helps make the next version better.
 
-The DSL supports navigation, click/double-click, fill/type/select/check/uncheck,
-keyboard, hover/scroll, uploads/downloads, tabs, waits, extraction and submission.
-Mutations reject ambiguous selectors. Repair preserves successful actions and
-replaces only the failed portion. Context can escalate from structured DOM/diffs
-to accessibility and a sanitized HTML fragment. Loop and token limits stop
-unbounded runs.
-
-Workflow matching currently requires the same origin, path, normalized goal and
-compatible initial control structure. It does not claim transfer across unrelated
-sites. Failed runs are not automatically replayed. See the
-[requirement audit](docs/REQUIREMENTS.md) and [implementation notes](docs/IMPLEMENTATION.md).
-
-## Planned
-
-- Domain adapters for Greenhouse, Lever and other complex platforms.
-- Explicit versioned workflow generalization across compatible task parameters.
-- Optional vision fallback for canvas and inaccessible DOM; no CAPTCHA bypass.
-- Cheap/strong model routing for difficult recovery.
-- Encrypted vault storage and more detailed site/data permission scopes.
-- Repeated benchmark trials, more sandbox cases and a measured screenshot baseline.
-
-## License
-
-[MIT](LICENSE). Report vulnerabilities privately through
-[GitHub vulnerability reporting](https://github.com/OthmaneBlial/FreeComputerUse/security/advisories/new).
+[MIT](LICENSE) · Built with TypeScript and Playwright.

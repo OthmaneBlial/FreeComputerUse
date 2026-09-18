@@ -1,0 +1,220 @@
+{
+  "measuredAt": "2026-09-18T20:05:23.898Z",
+  "mode": "real DeepSeek Flash planning; human-paced Playwright execution",
+  "scenario": "Synthetic invoice filters, separate detail page, extraction and verified download",
+  "goal": "Search invoices for Atlas Studio. Set Invoice status to Overdue, Invoice period to September 2026, and Account owner to Maya Chen. Extract the matching Invoices table. Open View INV-2609-04, extract the Invoice line items table, then click Download this invoice. This is a simulation; do not pay or send anything.",
+  "correct": true,
+  "independentOracle": "Matching invoice row and filter state; separate invoice-details document; actual saved file bytes for Atlas Studio, EUR 180 + EUR 60 = EUR 240",
+  "normalMode": true,
+  "websiteVisitedOnlyAfterApproval": true,
+  "metrics": {
+    "durationMs": 13881,
+    "browserActions": 8,
+    "failedActions": 0,
+    "llmCalls": 2,
+    "inputTokens": 4849,
+    "outputTokens": 414,
+    "estimatedCostUSD": 0.0012741240000000002,
+    "actionsPerLLMCall": 4,
+    "tokensPerAction": 657.875,
+    "repairs": 0,
+    "workflowCacheHits": 0,
+    "pageCacheEntries": 5,
+    "planBatches": 2,
+    "compressionReduction": 0.4219582138467841,
+    "selectorSuccessRate": 1,
+    "usageEstimated": false,
+    "provider": "deepseek-flash",
+    "mode": "normal",
+    "approvedSites": [
+      "http://127.0.0.1:49948"
+    ]
+  },
+  "documentPages": [
+    "/lab/workspace.html",
+    "/lab/invoice-details.html"
+  ],
+  "recording": {
+    "width": 1600,
+    "height": 1000,
+    "durationSeconds": 18.337,
+    "marks": [
+      {
+        "at": 2.85,
+        "phase": "PERMISSION",
+        "message": "Website approved: http://127.0.0.1:49948"
+      },
+      {
+        "at": 2.934,
+        "phase": "OBSERVE",
+        "message": "DOM 4882 bytes → 2822 bytes"
+      },
+      {
+        "at": 2.934,
+        "phase": "PLAN",
+        "message": "Requesting one action batch"
+      },
+      {
+        "at": 4.344,
+        "phase": "PLAN",
+        "message": "Validated plan"
+      },
+      {
+        "at": 4.346,
+        "phase": "EXECUTE",
+        "message": "fill {\"id\":\"invoice-query\"}"
+      },
+      {
+        "at": 7.238,
+        "phase": "OBSERVE",
+        "message": "DOM 4766 bytes → 2470 bytes"
+      },
+      {
+        "at": 7.238,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 7.239,
+        "phase": "EXECUTE",
+        "message": "select {\"id\":\"invoice-status\"}"
+      },
+      {
+        "at": 8.495,
+        "phase": "OBSERVE",
+        "message": "DOM 4569 bytes → 2351 bytes"
+      },
+      {
+        "at": 8.495,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 8.495,
+        "phase": "EXECUTE",
+        "message": "select {\"id\":\"invoice-period\"}"
+      },
+      {
+        "at": 9.724,
+        "phase": "OBSERVE",
+        "message": "DOM 4401 bytes → 2230 bytes"
+      },
+      {
+        "at": 9.724,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 9.724,
+        "phase": "EXECUTE",
+        "message": "select {\"id\":\"invoice-owner\"}"
+      },
+      {
+        "at": 10.951,
+        "phase": "OBSERVE",
+        "message": "DOM 4365 bytes → 2230 bytes"
+      },
+      {
+        "at": 10.951,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 10.951,
+        "phase": "EXECUTE",
+        "message": "extract {\"css\":\"table\"}"
+      },
+      {
+        "at": 10.967,
+        "phase": "OBSERVE",
+        "message": "DOM 4431 bytes → 2230 bytes"
+      },
+      {
+        "at": 10.967,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 10.967,
+        "phase": "EXECUTE",
+        "message": "click {\"role\":\"button\",\"name\":\"View INV-2609-04\"}"
+      },
+      {
+        "at": 12.218,
+        "phase": "OBSERVE",
+        "message": "DOM 2642 bytes → 1773 bytes"
+      },
+      {
+        "at": 12.218,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 12.218,
+        "phase": "VERIFY",
+        "message": "Batch completion verified"
+      },
+      {
+        "at": 12.225,
+        "phase": "OBSERVE",
+        "message": "DOM 3023 bytes → 1773 bytes"
+      },
+      {
+        "at": 12.225,
+        "phase": "PLAN",
+        "message": "Requesting one action batch"
+      },
+      {
+        "at": 13.353,
+        "phase": "PLAN",
+        "message": "Validated plan"
+      },
+      {
+        "at": 13.355,
+        "phase": "EXECUTE",
+        "message": "extract {\"css\":\"table\"}"
+      },
+      {
+        "at": 13.392,
+        "phase": "OBSERVE",
+        "message": "DOM 3023 bytes → 1773 bytes"
+      },
+      {
+        "at": 13.392,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 13.392,
+        "phase": "EXECUTE",
+        "message": "download {\"role\":\"button\",\"name\":\"Download this invoice\"}"
+      },
+      {
+        "at": 14.94,
+        "phase": "OBSERVE",
+        "message": "DOM 3023 bytes → 1773 bytes"
+      },
+      {
+        "at": 14.94,
+        "phase": "VERIFY",
+        "message": "Action completed locally"
+      },
+      {
+        "at": 14.94,
+        "phase": "VERIFY",
+        "message": "Batch completion verified"
+      },
+      {
+        "at": 14.943,
+        "phase": "DONE",
+        "message": "Task completed"
+      }
+    ],
+    "encodedVideoDurationSeconds": 19.44,
+    "gifFramesPerSecond": 10,
+    "gifWidth": 1100,
+    "speedChanges": false,
+    "note": "Event marks are relative to the capture harness clock; the recorder includes startup and close frames. GIF and MP4 preserve the original action pace."
+  },
+  "limitations": "One controlled synthetic trial; not a general website success rate. Public video contains synthetic data only; the API key and local session data are not shown. The configured cost is an estimate, not a billing receipt."
+}
