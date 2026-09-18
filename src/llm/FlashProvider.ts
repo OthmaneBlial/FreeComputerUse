@@ -52,7 +52,7 @@ export class FlashProvider implements LLMProvider {
       const safeError=(error instanceof Error?error.message:'LLM request failed').split(this.config.key).join('[redacted key]');
       if(!usage){usage={input:inputBound,output:max_tokens,estimated:true};this.budget.record(usage,reservation.id);}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:false,error:safeError});
-      if(validationFailure&&!correcting)return await this.request(operation,context,schema,format+'\nYour last response was rejected: '+safeError+'. Return corrected JSON using only the listed keys. closeTab/back/forward/reload have type only (optional sensitive/verify/timeoutMs); no index or target.',true);
+      if(validationFailure&&!correcting)return await this.request(operation,context,schema,format+'\nYour previous JSON failed strict schema validation. Return corrected JSON using only the listed keys. closeTab/back/forward/reload have type only (optional sensitive/verify/timeoutMs); no index or target.',true);
       throw new Error(safeError);
     }finally{this.controllers.delete(controller);}
   }
