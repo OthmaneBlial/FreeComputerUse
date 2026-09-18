@@ -20,13 +20,18 @@
     "dev": "tsx src/cli/index.ts ui",
     "demo": "tsx scripts/demo.ts",
     "fixtures": "tsx fixtures/server.ts",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "security": "node scripts/security-check.mjs --history",
+    "benchmark:public": "tsx scripts/public-benchmark.ts",
+    "lab:build": "tsx scripts/build-lab.ts",
+    "ui:smoke": "tsx scripts/ui-smoke.ts"
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE",
-    ".env.example"
+    ".env.example",
+    "SECURITY.md"
   ],
   "license": "MIT",
   "dependencies": {
