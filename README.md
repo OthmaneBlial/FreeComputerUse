@@ -204,7 +204,8 @@ The final public trial passed **14/14** result checks, and **14/14** learned rep
 
 See [the public benchmark report](artifacts/benchmark-public.json) for task
 correctness, calls, tokens, estimated cost, repairs, compression and learned repeat
-results. A manually triggered GitHub validation workflow runs the same local checks without model credentials. The tests cover real Chromium extraction, frames/shadow DOM, selectors,
+results. Validation runs only locally with `npm run validate`; GitHub CI is disabled
+and its workflow has been removed. The tests cover real Chromium extraction, frames/shadow DOM, selectors,
 validation, uploads/downloads, tabs, verification, bounded repair, workflow/replay,
 permissions, redaction, token reservations and the rendered dashboard.
 

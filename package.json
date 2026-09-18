@@ -16,6 +16,7 @@
     "build": "tsc && node scripts/copy-ui.mjs",
     "check": "tsc --noEmit && tsc -p tsconfig.tests.json",
     "test": "tsx --test tests/*.test.ts",
+    "validate": "npm run check && npm test && npm run build && npm run security && npm audit --omit=dev --audit-level=high",
     "agent": "tsx src/cli/index.ts",
     "dev": "tsx src/cli/index.ts ui",
     "demo": "tsx scripts/demo.ts",

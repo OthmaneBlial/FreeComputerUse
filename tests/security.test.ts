@@ -91,7 +91,7 @@ test('a prior download cannot satisfy a new task and a repair cannot weaken trus
   }finally{await agent.close();store.close();}
 });
 
-test('closing a page cancels its pending frame grant and cannot make a later request',async()=>{
+test('closing a page cancels its pending frame grant and cannot make a later request',{timeout:15000},async()=>{
   let visits=0;
   const child=createServer((_req,res)=>{visits++;res.end('<h1>Child</h1>');});
   await new Promise<void>(resolve=>child.listen(0,'127.0.0.1',resolve));const childURL=`http://127.0.0.1:${(child.address() as {port:number}).port}`;
@@ -100,9 +100,23 @@ test('closing a page cancels its pending frame grant and cannot make a later req
   const store=new TraceStore(':memory:'),agent=new Agent({store,browser:{allowedOrigins:[url]}});let childPrompt=false;let signalChild!:()=>void;const pendingChild=new Promise<void>(resolve=>{signalChild=resolve;});
   agent.control.on('approval',pending=>{if((pending.action as {origin:string}).origin===url)agent.control.approve();else{childPrompt=true;signalChild();}});
   try{
-    const running=agent.run('Read the parent page',url);
-    await pendingChild;await agent.browser.page.close();const trace=await running;
+    // Keep the task alive until the child permission arrives. With no provider
+    // or plan, a fast main-frame observation could fail before that request.
+    const plan=PlanSchema.parse({goal:'Read the parent page',steps:['Wait for the child frame'],actions:[{type:'wait',condition:{type:'text_exists',value:'Child'},timeoutMs:30000}],completion:[{type:'text_exists',value:'Parent'}]});
+    const running=agent.run('Read the parent page',url,plan);
+    await Promise.race([pendingChild,running.then(()=>{throw new Error('Task ended before requesting the child permission');})]);
+    await agent.browser.page.close();const trace=await running;
     assert(childPrompt);assert.equal(trace.status,'failed');assert.equal(agent.control.pending,undefined);assert.equal(visits,0);
     assert.throws(()=>agent.control.approve(),/No action/);
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>parent.close(()=>resolve())),new Promise<void>(resolve=>child.close(()=>resolve()))]);}
+});
+
+test('failed tasks reject website requests arriving after completion',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store,browser:{allowedOrigins:['http://127.0.0.1:1']}});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent('<h1>No local strategy</h1>');
+    const trace=await agent.run('Do an unsupported task');assert.equal(trace.status,'failed');assert.equal(agent.control.stopped,true);
+    await assert.rejects(agent.browser.navigate('https://example.test'),/stopped/);
+    assert.equal(agent.control.pending,undefined);
+  }finally{await agent.close();store.close();}
 });
