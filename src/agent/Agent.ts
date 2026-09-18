@@ -151,7 +151,7 @@ export class Agent extends EventEmitter {
         if(plan.continue){previous=batchState;await this.observe();plan=undefined;continue;}
         trace.completion=criteria().map(c=>this.executor.semanticCondition(c));trace.status='completed';break;
       }
-    }catch(error){trace.status=this.control.stopped?'stopped':'failed';trace.error=this.variables.redact(error instanceof Error?error.message:'Task failed');this.event('ERROR',trace.error);}
+    }catch(error){trace.status=this.control.stopped?'stopped':'failed';trace.error=this.variables.redact(error instanceof Error?error.message:'Task failed');if(this.control.pending)this.control.stop();this.event('ERROR',trace.error);}
     finally{
       trace.durationMs=Date.now()-startedAt;trace.calls=this.providerCalls().slice(callStart);
       const usage=this.budget.snapshot(trace.actions.filter(a=>a.success).length);
@@ -174,5 +174,5 @@ export class Agent extends EventEmitter {
     const plan=PlanSchema.parse({goal:trace.goal,steps:['Replay successful semantic actions'],actions:trace.actions.filter(a=>a.success).map(a=>a.action),completion:trace.completion,continue:false});
     return this.run(trace.goal,url??trace.url,plan,false);
   }
-  async close(){if(this.active)this.control.stop();await this.browser.close();}
+  async close(){this.control.stop();await this.browser.close();}
 }

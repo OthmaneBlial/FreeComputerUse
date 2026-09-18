@@ -90,3 +90,19 @@ test('a prior download cannot satisfy a new task and a repair cannot weaken trus
     assert.equal(trace.status,'failed');assert.equal(agent.browser.downloads.length,0);assert.match(trace.error??'',/completion could not be verified/);
   }finally{await agent.close();store.close();}
 });
+
+test('closing a page cancels its pending frame grant and cannot make a later request',async()=>{
+  let visits=0;
+  const child=createServer((_req,res)=>{visits++;res.end('<h1>Child</h1>');});
+  await new Promise<void>(resolve=>child.listen(0,'127.0.0.1',resolve));const childURL=`http://127.0.0.1:${(child.address() as {port:number}).port}`;
+  const parent=createServer((_req,res)=>res.end(`<h1>Parent</h1><iframe src="${childURL}"></iframe>`));
+  await new Promise<void>(resolve=>parent.listen(0,'127.0.0.1',resolve));const url=`http://127.0.0.1:${(parent.address() as {port:number}).port}`;
+  const store=new TraceStore(':memory:'),agent=new Agent({store,browser:{allowedOrigins:[url]}});let childPrompt=false;let signalChild!:()=>void;const pendingChild=new Promise<void>(resolve=>{signalChild=resolve;});
+  agent.control.on('approval',pending=>{if((pending.action as {origin:string}).origin===url)agent.control.approve();else{childPrompt=true;signalChild();}});
+  try{
+    const running=agent.run('Read the parent page',url);
+    await pendingChild;await agent.browser.page.close();const trace=await running;
+    assert(childPrompt);assert.equal(trace.status,'failed');assert.equal(agent.control.pending,undefined);assert.equal(visits,0);
+    assert.throws(()=>agent.control.approve(),/No action/);
+  }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>parent.close(()=>resolve())),new Promise<void>(resolve=>child.close(()=>resolve()))]);}
+});
