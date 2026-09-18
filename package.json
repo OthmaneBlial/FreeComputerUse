@@ -1,0 +1,42 @@
+{
+  "name": "free-computer-use",
+  "version": "0.1.0",
+  "description": "Spend tokens on planning, execute browser actions locally.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "bin": {
+    "agent": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-ui.mjs",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "agent": "tsx src/cli/index.ts",
+    "dev": "tsx src/cli/index.ts ui",
+    "demo": "tsx scripts/demo.ts",
+    "fixtures": "tsx fixtures/server.ts",
+    "benchmark": "tsx scripts/benchmark.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "15.0.0",
+    "playwright": "1.63.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  }
+}

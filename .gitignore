@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.fcu/
+*.sqlite*
+*.log
+artifacts/private/
+.DS_Store
