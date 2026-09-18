@@ -41,24 +41,34 @@ function connectEvents(agent:Agent,debug:boolean,rl?:ReturnType<typeof createInt
   agent.on('event',event=>{if(debug||['PLAN','REPAIR','HUMAN','ERROR','DONE','CACHE','LOCAL'].includes(event.phase))console.log(`[${event.phase}] ${event.message}`);});
   agent.control.on('approval',async pending=>{
     if(!stdin.isTTY){console.error('Human approval needs a terminal or the local UI; action rejected.');agent.control.reject();return;}
-    const reader=rl??createInterface({input:stdin,output:stdout});
-    const answer=await reader.question(`${pending.reason}\n${JSON.stringify(pending.action)}\nApprove? [y/N] `);
-    if(/^(y|yes)$/i.test(answer.trim()))agent.control.approve();else agent.control.reject();
-    if(!rl)reader.close();
+    const reader=rl??createInterface({input:stdin,output:stdout}),cancellation=new AbortController();
+    const onChange=()=>{if(agent.control.stopped||agent.control.pending!==pending)cancellation.abort();};agent.control.on('change',onChange);
+    try{
+      while(agent.control.pending===pending&&!agent.control.stopped){
+        const answer=(await reader.question(`${pending.reason}\n${JSON.stringify(pending.action)}\nApprove? [y/N] `,{signal:cancellation.signal})).trim();
+        if(answer===':stop'){agent.control.stop();break;}
+        if(answer===':pause'){agent.control.pause();continue;}
+        if(answer===':resume'){agent.control.resume();continue;}
+        if(agent.control.pending!==pending||agent.control.stopped)break;
+        if(/^(y|yes|:approve)$/i.test(answer))agent.control.approve();else agent.control.reject();
+        break;
+      }
+    }catch{if(agent.control.pending===pending&&!agent.control.stopped)agent.control.reject();}
+    finally{agent.control.off('change',onChange);if(!rl)reader.close();}
   });
 }
 async function interactive(url?:string,options:RunOptions={}){
   if(!stdin.isTTY)throw new Error('Interactive mode requires a terminal. Use agent run or agent ui.');
   const reader=createInterface({input:stdin,output:stdout});
   const start=url??await reader.question('Starting URL: ');
-  const {agent,store}=await makeAgent(start,{...options,headed:true});connectEvents(agent,!!options.debug,reader);
+  const {agent,store}=await makeAgent(start,{...options,headed:true}).catch(error=>{reader.close();throw error;});connectEvents(agent,!!options.debug,reader);
   try{
     await agent.open(start);console.log(`FreeComputerUse · ${agent.options.provider?.name??'local workflows only'}\nCommands: :pause :resume :approve :reject :stop :inspect :quit`);
     while(true){const goal=(await reader.question('> ')).trim();if(!goal)continue;if(goal===':quit')break;
       if(goal===':inspect'){console.log(agent.observer.compressor.compress(await agent.observe()).text);continue;}
       if(goal.startsWith(':')){console.log('Control commands are available while a task runs, or in the local UI.');continue;}
       // Read input while the run is active so humans can take/return control.
-      const handler=(line:string)=>{const control=line.trim();if(control===':pause')agent.control.pause();if(control===':resume')agent.control.resume();if(control===':approve'&&agent.control.pending)agent.control.approve();if(control===':reject'&&agent.control.pending)agent.control.reject();if(control===':stop')agent.control.stop();};
+      const handler=(line:string)=>{if(agent.control.pending)return;const control=line.trim();if(control===':pause')agent.control.pause();if(control===':resume')agent.control.resume();if(control===':stop')agent.control.stop();};
       reader.on('line',handler);
       try{showTrace(await agent.run(goal));}finally{reader.off('line',handler);}
       if(agent.control.stopped)break;
