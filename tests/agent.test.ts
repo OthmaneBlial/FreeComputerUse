@@ -10,9 +10,9 @@ import type { LLMProvider } from '../src/llm/LLMProvider.js';
 
 test('bounded token budget reserves calls/output and tracks cache-aware configured cost',()=>{
   const budget=new TokenBudget({maxLLMCalls:2,maxInputTokens:100,maxOutputTokens:1000},{input:1,output:2,cachedInput:.1});
-  assert.equal(budget.reserve(30,500),500);budget.record({input:30,output:500,cacheHit:10});
+  assert.equal(budget.reserve(30,500).maxOutput,500);budget.record({input:30,output:500,cacheHit:10});
   assert.equal(budget.cost,.001021);
-  assert.equal(budget.reserve(40,700),500);budget.record({input:40,output:500});
+  assert.equal(budget.reserve(40,700).maxOutput,500);budget.record({input:40,output:500});
   assert.throws(()=>budget.reserve(1),/call budget/);
   const small=new TokenBudget({maxLLMCalls:5,maxInputTokens:10,maxOutputTokens:300});
   assert.throws(()=>small.reserve(11),/input budget/);assert.equal(small.calls,0);
@@ -40,7 +40,7 @@ test('observe/plan/execute/verify learns semantic workflow and replays without a
 
 test('minimal repair changes only the failed action and preserves successful prefix',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
-  const agent=new Agent({store,provider,browser:{allowedOrigins:[fixture.url]}});
+  const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
   try{
     const trace=await agent.run('Recover from changed DOM',fixture.url+'/changed');
     assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(provider.repairCalls,1);
@@ -52,7 +52,7 @@ test('minimal repair changes only the failed action and preserves successful pre
 test('verification failure repairs completion; max steps terminates repeated batches',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
   const provider:LLMProvider={name:'test',plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'element_visible',target:{css:'main'}}],continue:true}),repair:async()=>{throw new Error('unexpected repair');}};
-  const agent=new Agent({store,provider,maxSteps:2,browser:{allowedOrigins:[fixture.url]}});
+  const agent=new Agent({store,provider,maxSteps:2,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
   try{
     const trace=await agent.run('Never-ending provider',fixture.url);assert.equal(trace.status,'failed');assert.match(trace.error??'',/limit/);assert.equal(trace.actions.length,2);
   }finally{await agent.close();store.close();await fixture.close();}
@@ -60,7 +60,7 @@ test('verification failure repairs completion; max steps terminates repeated bat
 
 test('generic adapter extracts tables without invoking a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
-  const agent=new Agent({store,browser:{allowedOrigins:[fixture.url]}});
+  const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
   try{const trace=await agent.run('Extract the table',fixture.url+'/wizard/results');assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.metrics.llmCalls,0);assert.equal(trace.metrics.planBatches,0);}
   finally{await agent.close();store.close();await fixture.close();}
 });

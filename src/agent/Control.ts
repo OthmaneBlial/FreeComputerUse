@@ -1,12 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { PlanSchema, type Plan } from '../actions/schema.js';
 export class Control extends EventEmitter {
-  paused=false;stopped=false;
+  paused=false;stopped=false;revision=0;
   pending?:{reason:string;action:unknown};
   replacement?:Plan;
   private decide?: (approved:boolean)=>void;
   pause(){this.paused=true;this.emit('change');}
-  resume(){this.paused=false;this.emit('change');}
+  resume(){this.paused=false;this.revision++;this.emit('change');}
   stop(){this.stopped=true;this.paused=false;this.decide?.(false);this.emit('change');}
   approve(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(true);}
   reject(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(false);}

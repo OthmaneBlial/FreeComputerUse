@@ -6,6 +6,14 @@ export class Verifier {
   constructor(readonly browser:Browser,readonly observer:Observer,readonly variables:VariableResolver) {}
   async one(condition:Condition,since=0):Promise<boolean> {
     const page=this.browser.page;
+    if(condition.type==='form_submitted'){
+      const target=this.observer.selectors.descriptor(condition.target);
+      return this.browser.formReceipts.some(f=>{
+        const matches=JSON.stringify(f.target)===JSON.stringify(target)||(f.id&&(target.id===f.id||target.css===`#${f.id}`||target.css===`form#${f.id}`))||(f.label&&(target.label===f.label||target.role==='form'&&target.name===f.label))||(f.unique&&target.css==='form');
+        const action=new URL(f.actionURL);
+        return matches&&f.time>=since&&this.browser.responses.some(r=>{const url=new URL(r.url);return r.time>=f.time&&r.status>=200&&r.status<400&&r.method===f.method&&r.resource==='document'&&url.origin===action.origin&&url.pathname===action.pathname;});
+      });
+    }
     if('target' in condition) {
       let locator;
       try{locator=(await this.observer.selectors.resolve(page,condition.target,100)).locator;}catch{
@@ -17,10 +25,15 @@ export class Verifier {
         case 'element_not_visible':return !(await locator.isVisible());
         case 'input_value_equals':return await locator.inputValue()===this.variables.resolve(condition.value);
         case 'checkbox_checked':return locator.isChecked();
-        case 'form_submitted':return await locator.evaluate(el=>el.getAttribute('data-fcu-submitted')==='true') && this.browser.responses.some(r=>r.time>=since&&r.status>=200&&r.status<400);
       }
     }
     switch(condition.type){
+      case 'extraction_created':return this.browser.extractions.some(e=>!condition.key||e.key===condition.key);
+      case 'extraction_count':{
+        const values=this.browser.extractions.filter(e=>!condition.key||e.key===condition.key).flatMap(e=>Array.isArray(e.value)?e.value:[]);
+        const size=new Set(values.map(v=>JSON.stringify(v))).size;
+        return size>=condition.min&&(condition.max===undefined||size<=condition.max);
+      }
       case 'url_equals':return page.url()===this.variables.resolve(condition.value);
       case 'url_contains':return page.url().includes(this.variables.resolve(condition.value));
       case 'title_changed':return await page.title()!==condition.value;

@@ -46,6 +46,14 @@ export class Executor {
       await this.control.checkpoint();
       const page=this.browser.page;const timeout=action.timeoutMs??4000;let data:unknown;
       const value='value'in action?this.variables.resolve(action.value):'';
+      if(locator&&['click','press','submit'].includes(action.type)){
+        const info=await locator.evaluate((el,type)=>{
+          const f=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form;
+          const submitting=type==='submit'||type==='press'||el.matches('button:not([type=button]):not([type=reset]),input[type=submit]');
+          return f&&submitting&&f.checkValidity()?{actionURL:f.action,method:f.method.toUpperCase(),id:f.id,label:f.getAttribute('aria-label')??'',unique:document.forms.length===1}:null;
+        },action.type);
+        if(info&&('target'in receiptAction)&&receiptAction.target)this.browser.formReceipts.push({...info,target:this.observer.selectors.descriptor(receiptAction.target),time:Date.now()});
+      }
       executed=true;
       switch(action.type){
         case 'navigate':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.navigate(action.url);break;
@@ -84,7 +92,7 @@ export class Executor {
           await mkdir(folder,{recursive:true,mode:0o700});
           const filename=basename(action.filename??download.suggestedFilename());
           if(!filename||filename==='.'||filename==='..')throw new Error('Invalid download filename');
-          const path=resolve(folder,`${Date.now()}-${filename}`);await download.saveAs(path);
+          const path=resolve(folder,`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${filename}`);await download.saveAs(path);
           if(await download.failure())throw new Error('Browser download failed');
           this.browser.downloads.push({path,filename});data={path,filename};break;
         }
@@ -111,6 +119,7 @@ export class Executor {
             if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
             if(action.limit)data=(data as unknown[]).slice(0,action.limit);
           }
+          this.browser.extractions.push({key:action.key,value:data});
           data={[action.key]:data};break;
         }
       }

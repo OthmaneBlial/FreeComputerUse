@@ -13,6 +13,8 @@ export type Target = z.infer<typeof TargetSchema>;
 
 export const ConditionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('input_value_equals'), target: TargetSchema, value: z.string().max(10000) }).strict(),
+  z.object({type:z.literal('extraction_created'),key:text.optional()}).strict(),
+  z.object({type:z.literal('extraction_count'),key:text.optional(),min:z.number().int().min(1).max(1000),max:z.number().int().min(1).max(1000).optional()}).strict(),
   ...(['element_exists', 'element_visible', 'element_not_visible', 'checkbox_checked', 'form_submitted'] as const)
     .map(type => z.object({ type: z.literal(type), target: TargetSchema }).strict()),
   ...(['url_equals', 'url_contains', 'text_exists', 'text_disappeared', 'title_changed'] as const)

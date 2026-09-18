@@ -35,4 +35,16 @@ with `npx playwright install chromium`. Copy `.env.example` to `.env` locally,
 then set your model, endpoint and API key. `.env` and local browser state are
 excluded from Git.
 
+## Run the agent
+
+`npm run agent -- run "Find the pricing page and extract the cheapest plan" https://example.com`
+asks permission before using the site. Sensitive actions have a separate approval
+gate. `npm run dev` opens the local workspace at `http://127.0.0.1:4318` with task,
+live browser preview, plan, costs, logs, approval, pause/manual control and replay.
+
+Explicit `--ultra` (or the UI's Ultra checkbox) skips website and action approvals.
+It still uses the validated browser API, limits steps/tokens, and limits uploads
+to user-defined file aliases. Normal mode requires an interactive terminal for
+approval; noninteractive runs reject instead of silently authorizing access.
+
 MIT licensed.

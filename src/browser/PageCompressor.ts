@@ -1,6 +1,6 @@
 import type { PageState, PageElement } from './types.js';
 export const similarity = (a: string,b: string) => {
-  const tokens = (s:string)=>new Set(s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').split(' ').filter(Boolean));
+  const tokens = (s:string)=>new Set(s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').split(' ').filter(word=>word&&!['the','this','a','and','of','to','in','on','for','with','my','using','from','at','an','then','is','it','me'].includes(word)));
   const aa=tokens(a),bb=tokens(b);
   if (!aa.size || !bb.size) return 0;
   return [...aa].filter(x=>bb.has(x)).length / new Set([...aa,...bb]).size;

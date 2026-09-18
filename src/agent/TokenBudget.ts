@@ -1,19 +1,27 @@
 export interface Usage { input:number;output:number;cacheHit?:number;cacheMiss?:number;estimated?:boolean }
 export interface BudgetLimits {maxLLMCalls:number;maxInputTokens:number;maxOutputTokens:number}
+export interface Reservation {id:number;maxOutput:number;inputBound:number}
 export class TokenBudget {
   calls=0;input=0;output=0;cost:number|null;
+  private reservations=new Map<number,Reservation>();
   constructor(readonly limits:BudgetLimits={maxLLMCalls:10,maxInputTokens:20000,maxOutputTokens:5000},
     readonly prices?:{input:number;output:number;cachedInput?:number}){this.cost=prices?0:null;}
-  get tight(){return this.calls>=this.limits.maxLLMCalls*.7||this.input>=this.limits.maxInputTokens*.7||this.output>=this.limits.maxOutputTokens*.7;}
+  get tight(){return this.calls>=this.limits.maxLLMCalls*.7||this.input+this.pendingInput>=this.limits.maxInputTokens*.7||this.output+this.pendingOutput>=this.limits.maxOutputTokens*.7;}
+  get pendingInput(){return [...this.reservations.values()].reduce((n,r)=>n+r.inputBound,0);}
+  get pendingOutput(){return [...this.reservations.values()].reduce((n,r)=>n+r.maxOutput,0);}
   reserve(inputBound:number,requestedOutput=1600){
-    const maxOutput=Math.min(requestedOutput,this.limits.maxOutputTokens-this.output);
+    if(!Number.isSafeInteger(inputBound)||inputBound<0||!Number.isSafeInteger(requestedOutput)||requestedOutput<100)throw new Error('Invalid token reservation');
+    const maxOutput=Math.min(requestedOutput,this.limits.maxOutputTokens-this.output-this.pendingOutput);
     if(this.calls>=this.limits.maxLLMCalls)throw new Error('LLM call budget exhausted');
-    if(this.input+inputBound>this.limits.maxInputTokens)throw new Error('LLM input budget cannot admit this request; narrow context or raise the explicit budget');
+    if(this.input+this.pendingInput+inputBound>this.limits.maxInputTokens)throw new Error('LLM input budget cannot admit this request; narrow context or raise the explicit budget');
     if(maxOutput<100)throw new Error('LLM output budget exhausted');
     this.calls++;
-    return maxOutput;
+    const reservation={id:this.calls,maxOutput,inputBound};this.reservations.set(reservation.id,reservation);return reservation;
   }
-  record(usage:Usage){
+  record(usage:Usage,reservationId?:number){
+    if(!Number.isSafeInteger(usage.input)||usage.input<0||!Number.isSafeInteger(usage.output)||usage.output<0||usage.cacheHit!==undefined&&(usage.cacheHit<0||usage.cacheHit>usage.input))throw new Error('Invalid provider token usage');
+    const id=reservationId??this.reservations.keys().next().value;
+    if(id!==undefined)this.reservations.delete(id);
     this.input+=usage.input;this.output+=usage.output;
     if(this.prices){
       const cached=usage.cacheHit??0;

@@ -10,6 +10,7 @@ export interface RepairContext extends PlanningContext {
 }
 export interface LLMProvider {
   readonly name:string;
+  cancel?():void;
   plan(context:PlanningContext):Promise<Plan>;
   repair(context:RepairContext):Promise<Repair>;
   classify?(goal:string):Promise<{intent:string}>;

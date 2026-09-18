@@ -8,6 +8,7 @@ export class SelectorEngine {
   remember(elements:PageElement[]) { for(const element of elements) this.registry.set(element.ref,element); }
   descriptor(target:Target):SemanticTarget {
     if(typeof target!=='string')return target;
+    if(target.startsWith('css:'))return {css:target.slice(4)};
     const el=this.registry.get(target);
     if(!el)throw new Error(`Unknown semantic reference ${target}`);
     return {...el.selectors};
@@ -24,6 +25,7 @@ export class SelectorEngine {
     if(t.attributeName)list.push({strategy:'attributeName',locator:root.locator(`[name=${attr(t.attributeName)}]`)});
     if(t.text)list.push({strategy:'text',locator:root.getByText(t.text,{exact:true})});
     if(t.css)list.push({strategy:'css',locator:root.locator(t.css)});
+    if(t.role==='button'&&/^(next( step)?|continue|proceed|advance)$/i.test(t.name??''))list.push({strategy:'local-synonym',locator:root.getByRole('button',{name:/^(next( step)?|continue|proceed|advance)$/i})});
     return list;
   }
   async resolve(page:Page,target:Target,timeoutMs=4000,allowMany=false):Promise<{locator:Locator;strategy:string}> {
