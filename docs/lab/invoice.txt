@@ -1,0 +1,4 @@
+NORTHSTAR DEMO INVOICE
+INV-001
+Amount: EUR 42
+Synthetic public browser benchmark fixture
