@@ -17,8 +17,10 @@ function render(snapshot){
   $('approval').hidden=!state.pending;if(state.pending){text('approval-reason',state.pending.reason);text('approval-action',typeof state.pending.action==='string'?state.pending.action:JSON.stringify(state.pending.action,null,2));}
   const calls=metrics.llmCalls??trace?.calls?.length??0,actions=metrics.browserActions??trace?.actions?.filter(a=>a.success).length??0;
   const input=metrics.inputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.input,0)??0,output=metrics.outputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.output,0)??0;
-  text('calls',fmt(calls));text('actions',fmt(actions));text('ratio',calls?(actions/calls).toFixed(1):actions?'∞':'—');text('tokens',fmt(input+output));text('cost',metrics.estimatedCostUSD==null?'—':'$'+Number(metrics.estimatedCostUSD).toFixed(5));
+  text('calls',fmt(calls));text('actions',fmt(actions));text('ratio',calls?(actions/calls).toFixed(1):actions?'local':'—');text('tokens',fmt(input+output));text('cost',metrics.estimatedCostUSD==null?'—':'$'+Number(metrics.estimatedCostUSD).toFixed(5));
   const fraction=Math.min(1,Math.max(input/(state.limits?.maxInputTokens||20000),output/(state.limits?.maxOutputTokens||5000),calls/(state.limits?.maxLLMCalls||10)));text('budget-value',Math.round(fraction*100)+'%');$('budget-meter').style.width=fraction*100+'%';text('budget-limit',`${fmt(state.limits?.maxInputTokens)} input / ${fmt(state.limits?.maxOutputTokens)} output`);
+  const outputs=trace?.actions?.filter(a=>a.success&&a.data!==undefined).map(a=>a.data)||[];
+  $('result-panel').hidden=!outputs.length;text('result-output',outputs.length?JSON.stringify(outputs,null,2):'');
   const plan=trace?.plans?.at(-1);$('plan').replaceChildren();for(const step of plan?.steps||['Waiting for a task.']){const li=document.createElement('li');li.textContent=step;$('plan').append(li);}
   const observe=state.events?.filter(e=>e.phase==='OBSERVE').at(-1);text('compression',observe?.data?.reduction!=null?(observe.data.reduction*100).toFixed(1)+'% smaller':'—');
   text('warnings',state.state?.warnings?.join('\n')||'');
