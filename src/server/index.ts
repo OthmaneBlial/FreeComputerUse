@@ -40,8 +40,8 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         const html=(await readFile(new URL('../ui/index.html',import.meta.url),'utf8')).replace('__CSRF_TOKEN__',secret);
         res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html);return;
       }
-      if(req.method==='GET'&&['/app.js','/style.css'].includes(path)){
-        res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript':'text/css'});res.end(await readFile(new URL('../ui'+path,import.meta.url)));return;
+      if(req.method==='GET'&&['/app.js','/style.css','/logo.svg'].includes(path)){
+        res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript':path.endsWith('.svg')?'image/svg+xml':'text/css'});res.end(await readFile(new URL('../ui'+path,import.meta.url)));return;
       }
       const cookie=req.headers.cookie?.split(';').map(s=>s.trim()).find(s=>s.startsWith('fcu_session='))?.slice(12)??'';
       if(!same(cookie,secret)){send(401,{error:'Open the local dashboard first'});return;}
