@@ -80,9 +80,14 @@ export class Browser {
     this.page = await this.context.newPage();
     await this.navigate(url);
   }
-  switchTab(index: number) {
+  async switchTab(index: number,timeoutMs=4000) {
+    const deadline=Date.now()+timeoutMs;
+    while(!this.context.pages()[index]&&Date.now()<deadline){
+      await this.context.waitForEvent('page',{timeout:Math.max(1,deadline-Date.now())}).catch(()=>{});
+    }
     const page = this.context.pages()[index];
     if (!page) throw new Error('Tab index does not exist');
+    await page.waitForLoadState('domcontentloaded',{timeout:timeoutMs});
     this.page = page;
   }
   async closeTab() {

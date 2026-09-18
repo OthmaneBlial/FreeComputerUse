@@ -5,6 +5,7 @@ export class Control extends EventEmitter {
   pending?:{reason:string;action:unknown};
   replacement?:Plan;
   private decide?: (approved:boolean)=>void;
+  private approvalTail:Promise<void>=Promise.resolve();
   pause(){this.paused=true;this.emit('change');}
   resume(){this.paused=false;this.revision++;this.emit('change');}
   stop(){this.stopped=true;this.paused=false;this.decide?.(false);this.emit('change');}
@@ -16,10 +17,18 @@ export class Control extends EventEmitter {
     if(this.stopped)throw new Error('Task stopped by human');
   }
   async confirm(reason:string,action:unknown){
+    // Frames/popups can request permissions concurrently. Never overwrite the
+    // decision callback for an approval already visible to the human.
+    const predecessor=this.approvalTail;
+    let release!:()=>void;
+    this.approvalTail=new Promise<void>(resolve=>{release=resolve;});
+    await predecessor;
+    try{
     if(this.stopped)throw new Error('Task stopped by human');
     this.pending={reason,action};
     const approved=await new Promise<boolean>(resolve=>{this.decide=resolve;this.emit('approval',this.pending);});
     this.pending=undefined;this.decide=undefined;this.emit('change');
     if(!approved)throw new Error('Sensitive action rejected by human');
+    }finally{release();}
   }
 }

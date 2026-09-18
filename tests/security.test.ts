@@ -30,3 +30,63 @@ test('trusted extraction criteria derive from the original goal',()=>{
   assert.deepEqual(goalCriteria('Extract the first five stories'),[{type:'extraction_created'},{type:'extraction_count',min:5,max:5}]);
   assert.deepEqual(goalCriteria('Fill the form using my profile'),[]);
 });
+
+import {once} from 'node:events';
+import {Control} from '../src/agent/Control.js';
+import {Browser} from '../src/browser/Browser.js';
+import {Observer} from '../src/browser/Observer.js';
+import {Executor} from '../src/actions/executor.js';
+import {VariableResolver} from '../src/profile/VariableResolver.js';
+
+test('concurrent permissions remain distinct and stopping rejects queued approvals',async()=>{
+  const control=new Control(),seen:unknown[]=[];control.on('approval',p=>seen.push(p.action));
+  const firstVisible=once(control,'approval');
+  const first=control.confirm('First',{origin:'https://one.test'}),second=control.confirm('Second',{origin:'https://two.test'});
+  await firstVisible;assert.deepEqual(seen,[{origin:'https://one.test'}]);
+  const secondVisible=once(control,'approval');control.approve();await first;await secondVisible;
+  assert.deepEqual(seen,[{origin:'https://one.test'},{origin:'https://two.test'}]);
+  const denied=assert.rejects(second,/rejected/);control.reject();await denied;
+  const third=control.confirm('Third',{}),fourth=control.confirm('Fourth',{});
+  const settled=Promise.allSettled([third,fourth]);await Promise.resolve();control.stop();
+  assert((await settled).every(result=>result.status==='rejected'));
+});
+
+test('replaced sensitive target cannot inherit an earlier human approval',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button id="delete" onclick="document.body.dataset.deleted=\'yes\'">Delete record</button>');
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    const visible=once(control,'approval'),execution=executor.run({type:'click',target:{id:'delete'}});
+    await visible;
+    await browser.page.locator('#delete').evaluate(el=>{el.outerHTML='<button id="delete" onclick="document.body.dataset.deleted=\'yes\'">Delete record</button>';});
+    control.approve();const result=await execution;
+    assert.equal(result.success,false);assert.match(result.error??'',/target changed/);assert.equal(result.uncertain,false);
+    assert.equal(await browser.page.locator('body').getAttribute('data-deleted'),null);
+  }finally{await browser.close();}
+});
+
+test('unapproved cross-origin fetches are blocked before receiving a request',async()=>{
+  let leaked=0;
+  const receiver=createServer((_req,res)=>{leaked++;res.end('Forbidden');});
+  await new Promise<void>(resolve=>receiver.listen(0,'127.0.0.1',resolve));
+  const receiverURL=`http://127.0.0.1:${(receiver.address() as {port:number}).port}`;
+  const source=createServer((_req,res)=>res.end(`<h1>Safe sandbox</h1><script>fetch('${receiverURL}/collect').catch(()=>{});</script>`));
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${(source.address() as {port:number}).port}`,store=new TraceStore(':memory:');
+  const agent=new Agent({store,browser:{allowedOrigins:[url]}});agent.control.on('approval',()=>agent.control.approve());
+  try{
+    const plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'extraction_created'}],continue:false});
+    assert.equal((await agent.run('Read this sandbox',url,plan)).status,'completed');assert.equal(leaked,0);
+  }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>receiver.close(()=>resolve()))]);}
+});
+
+test('a prior download cannot satisfy a new task and a repair cannot weaken trusted criteria',async()=>{
+  const store=new TraceStore(':memory:');
+  const agent=new Agent({store,mode:'ultra',completionCriteria:[{type:'download_created',value:'old.txt'}],provider:{name:'fixture',plan:async()=>{throw new Error('unexpected');},repair:async()=>({actions:[],replace:0,completion:[{type:'extraction_created'}]})}});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent('<h1>Read only</h1>');agent.browser.downloads.push({filename:'old.txt',path:'/not-used'});
+    const plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'extraction_created'}],continue:false});
+    const trace=await agent.run('Read this page',undefined,plan);
+    assert.equal(trace.status,'failed');assert.equal(agent.browser.downloads.length,0);assert.match(trace.error??'',/completion could not be verified/);
+  }finally{await agent.close();store.close();}
+});

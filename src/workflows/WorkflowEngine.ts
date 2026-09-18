@@ -17,10 +17,12 @@ export class WorkflowEngine {
   learn(trace:Trace,initial:PageState){
     if(trace.status!=='completed'||!trace.actions.length)return;
     const actions=trace.actions.filter(result=>result.success).map(result=>result.action);
+    const completion=[...new Map(trace.completion.map(c=>[JSON.stringify(c),c])).values()];
+    if(actions.length>80||completion.length>12)return;
     if(actions.some(action=>containsRef(action)))return; // Only portable semantic workflows.
     const url=new URL(initial.url),intent=normalizeIntent(trace.goal),structure=structureHash(initial);
     const id=createHash('sha256').update([url.origin,url.pathname,intent,structure].join('\n')).digest('hex').slice(0,16);
-    const plan=PlanSchema.parse({goal:trace.goal,steps:trace.plans.flatMap(p=>p.steps).slice(0,12),actions,completion:trace.completion,continue:false});
+    const plan=PlanSchema.parse({goal:trace.goal,steps:trace.plans.flatMap(p=>p.steps).slice(0,12),actions,completion,continue:false});
     const workflow:Workflow={id,origin:url.origin,path:url.pathname,intent,structure,plan,learnedFrom:trace.id,createdAt:Date.now()};
     this.store.db.prepare('INSERT OR REPLACE INTO workflows(id,domain,intent,structure,workflow,hits) VALUES(?,?,?,?,?,COALESCE((SELECT hits FROM workflows WHERE id=?),0))').run(id,url.origin,intent,structure,JSON.stringify(workflow),id);
     return workflow;

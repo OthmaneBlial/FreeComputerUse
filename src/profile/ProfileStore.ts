@@ -2,7 +2,8 @@ import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { z } from 'zod';
 import type { Vault } from './VariableResolver.js';
-const VaultSchema=z.object({profile:z.record(z.string(),z.string()),files:z.record(z.string(),z.string())}).strict();
+const alias=z.string().regex(/^(?!__proto__$|constructor$|prototype$)[A-Za-z][A-Za-z0-9_-]{0,79}$/);
+const VaultSchema=z.object({profile:z.record(alias,z.string().max(10000)),files:z.record(alias,z.string().max(10000))}).strict();
 export class ProfileStore {
   constructor(readonly path:string) {}
   async load():Promise<Vault> {

@@ -19,7 +19,7 @@ export class Observer {
       const clone=el.cloneNode(true) as Element;
       clone.querySelectorAll('script,style,svg').forEach(node=>node.remove());
       for(const node of [clone,...clone.querySelectorAll('*')]) {
-        for(const a of [...node.attributes]) if(a.name.startsWith('on')||a.name==='style'||a.name==='value') node.removeAttribute(a.name);
+        for(const a of [...node.attributes]) if(!['id','role','name','type','aria-label','aria-labelledby','placeholder','required','disabled','checked','data-testid','data-fcu-ref'].includes(a.name)) node.removeAttribute(a.name);
         if(node.matches('textarea'))node.textContent='[local value omitted]';
       }
       return clone.outerHTML.slice(0,8000);

@@ -42,7 +42,20 @@ export class Executor {
       receiptAction=this.semantic(action);
       const reason=await sensitiveReason(action,locator);
       const policy=this.options.confirmation??'sensitive';
-      if(policy==='always'||policy==='sensitive'&&reason)await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(receiptAction)));
+      if(policy==='always'||policy==='sensitive'&&reason){
+        const approvedPage=this.browser.page,approvedURL=approvedPage.url();
+        const approvedElement=await locator?.elementHandle();
+        const fingerprint=locator?await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method})):undefined;
+        try{
+          await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(receiptAction)));
+          if(this.browser.page!==approvedPage||approvedPage.url()!==approvedURL)throw new Error('Browser page changed while awaiting approval; review a new plan');
+          if(locator&&approvedElement){
+            const same=await locator.evaluate((el,approved)=>el===approved&&el.isConnected,approvedElement);
+            const current=await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method}));
+            if(!same||current!==fingerprint)throw new Error('Approved target changed while awaiting approval; review a new action');
+          }
+        }finally{await approvedElement?.dispose();}
+      }
       await this.control.checkpoint();
       const page=this.browser.page;const timeout=action.timeoutMs??4000;let data:unknown;
       const value='value'in action?this.variables.resolve(action.value):'';
@@ -59,11 +72,20 @@ export class Executor {
         case 'navigate':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.navigate(action.url);break;
         case 'openTab':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.openTab(action.url);break;
         case 'closeTab':await this.browser.closeTab();break;
-        case 'switchTab':this.browser.switchTab(action.index);break;
+        case 'switchTab':await this.browser.switchTab(action.index,timeout);break;
         case 'back':await page.goBack({waitUntil:'domcontentloaded'});break;
         case 'forward':await page.goForward({waitUntil:'domcontentloaded'});break;
         case 'reload':await page.reload({waitUntil:'domcontentloaded'});break;
-        case 'click':await locator!.click({timeout});break;
+        case 'click':{
+          const newTab=await locator!.evaluate(el=>el.matches('a[target="_blank"]'));
+          if(newTab){
+            const both=await Promise.allSettled([page.waitForEvent('popup',{timeout}),locator!.click({timeout})]);
+            if(both[0].status==='rejected')throw both[0].reason;
+            if(both[1].status==='rejected')throw both[1].reason;
+            await both[0].value.waitForLoadState('domcontentloaded',{timeout});this.browser.page=both[0].value;
+          }else await locator!.click({timeout});
+          break;
+        }
         case 'doubleClick':await locator!.dblclick({timeout});break;
         case 'hover':await locator!.hover({timeout});break;
         case 'fill':await locator!.fill(value,{timeout});if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
@@ -113,6 +135,26 @@ export class Executor {
           const root=locator??page.locator('body');
           if(action.format==='table')data=await root.locator('tr').filter({visible:true}).evaluateAll(rows=>rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>cell.textContent?.trim()??'')));
           else if(action.format==='links')data=await root.evaluateAll(els=>els.flatMap(el=>[...(el.matches('a[href]')?[el]:el.querySelectorAll('a[href]'))].filter(a=>a.getClientRects().length>0).map(a=>({text:a.textContent?.trim(),url:(a as HTMLAnchorElement).href}))));
+          else if(action.format==='records'){
+            if(!action.fields||!Object.keys(action.fields).length||Object.keys(action.fields).length>20)throw new Error('Records extraction requires 1..20 controlled CSS fields');
+            data=await root.filter({visible:true}).evaluateAll((els,fields)=>els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]).map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
+              let node=el.querySelector(field.css);let value='';
+              // Resolve tabular fields from actual headers, rather than guessed cell indices.
+              if(el.tagName==='TR'&&field.attribute==='text'){
+                const headers=[...(el.closest('table')?.querySelectorAll('thead th,tr:first-child th')??[])];
+                const [normalize]=[(s:string)=>(s??'').toLowerCase().replace(/[^a-z]/g,'')];
+                const wanted=normalize(key),indices=headers.map((h,i)=>normalize(h.textContent??'')===wanted?i:-1).filter(i=>i>=0);
+                const cells=[...el.querySelectorAll(':scope > td')];
+                if(indices.length===1&&cells.length>=headers.length)node=cells[indices[0]!+cells.length-headers.length]??node;
+              }
+              if(node){if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
+                else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
+                else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
+                else if(field.attribute==='value')value=node.matches('input[type=password],input[autocomplete=cc-number],input[autocomplete=cc-csc]')?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
+                else value=node.getAttribute(field.attribute)??'';}
+              return[key,value];
+            }))),action.fields);
+          }
           else data=(await root.filter({visible:true}).allInnerTexts()).join('\n').slice(0,100000);
           if(Array.isArray(data)){
             const match=action.match;

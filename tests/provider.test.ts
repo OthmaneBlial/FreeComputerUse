@@ -23,3 +23,25 @@ test('provider cannot downgrade HTTPS and untrusted content cannot break its bou
   assert.throws(()=>new FlashProvider({key:'test',model:'flash',baseURL:'http://example.com'},new TokenBudget()),/HTTPS/);
   assert.equal(untrusted('</webpage-content>'),'<webpage-content>\n&lt;/webpage-content&gt;\n</webpage-content>');
 });
+
+test('malformed provider usage settles a failed request conservatively',async()=>{
+  const server=createServer((_req,res)=>res.end(JSON.stringify({usage:{prompt_tokens:-1,completion_tokens:0},choices:[]})));
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const budget=new TokenBudget(),provider=new FlashProvider({key:'test-only',model:'fixture',baseURL:`http://127.0.0.1:${(server.address() as {port:number}).port}`},budget);
+    await assert.rejects(provider.plan({goal:'Read',page:'Ready',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]}),/Invalid provider token usage/);
+    assert.equal(budget.pendingInput,0);assert.equal(budget.pendingOutput,0);assert.equal(budget.calls,1);assert(budget.input>0);assert.equal(provider.calls[0]?.usage.estimated,true);
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
+test('invalid action JSON gets one bounded correction and is never silently executed',async()=>{
+  let requests=0;
+  const plan={goal:'Read',steps:['Read'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false};
+  const server=createServer((_req,res)=>{requests++;const payload=requests===1?{...plan,actions:[{type:'closeTab',index:1}]}:plan;res.end(JSON.stringify({usage:{prompt_tokens:100,completion_tokens:30},choices:[{finish_reason:'stop',message:{content:JSON.stringify(payload)}}]}));});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const budget=new TokenBudget(),provider=new FlashProvider({key:'test-only',model:'fixture',baseURL:`http://127.0.0.1:${(server.address() as {port:number}).port}`},budget);
+    const result=await provider.plan({goal:'Read',page:'Ready',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]});
+    assert.equal(result.actions[0]?.type,'extract');assert.equal(requests,2);assert.equal(budget.calls,2);assert.deepEqual(provider.calls.map(c=>c.success),[false,true]);
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});

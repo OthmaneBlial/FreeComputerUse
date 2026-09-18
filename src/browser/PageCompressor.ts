@@ -37,5 +37,8 @@ export function diffPages(previous:PageState,current:PageState) {
     changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)).map(e=>({ref:e.ref,role:e.role,name:e.name,type:e.type,required:e.required,options:e.options,hasValue:e.hasValue,checked:e.checked,error:e.error})),
     headings:current.headings.filter(h=>!previous.headings.includes(h)),
     text:current.text===previous.text?undefined:current.text,
+    tables:JSON.stringify(current.tables)===JSON.stringify(previous.tables)?undefined:current.tables,
+    dialogs:JSON.stringify(current.dialogs)===JSON.stringify(previous.dialogs)?undefined:current.dialogs,
+    warnings:current.warnings,
   };
 }

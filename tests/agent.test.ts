@@ -49,7 +49,7 @@ test('minimal repair changes only the failed action and preserves successful pre
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
-test('verification failure repairs completion; max steps terminates repeated batches',async()=>{
+test('max steps terminates repeated batches',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
   const provider:LLMProvider={name:'test',plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'element_visible',target:{css:'main'}}],continue:true}),repair:async()=>{throw new Error('unexpected repair');}};
   const agent=new Agent({store,provider,maxSteps:2,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
@@ -63,4 +63,16 @@ test('generic adapter extracts tables without invoking a provider',async()=>{
   const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
   try{const trace=await agent.run('Extract the table',fixture.url+'/wizard/results');assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.metrics.llmCalls,0);assert.equal(trace.metrics.planBatches,0);}
   finally{await agent.close();store.close();await fixture.close();}
+});
+
+test('completion-only repair preserves successful actions; failed replay never invokes a provider',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');let repairs=0;
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairs++;return{actions:[],replace:0,completion:[{type:'text_exists',value:'Northstar'}]};}};
+  const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  try{
+    const plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'text_exists',value:'Missing original criterion'}],continue:false});
+    const trace=await agent.run('Read this page',fixture.url,plan);assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.actions.length,1);assert.equal(repairs,1);
+    const incompatible={...trace,actions:[{...trace.actions[0]!,action:{type:'click' as const,target:{role:'button',name:'Missing control'},timeoutMs:100}}]};
+    const replay=await agent.replay(incompatible);assert.equal(replay.status,'failed');assert.equal(repairs,1);assert.equal(replay.metrics.llmCalls,0);
+  }finally{await agent.close();store.close();await fixture.close();}
 });

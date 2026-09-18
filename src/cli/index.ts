@@ -73,10 +73,12 @@ runFlags(program.command('run <goal> <url>').description('Run a natural language
 });
 runFlags(program.command('open <url>').description('Open a persistent browser and enter tasks')).action(interactive);
 program.command('inspect <url>').option('--region <region>','Form id, tag or accessible region name').option('--level <n>','1 overview, 2 controls, 3 component','2').option('--screenshot <file>','Explicit local screenshot fallback').option('--accessibility','Show accessibility snapshot').option('--ultra','Skip the website access prompt').action(async(url:string,options:{region?:string;level:string;screenshot?:string;accessibility?:boolean;ultra?:boolean})=>{
-  if(!options.ultra){if(!stdin.isTTY)throw new Error('Website permission requires an interactive terminal. Use the UI, or explicitly choose --ultra.');const reader=createInterface({input:stdin,output:stdout});const answer=await reader.question(`Allow inspection of ${new URL(url).origin}? [y/N] `);reader.close();if(!/^(y|yes)$/i.test(answer.trim()))throw new Error('Website access rejected');}
-  const browser=await new Browser().launch();try{await browser.navigate(url);const observer=new Observer();const state=await observer.inspect(browser.page,options.region);console.log(options.accessibility?await observer.accessibility(browser.page):observer.compressor.compress(state,{level:z.coerce.number().min(1).max(3).parse(options.level) as 1|2|3}).text);
-    if(options.screenshot){const file=resolve(options.screenshot);await mkdir(join(file,'..'),{recursive:true});await browser.page.screenshot({path:file});console.log(`Saved local screenshot: ${file}`);}}
-  finally{await browser.close();}
+  const store=new TraceStore(':memory:'),agent=new Agent({store,mode:options.ultra?'ultra':'normal',browser:{allowedOrigins:[new URL(url).origin]}});
+  connectEvents(agent,false);
+  try{const state=await agent.open(url);const scoped=options.region?await agent.observer.inspect(agent.browser.page,options.region):state;
+    console.log(agent.variables.redact(options.accessibility?await agent.observer.accessibility(agent.browser.page):agent.observer.compressor.compress(scoped,{level:z.coerce.number().int().min(1).max(3).parse(options.level) as 1|2|3}).text));
+    if(options.screenshot){const file=resolve(options.screenshot);await mkdir(join(file,'..'),{recursive:true});await agent.browser.page.screenshot({path:file});console.log(`Saved local screenshot: ${file}`);}}
+  finally{await agent.close();store.close();}
 });
 runFlags(program.command('replay <id>').option('--url <url>','Override starting URL')).action(async(id:string,options:RunOptions&{url?:string})=>{
   const config=runtimeConfig(),lookup=new TraceStore(join(config.dataDir,'history.sqlite'));const trace=lookup.get(id);lookup.close();if(!trace)throw new Error('Run not found');

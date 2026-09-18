@@ -1,0 +1,78 @@
+# Security model
+
+Report vulnerabilities privately through GitHub's private vulnerability reporting
+when enabled. Never include credentials or real browser profile data in an issue.
+
+## Permission model
+
+Normal mode requires a human to approve each website origin before its first
+document request. The grant covers the requested task in that browser session,
+including subsequent pages on the same origin. New origins need another grant.
+Rejecting an initial grant leaves the target website unvisited. Cached workflows
+and replay do not bypass site grants or sensitive-action policy.
+
+Sensitive submissions, purchases, messages, deletion and similar controls are
+gated separately by explicit action flags and local control metadata. Detection
+is conservative and heuristic: an ambiguously named or adversarial control can
+conceal its effect. Use `--confirmation always` when each action needs review.
+
+**Ultra mode is explicit, off by default.** It skips website/action approvals and
+allows external HTTP(S) destinations. It does not add shell access, arbitrary
+JavaScript execution, arbitrary local-file access, or remove step/token budgets.
+The model still cannot read environment variables or supply an arbitrary upload
+path. User restrictions and final completion criteria still apply.
+
+## Execution and network boundary
+
+- Every model plan/action/repair passes strict Zod validation.
+- Browser operations use a fixed Playwright action API; there is no eval/exec DSL.
+- Page text has an escaped untrusted-content boundary and cannot replace the
+  original goal. Local warnings flag common injection phrases.
+- In normal mode, local vault aliases require a goal authorizing profile, details,
+  credentials, resume/CV or local files. Vault values cannot appear in navigation
+  URL templates. Uploads require an explicit `{{files.alias}}` defined locally.
+- HTTP(S) only; URL credentials are rejected. Cross-origin resources are limited
+  to configured/approved origins in normal mode. WebSockets follow the same
+  policy. Service workers are blocked to keep request interception effective.
+- Selector ambiguity is rejected for mutations; collection extraction may select
+  several nodes. Browser dialogs are dismissed by default.
+- A failed click/submit with an uncertain outcome requires human review before
+  repair. Replay has no provider and stops on incompatible state.
+
+Prompt isolation, origin restrictions and approval gates reduce injection risk;
+they do not mathematically establish that a model always follows the goal, nor
+that an allowed website is trustworthy. Websites still run their own JavaScript
+inside Chromium and can access data intentionally entered on them. No CAPTCHA or
+security bypass is implemented. Do not automate a site without authorization.
+
+## Local data
+
+`.env`, `.fcu`, profiles, session cookies, localStorage, downloads and SQLite traces
+are ignored by Git. The local environment/profile/history files use mode 0600;
+state/profile directories use mode 0700 on supported filesystems. This is local
+storage with file permissions, **not encrypted storage**. Browser session data and
+extracted website content can be sensitive; use an OS-protected account/disk.
+
+Known profile/file values are redacted from prompts, event logs and traces and
+resolve locally during actions. Secret-looking key strings are also redacted.
+Records extraction omits password/payment field values. These filters do not
+identify every possible secret in arbitrary website content. Do not publish local
+traces, browser profiles or screenshots from a real account.
+
+## Dashboard boundary
+
+The UI binds only to `127.0.0.1`; Host checks prevent simple DNS rebinding. API
+requests require a random HttpOnly SameSite=Strict session cookie. Mutations also
+require the exact local Origin and an unguessable CSRF header. No CORS access is
+enabled. CSP restricts assets/connections to the same local origin. API keys are
+never exposed through the UI or API. A process/user already controlling the local
+OS account is outside this boundary; the loopback UI is not a multi-user service.
+
+## Verification evidence
+
+`npm test` includes rejection-before-network, normal/Ultra permission separation,
+strict code rejection, upload alias confinement, origin restrictions, duplicate
+selectors, concurrent token reservations, redaction, local UI authorization/CSRF,
+approval and zero-provider replay. Public benchmarks use only read-only sandbox
+tasks or browser-only simulations on the project-owned lab. They never send a
+message, purchase, create an account or modify a real user's account.

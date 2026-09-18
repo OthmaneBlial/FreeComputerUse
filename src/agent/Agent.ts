@@ -64,6 +64,7 @@ export class Agent extends EventEmitter {
     const full=this.observer.compressor.compress(state,{goal,maxChars});
     let page=full.text;
     if(previous){const diff=JSON.stringify(diffPages(previous,state));if(diff.length<page.length)page=`PAGE DIFF\n${diff}`;}
+    page+='\nOPEN TABS '+JSON.stringify(this.browser.context.pages().map((p,index)=>({index,url:p.url(),active:p===this.browser.page})))+'\nEXTRACTIONS '+this.variables.redact(JSON.stringify(this.browser.extractions.slice(-3).map(e=>({key:e.key,preview:JSON.stringify(e.value).slice(0,800)}))));
     return {goal:this.variables.redact(goal),page:this.variables.redact(page),aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.options.browser?.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
   }
   async run(goal:string,url?:string,providedPlan?:Plan,allowProvider=true):Promise<Trace>{
@@ -77,7 +78,9 @@ export class Agent extends EventEmitter {
     const repeated=new Map<string,number>(),navigations=new Map<string,number>(),completed:string[]=[];
     let revision=this.control.revision;
     try{
-      if(!this.browser.context)await this.browser.launch();this.browser.extractions.length=0;if(url)await this.browser.navigate(url);
+      if(!this.browser.context)await this.browser.launch();
+      this.browser.extractions.length=0;this.browser.downloads.length=0;this.browser.formReceipts.length=0;
+      if(url)await this.browser.navigate(url);
       initial=await this.observe();trace.url=initial.url;
       if(initial.warnings.some(w=>w.includes('Human authentication'))){
         this.control.pause();this.event('HUMAN','Take control to complete authentication/security checks, then resume');
@@ -98,7 +101,7 @@ export class Agent extends EventEmitter {
           plan=await provider.plan(this.context(goal,this.state!,completed,previous));
         }
         const batchState=this.state!;
-        plan=PlanSchema.parse(plan);trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.options.store.save(this.safeTrace(trace));
+        plan=PlanSchema.parse(plan);trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
         let actions=[...plan.actions];let index=0;
         while(index<actions.length){
           await this.control.checkpoint();
@@ -110,7 +113,7 @@ export class Agent extends EventEmitter {
           const key=before.hash+JSON.stringify(action);const count=(repeated.get(key)??0)+1;repeated.set(key,count);
           if(count>(this.options.maxRepeatedStates??3))throw new Error('Repeated state/action loop detected');
           this.event('EXECUTE',`${action.type}${'target'in action?' '+JSON.stringify(action.target):''}`,{index:index+1,total:actions.length});
-          const result=await this.executor.run(action);trace.actions.push(result);this.options.store.save(this.safeTrace(trace));
+          const result=await this.executor.run(action);trace.actions.push(result);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
           const after=await this.observe();
           if(before.url!==after.url){const loops=(navigations.get(after.url)??0)+1;navigations.set(after.url,loops);if(loops>(this.options.maxNavigationLoops??3))throw new Error('Navigation loop detected');}
           if(result.success){
@@ -125,6 +128,7 @@ export class Agent extends EventEmitter {
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
           const context=this.context(goal,after,completed,before);
           if(repairs>1)context.page+='\nACCESSIBILITY\n'+this.variables.redact(await this.observer.accessibility(this.browser.page));
+          if(repairs>2){const scope=await this.browser.page.locator('form').count()===1?'form':await this.browser.page.locator('main').count()===1?'main':'body';context.page+='\nTARGETED HTML\n'+this.variables.redact(await this.observer.fragment(this.browser.page,scope)).slice(0,3000);}
           const repaired=RepairSchema.parse(await provider.repair({...context,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)}));
           if(repaired.replace<1||!repaired.actions.length||repaired.replace>actions.length-index)throw new Error('Repair attempted to replace actions outside the pending batch');
           if(repaired.completion)plan.completion=repaired.completion;
@@ -157,8 +161,9 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,pageCacheEntries:this.cache.size,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      if(safe.status==='completed'&&initial)this.workflows.learn(safe,initial);
-      this.active=false;this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
+      this.active=false;
+      if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
+      this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
     return this.trace!;
   }

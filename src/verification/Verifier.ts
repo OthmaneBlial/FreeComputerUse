@@ -29,6 +29,8 @@ export class Verifier {
     }
     switch(condition.type){
       case 'extraction_created':return this.browser.extractions.some(e=>!condition.key||e.key===condition.key);
+      case 'extraction_contains':return this.browser.extractions.some(e=>(!condition.key||e.key===condition.key)&&JSON.stringify(e.value).includes(this.variables.resolve(condition.value)));
+      case 'tab_count':return this.browser.context.pages().length===condition.count;
       case 'extraction_count':{
         const values=this.browser.extractions.filter(e=>!condition.key||e.key===condition.key).flatMap(e=>Array.isArray(e.value)?e.value:[]);
         const size=new Set(values.map(v=>JSON.stringify(v))).size;
@@ -37,8 +39,8 @@ export class Verifier {
       case 'url_equals':return page.url()===this.variables.resolve(condition.value);
       case 'url_contains':return page.url().includes(this.variables.resolve(condition.value));
       case 'title_changed':return await page.title()!==condition.value;
-      case 'text_exists':return await page.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()>0;
-      case 'text_disappeared':return await page.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()===0;
+      case 'text_exists':for(const frame of page.frames())if(await frame.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()>0)return true;return false;
+      case 'text_disappeared':for(const frame of page.frames())if(await frame.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()>0)return false;return true;
       case 'download_created':return this.browser.downloads.some(d=>!condition.value||d.filename===condition.value);
       case 'network_response':return this.browser.responses.some(r=>r.time>=since&&r.url.includes(condition.value)&&(!condition.status||r.status===condition.status));
       case 'page_changed':return (await this.observer.inspect(page)).hash!==condition.value;

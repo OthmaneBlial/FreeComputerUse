@@ -5,7 +5,7 @@ const attr = (value:string)=>JSON.stringify(value);
 export const selectorRanks = ['role','label','placeholder','testId','id','attributeName','text','css','path'] as const;
 export class SelectorEngine {
   private registry=new Map<string,PageElement>();
-  remember(elements:PageElement[]) { for(const element of elements) this.registry.set(element.ref,element); }
+  remember(elements:PageElement[]) { for(const element of elements) this.registry.set(element.ref,element);while(this.registry.size>5000)this.registry.delete(this.registry.keys().next().value!); }
   descriptor(target:Target):SemanticTarget {
     if(typeof target!=='string')return target;
     if(target.startsWith('css:'))return {css:target.slice(4)};

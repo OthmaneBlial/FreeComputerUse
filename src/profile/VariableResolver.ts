@@ -17,8 +17,12 @@ export class VariableResolver {
   aliases() {return {profile:Object.keys(this.vault.profile),files:Object.keys(this.vault.files)};}
   redact(value:string) {
     let result=value;
-    for(const [group,dictionary] of Object.entries(this.vault)) {
-      for(const [name,secret] of Object.entries(dictionary)) if(secret.length>1) result=result.split(secret).join(`{{${group}.${name}}}`);
+    const secrets=Object.entries(this.vault).flatMap(([group,dictionary])=>Object.entries(dictionary).map(([name,secret])=>({alias:`{{${group}.${name}}}`,secret}))).sort((a,b)=>b.secret.length-a.secret.length);
+    for(const {alias,secret} of secrets) if(secret.length>1){
+      result=result.split(secret).join(alias);
+      // Traces/prompts are often JSON-serialized: redact escaped values too.
+      const escaped=JSON.stringify(secret).slice(1,-1);
+      if(escaped!==secret)result=result.split(escaped).join(JSON.stringify(alias).slice(1,-1));
     }
     return result.replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]');
   }

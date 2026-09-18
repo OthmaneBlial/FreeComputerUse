@@ -19,7 +19,7 @@ export class FlashProvider implements LLMProvider {
   plan(context:PlanningContext):Promise<Plan>{return this.request('PLAN',context,PlanSchema,PLAN_FORMAT);}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
-  private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string):Promise<T>{
+  private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false):Promise<T>{
     const {page,...task}=context as PlanningContext;
     const messages=[{role:'system',content:SYSTEM_POLICY+'\n'+format},
       {role:'user',content:JSON.stringify({operation,...task})+'\n'+untrusted(page??'')}];
@@ -28,7 +28,7 @@ export class FlashProvider implements LLMProvider {
     const inputBound=Buffer.byteLength(JSON.stringify({messages,response_format}))+256;
     const reservation=this.budget.reserve(inputBound,operation==='CLASSIFY'?100:1800),max_tokens=reservation.maxOutput;
     const controller=new AbortController();this.controllers.add(controller);
-    const started=Date.now();let usage:Usage|undefined;
+    const started=Date.now();let usage:Usage|undefined,validationFailure=false;
     try{
       const body:Record<string,unknown>={model:this.config.model,messages,response_format,max_tokens,temperature:0};
       if(new URL(this.config.baseURL).hostname==='api.deepseek.com')body.thinking={type:'disabled'};
@@ -38,20 +38,21 @@ export class FlashProvider implements LLMProvider {
       });
       if(!response.ok)throw new Error(`LLM request failed with HTTP ${response.status}`);
       const data=await response.json() as {usage?:{prompt_tokens:number;completion_tokens:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[]};
-      usage=data.usage?{input:data.usage.prompt_tokens,output:data.usage.completion_tokens,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
-      this.budget.record(usage,reservation.id);
+      const reported=data.usage?{input:data.usage.prompt_tokens,output:data.usage.completion_tokens,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
+      this.budget.record(reported,reservation.id);usage=reported;
       const choice=data.choices?.[0];
       if(choice?.finish_reason==='length')throw new Error('LLM JSON was truncated by the output limit');
       if(!choice?.message.content)throw new Error('LLM returned empty JSON');
       let value:unknown;try{value=JSON.parse(choice.message.content);}catch{throw new Error('LLM returned invalid JSON');}
       const checked=schema.safeParse(value);
-      if(!checked.success)throw new Error('LLM response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));
+      if(!checked.success){validationFailure=true;throw new Error('LLM response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});
       return checked.data;
     }catch(error){
       const safeError=(error instanceof Error?error.message:'LLM request failed').split(this.config.key).join('[redacted key]');
       if(!usage){usage={input:inputBound,output:max_tokens,estimated:true};this.budget.record(usage,reservation.id);}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:false,error:safeError});
+      if(validationFailure&&!correcting)return await this.request(operation,context,schema,format+'\nYour last response was rejected: '+safeError+'. Return corrected JSON using only the listed keys. closeTab/back/forward/reload have type only (optional sensitive/verify/timeoutMs); no index or target.',true);
       throw new Error(safeError);
     }finally{this.controllers.delete(controller);}
   }

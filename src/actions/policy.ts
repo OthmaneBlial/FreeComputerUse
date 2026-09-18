@@ -11,5 +11,5 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
   }));
   if(/\b(submit|purchase|buy|pay|checkout|delete|remove|send|confirm|transfer|publish|unsubscribe|register|create account|accept terms)\b/i.test(facts.text))return `Potentially irreversible control: ${facts.text.slice(0,80)}`;
   if(action.type==='press'&&action.value==='Enter'&&facts.type!=='search')return 'Enter may submit a form';
-  if(facts.submit&&!/\b(search|continue|next|review|apply|sign in|log in)\b/i.test(facts.text))return 'Form submission';
+  if(facts.submit&&!/\b(search|find flights|find tickets|filter|continue|next|review|apply|sign in|log in)\b/i.test(facts.text))return 'Form submission';
 }

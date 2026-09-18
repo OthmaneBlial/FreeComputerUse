@@ -14,6 +14,8 @@ export type Target = z.infer<typeof TargetSchema>;
 export const ConditionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('input_value_equals'), target: TargetSchema, value: z.string().max(10000) }).strict(),
   z.object({type:z.literal('extraction_created'),key:text.optional()}).strict(),
+  z.object({type:z.literal('extraction_contains'),key:text.optional(),value:text}).strict(),
+  z.object({type:z.literal('tab_count'),count:z.number().int().min(1).max(100)}).strict(),
   z.object({type:z.literal('extraction_count'),key:text.optional(),min:z.number().int().min(1).max(1000),max:z.number().int().min(1).max(1000).optional()}).strict(),
   ...(['element_exists', 'element_visible', 'element_not_visible', 'checkbox_checked', 'form_submitted'] as const)
     .map(type => z.object({ type: z.literal(type), target: TargetSchema }).strict()),
@@ -39,7 +41,7 @@ export const ActionSchema = z.discriminatedUnion('type', [
     .map(type => z.object({ type: z.literal(type), url: text, ...meta }).strict()),
   z.object({ type: z.literal('upload'), target: TargetSchema, file: text, ...meta }).strict(),
   z.object({ type: z.literal('download'), target: TargetSchema, filename: text.optional(), ...meta }).strict(),
-  z.object({ type: z.literal('extract'), target: TargetSchema.optional(), format: z.enum(['text', 'table', 'links']).default('text'), key: text.default('result'), match: text.optional(), limit: z.number().int().min(1).max(1000).optional(), ...meta }).strict(),
+  z.object({ type: z.literal('extract'), target: TargetSchema.optional(), format: z.enum(['text', 'table', 'links','records']).default('text'), key: text.default('result'), match: text.optional(), limit: z.number().int().min(1).max(1000).optional(), fields:z.record(text,z.object({css:text,attribute:z.enum(['text','href','src','value','title']).default('text')}).strict()).optional(), ...meta }).strict(),
   z.object({ type: z.literal('wait'), condition: ConditionSchema, ...meta }).strict(),
   z.object({ type: z.literal('scroll'), target: TargetSchema.optional(), direction: z.enum(['up','down']).default('down'), pixels: z.number().int().min(1).max(10000).default(600), ...meta }).strict(),
   ...(['closeTab', 'back', 'forward', 'reload'] as const)
