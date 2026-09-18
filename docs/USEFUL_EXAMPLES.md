@@ -6,6 +6,11 @@ goal. Paste its starting URL and goal into <http://127.0.0.1:4318>. Normal mode
 waits for your website approval before navigating. Watch the actual browser
 pointer, progressive typing and clicks; **Full screen** enlarges the browser and
 keeps approvals and controls visible. **Execution log** opens the event stream.
+**View result** presents facts and tables instead of raw JSON. Copy its summary
+or save a standalone HTML report. Original site exports remain available under
+Saved files only after a successful download. A stopped/failed task shows a
+partial result. Toolbar arrows let you scroll the real page while idle or paused;
+the agent brings action targets fully into view before clicking.
 
 The practice site is a fictional Northstar workspace. Its filters, dialogs, file
 exports and saved state operate in the browser. No messages, bookings, purchases,
@@ -61,6 +66,7 @@ and [professional research](../research_useful_browser_tasks/findings_profession
 npm run lab:build
 npm run lab:serve                 # http://127.0.0.1:4319/lab/
 npm run lab:smoke                 # 12 screens, desktop/mobile, console and overflow
+npm run ui:results                # authored local journey: cards, cursor, visible controls
 npm run benchmark:complex         # supplied action plans; no model-planning claim
 npm run benchmark:complex -- --live  # real Flash planning; spends API tokens
 npm run benchmark:real            # real GitHub/GOV.UK trials; spends API tokens

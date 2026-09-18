@@ -63,6 +63,15 @@ export class Interaction extends EventEmitter {
     if(!this.enabled)return;
     await options.checkpoint();
     await locator.scrollIntoViewIfNeeded({timeout:options.timeout});
+    // Keep the whole control away from the viewport edge, including nested
+    // scrollers and frames. Playwright's actionability only requires its click
+    // point to be visible; the live viewer needs room around the control too.
+    await options.checkpoint();
+    await locator.evaluate(el=>{
+      const rect=el.getBoundingClientRect(),margin=48;
+      if(rect.top<margin||rect.bottom>innerHeight-margin||rect.left<16||rect.right>innerWidth-16)
+        el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+    });
     const box=await locator.boundingBox({timeout:options.timeout});
     if(!box)throw new Error('Interaction target has no visible bounds');
     const page=this.currentPage(),viewport=page.viewportSize()??{width:1280,height:720};

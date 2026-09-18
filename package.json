@@ -29,7 +29,8 @@
     "lab:smoke": "tsx scripts/lab-smoke.ts",
     "benchmark:complex": "tsx scripts/complex-benchmark.ts",
     "benchmark:real": "tsx scripts/real-world-benchmark.ts",
-    "ui:smoke": "tsx scripts/ui-smoke.ts"
+    "ui:smoke": "tsx scripts/ui-smoke.ts",
+    "ui:results": "tsx scripts/results-smoke.ts"
   },
   "files": [
     "dist",

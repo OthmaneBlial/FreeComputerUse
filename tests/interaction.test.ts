@@ -31,6 +31,22 @@ test('visible interaction moves the real pointer, types progressively, clicks an
   }finally{await browser.close();}
 });
 
+test('visible actions bring clipped controls fully into view, including nested scrollers',async()=>{
+  const browser=await new Browser({visualInteraction:true}).launch();
+  try{
+    await browser.page.setViewportSize({width:1000,height:600});
+    await browser.page.setContent(`<style>body{margin:0}.space{height:580px}button{height:48px}.tail{height:500px}#nested{height:180px;overflow:auto}</style><div class="space"></div><button onclick="window.clicked=this.getBoundingClientRect().toJSON()">Download itinerary</button><div class="tail"></div><div id="nested"><div style="height:165px"></div><button onclick="window.nested=this.getBoundingClientRect().toJSON()">Nested action</button><div class="tail"></div></div><div class="tail"></div>`);
+    assert((await browser.page.getByRole('button',{name:'Download itinerary'}).boundingBox())!.y>550);
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    assert((await executor.run({type:'click',target:{role:'button',name:'Download itinerary'}})).success);
+    const clicked=await browser.page.evaluate(()=>(window as unknown as {clicked:{top:number;bottom:number}}).clicked);
+    assert(clicked.top>=48&&clicked.bottom<=552,'The whole button, with surrounding space, was visible at the actual click');
+    assert((await executor.run({type:'click',target:{role:'button',name:'Nested action'}})).success);
+    const nested=await browser.page.getByRole('button',{name:'Nested action'}).boundingBox(),parent=await browser.page.locator('#nested').boundingBox();
+    assert(nested!.y>=parent!.y&&nested!.y+nested!.height<=parent!.y+parent!.height,'Nested scrolling also reveals the complete control');
+  }finally{await browser.close();}
+});
+
 test('reject and stop prevent actual clicks during visible interaction',async()=>{
   const browser=await new Browser({visualInteraction:true}).launch();
   try{

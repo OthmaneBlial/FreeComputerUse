@@ -1,7 +1,7 @@
 import { createServer,type IncomingMessage,type ServerResponse } from 'node:http';
 import { randomBytes,timingSafeEqual } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile,realpath,stat } from 'node:fs/promises';
+import { join,sep } from 'node:path';
 import { z } from 'zod';
 import { Agent } from '../agent/Agent.js';
 import { TraceStore } from '../history/TraceStore.js';
@@ -27,6 +27,8 @@ const same=(a:string,b:string)=>{const aa=Buffer.from(a),bb=Buffer.from(b);retur
 export async function startServer(options:{port?:number;headed?:boolean;quiet?:boolean;provider?:LLMProvider}={}){
   const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite')),profiles=new ProfileStore(join(config.dataDir,'profile.json'));
   const secret=randomBytes(32).toString('hex');let agent:Agent|undefined,pending:Promise<unknown>|undefined;
+  const previous=store.history(1)[0],savedTrace=previous?store.get(String(previous.id)):undefined;
+  const restored=savedTrace?.status==='running'?undefined:savedTrace;
   const listeners=new Set<ServerResponse>();let origin='';
   const server=createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');
@@ -40,7 +42,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         const html=(await readFile(new URL('../ui/index.html',import.meta.url),'utf8')).replace('__CSRF_TOKEN__',secret);
         res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html);return;
       }
-      if(req.method==='GET'&&['/app.js','/style.css','/logo.svg'].includes(path)){
+      if(req.method==='GET'&&['/app.js','/results.js','/style.css','/logo.svg'].includes(path)){
         res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript':path.endsWith('.svg')?'image/svg+xml':'text/css'});res.end(await readFile(new URL('../ui'+path,import.meta.url)));return;
       }
       const cookie=req.headers.cookie?.split(';').map(s=>s.trim()).find(s=>s.startsWith('fcu_session='))?.slice(12)??'';
@@ -50,7 +52,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='GET'&&path==='/api/state'){
         send(200,{active:agent?.active??false,paused:agent?.control.paused??false,pending:agent?.control.pending,
-          trace:agent?.trace?{...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}:undefined,state:agent?.state?{url:agent.state.url,title:agent.state.title,hash:agent.state.hash,warnings:agent.state.warnings,elements:agent.state.elements.length}:undefined,
+          trace:agent?.trace?{...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}:restored,state:agent?.state?{url:agent.state.url,title:agent.state.title,hash:agent.state.hash,warnings:agent.state.warnings,elements:agent.state.elements.length}:undefined,
           pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?.url(),events:agent?.events??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12),workflows:new WorkflowEngine(store).list()});return;
       }
       if(req.method==='GET'&&path==='/api/events'){
@@ -64,6 +66,15 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         res.writeHead(200,{'Content-Type':'image/jpeg','X-FCU-Page-ID':String(pageId),'X-FCU-Run-ID':running.trace?.id??''});res.end(screenshot);return;
       }
       if(req.method==='GET'&&path==='/api/profile'){send(200,await profiles.load());return;}
+      if(req.method==='GET'&&path==='/api/download'){
+        const query=new URL(req.url??'/',origin).searchParams,id=z.string().min(1).max(100).parse(query.get('id')),index=Number(z.string().regex(/^\d+$/).parse(query.get('index')));
+        const trace=agent?.trace?.id===id?agent.trace:store.get(id),receipt=trace?.actions[index];
+        if(!receipt?.success||receipt.action.type!=='download')throw new Error('Saved download not found');
+        const data=receipt.data as {path?:string;filename?:string};if(!data?.path||!data.filename)throw new Error('Saved download not found');
+        const root=await realpath(join(config.dataDir,'downloads')),file=await realpath(data.path);
+        if(!file.startsWith(root+sep)||!(await stat(file)).isFile())throw new Error('Saved download is outside the download folder');
+        res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(data.filename).replace(/'/g,'%27')}`});res.end(await readFile(file));return;
+      }
       if(req.method==='POST'&&path==='/api/profile'){
         if(agent?.active)throw new Error('Finish or stop the current task before changing profile');
         await profiles.save(await body(req) as never);send(200,{saved:true});return;

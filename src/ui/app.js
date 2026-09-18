@@ -1,6 +1,7 @@
+import {renderResults,reportHtml} from './results.js';
 const $=id=>document.getElementById(id);
 const token=document.querySelector('meta[name=csrf-token]').content;
-let state={},busy=false,lastEventCount=0,previewPending=false,refreshPending=false;
+let state={},busy=false,lastEventCount=0,previewPending=false,refreshPending=false,resultKey='',resultCount=0;
 let currentRunId='',previewPageId=0,pointer,lastPointerSequence=-1,lastClickSequence=-1,approvalKey='';
 function mobileView(view){document.body.dataset.mobileView=view;for(const button of document.querySelectorAll('[data-mobile-view]'))button.setAttribute('aria-pressed',String(button.dataset.mobileView===view));}
 mobileView('task');for(const button of document.querySelectorAll('[data-mobile-view]'))button.onclick=()=>mobileView(button.dataset.mobileView);
@@ -33,7 +34,7 @@ function paintPointer(){
   if(!visible){ring.hidden=true;return;}
   const x=rect.left-stage.left+pointer.x/pointer.width*rect.width,y=rect.top-stage.top+pointer.y/pointer.height*rect.height;
   cursor.style.transform=`translate(${x}px,${y}px)`;cursor.dataset.sequence=pointer.sequence;cursor.dataset.kind=pointer.kind;
-  const typing=pointer.kind==='fill'||pointer.kind==='type';cursor.classList.toggle('typing',typing);text('cursor-label',state.paused?'You':typing?'Typing…':'Agent');$('cursor-label').style.left=x>stage.width-110?'-85px':'20px';
+  const typing=pointer.kind==='fill'||pointer.kind==='type';cursor.classList.toggle('typing',typing);
   if(['click','doubleClick','check','uncheck'].includes(pointer.kind)&&pointer.sequence!==lastClickSequence){
     lastClickSequence=pointer.sequence;ring.hidden=false;ring.style.left=x+'px';ring.style.top=y+'px';ring.classList.remove('pulse');void ring.offsetWidth;ring.classList.add('pulse');
   }
@@ -64,9 +65,12 @@ function render(snapshot){
   const input=metrics.inputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.input,0)??0,output=metrics.outputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.output,0)??0;
   text('calls',fmt(calls));text('actions',fmt(actions));text('ratio',calls?(actions/calls).toFixed(1):actions?'local':'—');text('tokens',fmt(input+output));text('cost',metrics.estimatedCostUSD==null?'—':'$'+Number(metrics.estimatedCostUSD).toFixed(5));
   const fraction=Math.min(1,Math.max(input/(state.limits?.maxInputTokens||20000),output/(state.limits?.maxOutputTokens||5000),calls/(state.limits?.maxLLMCalls||10)));text('budget-value',Math.round(fraction*100)+'%');$('budget-meter').style.width=fraction*100+'%';text('budget-limit',`${fmt(state.limits?.maxInputTokens)} input / ${fmt(state.limits?.maxOutputTokens)} output`);
-  const outputs=trace?.actions?.filter(a=>a.success&&a.data!==undefined).map(a=>a.data)||[];
-  $('result-panel').hidden=!outputs.length;text('result-output',outputs.length?JSON.stringify(outputs,null,2):'');
-  $('result-open').disabled=!outputs.length;
+  const nextResultKey=JSON.stringify([trace?.id,trace?.status,trace?.actions?.filter(a=>a.success&&a.data!==undefined).map(a=>[a.action.type,a.action.key,a.data])]);
+  if(nextResultKey!==resultKey){resultKey=nextResultKey;resultCount=renderResults($('result-output'),trace);}
+  const outputs=resultCount;
+  $('result-panel').hidden=!outputs;$('result-open').disabled=!outputs;
+  for(const id of ['result-copy','result-save'])$(id).disabled=!outputs;
+  for(const id of ['page-up','page-down'])$(id).disabled=!state.browserUrl||active&&!paused;
   const plan=trace?.plans?.at(-1);$('plan').replaceChildren();for(const step of plan?.steps||['Waiting for a task.']){const li=document.createElement('li');li.textContent=step;$('plan').append(li);}
   const observe=state.events?.filter(e=>e.phase==='OBSERVE').at(-1);text('compression',observe?.data?.reduction!=null?(observe.data.reduction*100).toFixed(1)+'% smaller':'—');
   text('warnings',state.state?.warnings?.join('\n')||'');
@@ -104,6 +108,9 @@ $('preview').onclick=protect(async event=>{if(!state.paused)return;const img=$('
 $('manual-type').onclick=protect(async()=>{await api('control/manual',{type:'type',value:$('manual-value').value});await preview();});
 $('manual-enter').onclick=protect(async()=>{await api('control/manual',{type:'press',value:'Enter'});await preview();});
 $('manual-scroll').onclick=protect(async()=>{await api('control/manual',{type:'scroll',y:500});await preview();});
+for(const [id,y] of [['page-up',-400],['page-down',400]])$(id).onclick=protect(async()=>{await api('control/manual',{type:'scroll',y});await preview();});
+$('result-copy').onclick=protect(async()=>{await navigator.clipboard.writeText($('result-output').innerText);text('result-copy','Copied');setTimeout(()=>text('result-copy','Copy summary'),1500);});
+$('result-save').onclick=()=>{const blob=new Blob([reportHtml($('result-output'),state.trace?.goal)],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='task-report.html';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 const stream=new EventSource('/api/events');stream.onmessage=()=>refresh();
 stream.addEventListener('pointer',event=>{try{const next=JSON.parse(event.data);acceptPointer(next.pointer,next.runId);}catch{}});
 new ResizeObserver(paintPointer).observe($('browser-stage'));

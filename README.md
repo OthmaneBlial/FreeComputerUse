@@ -58,6 +58,12 @@ keep their fast execution; the dashboard uses a visible pace by default.
 The workspace fits the window; approvals stay beside the browser controls.
 Use **Full screen** to watch the browser at full size, and **Execution log** to
 open its stream in a dialog. Results, history and run options open on demand.
+Results use readable fact cards, tables and source links, with **Copy summary**
+and **Save report** for a standalone HTML report. Partial runs are labelled;
+only successfully saved files appear as downloads. The last finished trace is
+restored after a server restart. The pointer stays small without a floating label;
+controls near a viewport edge scroll fully into view before the agent clicks.
+The toolbar arrows scroll the real page while idle or after taking control.
 Use **Take control** to pause, click/type manually or edit the plan, then resume.
 Completed history entries replay their successful actions without a provider.
 
