@@ -14,6 +14,7 @@ const delay=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 export class Interaction extends EventEmitter {
   private pages=new WeakMap<Page,number>();
   private positions=new WeakMap<Page,{x:number;y:number}>();
+  private initializing=new WeakMap<Page,Promise<void>>();
   private nextPage=0;private sequence=0;private latest?:PointerState;
   constructor(private currentPage:()=>Page,readonly enabled=false){super();}
   pageId(page=this.currentPage()) {
@@ -25,7 +26,7 @@ export class Interaction extends EventEmitter {
     page.on('framenavigated',frame=>{
       if(frame===page.mainFrame()){
         this.pages.set(page,++this.nextPage);
-        if(page===this.currentPage())this.cue('idle',page,false);
+        if(page===this.currentPage())this.cue('idle',page,this.positions.has(page));
       }
     });
     page.on('close',()=>{if(page===this.currentPage())this.cue('idle',page,false);});
@@ -33,7 +34,20 @@ export class Interaction extends EventEmitter {
   snapshot():PointerState|undefined {
     if(!this.enabled||!this.currentPage())return;
     const page=this.currentPage();
-    return this.latest?.pageId===this.pageId(page)?this.latest:this.state('idle',page,false);
+    return this.latest?.pageId===this.pageId(page)?this.latest:this.state('idle',page,this.positions.has(page)&&!page.isClosed());
+  }
+  async initialize(page=this.currentPage()) {
+    if(!this.enabled||page.isClosed()||this.positions.has(page))return;
+    const pending=this.initializing.get(page);if(pending)return pending;
+    const work=(async()=>{
+      const viewport=page.viewportSize()??{width:1280,height:720},point={x:viewport.width/2,y:viewport.height/2};
+      // Park the real browser mouse once, before a plan arrives. Its position
+      // remains valid across document navigations; waiting never invents motion.
+      await page.mouse.move(point.x,point.y);this.positions.set(page,point);
+      if(page===this.currentPage()&&!page.isClosed())this.cue('idle',page,true);
+    })();
+    this.initializing.set(page,work);
+    try{await work;}finally{this.initializing.delete(page);}
   }
   private state(kind:InteractionKind,page:Page,visible:boolean):PointerState {
     const viewport=page.viewportSize()??{width:1280,height:720};

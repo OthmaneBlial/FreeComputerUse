@@ -26,14 +26,24 @@ function contentRect(){
   const scale=Math.min(rect.width/image.naturalWidth,rect.height/image.naturalHeight),width=image.naturalWidth*scale,height=image.naturalHeight*scale;
   return {left:rect.left+(rect.width-width)/2,top:rect.top+(rect.height-height)/2,width,height};
 }
+function preparation(){
+  const latest=state.events?.at(-1);
+  if(!state.active||state.pending||state.paused||!latest||!['PLAN','REPAIR'].includes(latest.phase))return;
+  if(latest.phase==='PLAN'&&latest.message==='Validated plan')return;
+  const seconds=Math.max(0,Math.floor((Date.now()-latest.time)/1000));
+  return {seconds,label:(latest.phase==='REPAIR'?'Preparing a correction':'Preparing the next actions')+` · ${seconds}s`,detail:seconds>=15?'Waiting for the model reply; no browser action has run during this preparation.':'Waiting for the model reply.'};
+}
 function paintPointer(){
   const cursor=$('agent-cursor'),ring=$('click-ring'),rect=contentRect(),stage=$('pointer-layer').getBoundingClientRect();
   const visible=pointer?.visible&&rect&&pointer.pageId===previewPageId;
   cursor.hidden=!visible;
-  text('interaction-label',state.pending?'Waiting for your approval':state.paused?'You have control':state.active?(interactionNames[pointer?.kind]||'Planning the next browser actions'):state.trace?.status==='completed'?'Task complete':state.trace?.status==='stopped'?'Task stopped':'Watch the browser work here');
+  const preparing=preparation();cursor.classList.toggle('preparing',!!preparing);
+  text('interaction-label',state.pending?'Waiting for your approval':state.paused?'You have control':preparing?preparing.label:state.active?(interactionNames[pointer?.kind]||'Planning the next browser actions'):state.trace?.status==='completed'?'Task complete':state.trace?.status==='stopped'?'Task stopped':'Watch the browser work here');
+  $('interaction-label').title=preparing?.detail||'';
+  if(preparing)text('control-state',preparing.detail);
   if(!visible){ring.hidden=true;return;}
   const x=rect.left-stage.left+pointer.x/pointer.width*rect.width,y=rect.top-stage.top+pointer.y/pointer.height*rect.height;
-  cursor.style.transform=`translate(${x}px,${y}px)`;cursor.dataset.sequence=pointer.sequence;cursor.dataset.kind=pointer.kind;
+  cursor.style.transform=`translate(${x}px,${y}px)`;cursor.dataset.sequence=pointer.sequence;cursor.dataset.kind=pointer.kind;cursor.dataset.pageId=pointer.pageId;
   const typing=pointer.kind==='fill'||pointer.kind==='type';cursor.classList.toggle('typing',typing);
   if(['click','doubleClick','check','uncheck'].includes(pointer.kind)&&pointer.sequence!==lastClickSequence){
     lastClickSequence=pointer.sequence;ring.hidden=false;ring.style.left=x+'px';ring.style.top=y+'px';ring.classList.remove('pulse');void ring.offsetWidth;ring.classList.add('pulse');
@@ -71,7 +81,7 @@ function render(snapshot){
   $('result-panel').hidden=!outputs;$('result-open').disabled=!outputs;
   for(const id of ['result-copy','result-save'])$(id).disabled=!outputs;
   for(const id of ['page-up','page-down'])$(id).disabled=!state.browserUrl||active&&!paused;
-  const plan=trace?.plans?.at(-1);$('plan').replaceChildren();for(const step of plan?.steps||['Waiting for a task.']){const li=document.createElement('li');li.textContent=step;$('plan').append(li);}
+  const plan=trace?.plans?.at(-1);$('plan').replaceChildren();for(const step of plan?.steps||[preparation()?'Preparing the first action batch…':'Waiting for a task.']){const li=document.createElement('li');li.textContent=step;$('plan').append(li);}
   const observe=state.events?.filter(e=>e.phase==='OBSERVE').at(-1);text('compression',observe?.data?.reduction!=null?(observe.data.reduction*100).toFixed(1)+'% smaller':'—');
   text('warnings',state.state?.warnings?.join('\n')||'');
   const phase=state.events?.at(-1)?.phase;for(const span of $('loop').children)span.classList.toggle('current',span.textContent.toUpperCase()===phase);
@@ -80,6 +90,7 @@ function render(snapshot){
   text('history-count',state.history?.length||0);$('history').replaceChildren();for(const run of state.history||[]){const button=document.createElement('button'),title=document.createElement('strong'),meta=document.createElement('small');button.className='history-item';title.textContent=run.goal;meta.textContent=run.status.toUpperCase()+' · '+new Date(Number(run.started)).toLocaleDateString();button.append(title,meta);button.title=run.status==='completed'?'Replay this run with no model':'Use this task again';button.disabled=active;button.onclick=protect(async()=>{$('history-dialog').close();if(run.status==='completed'){await api('replay',{id:run.id});mobileView('browser');notice('Replaying successful semantic actions.');}else{$('goal').value=run.goal;$('start-url').value=run.url;mobileView('task');notice('Task loaded. Edit it before running.');}await refresh();});$('history').append(button);}if(!state.history?.length)text('history','Your first run starts here.');
   text('workflow-count',state.workflows?.length||0);
   if(trace?.error)notice(trace.error,true);
+  paintPointer();
 }
 async function refresh(){if(refreshPending)return;refreshPending=true;try{render(await api('state'));}catch(error){notice('Connection lost: '+error.message,true);}finally{refreshPending=false;}}
 async function preview(){
@@ -114,4 +125,4 @@ $('result-save').onclick=()=>{const blob=new Blob([reportHtml($('result-output')
 const stream=new EventSource('/api/events');stream.onmessage=()=>refresh();
 stream.addEventListener('pointer',event=>{try{const next=JSON.parse(event.data);acceptPointer(next.pointer,next.runId);}catch{}});
 new ResizeObserver(paintPointer).observe($('browser-stage'));
-await refresh();setInterval(refresh,1500);previewLoop();
+await refresh();setInterval(refresh,1500);setInterval(paintPointer,1000);previewLoop();

@@ -7,6 +7,30 @@ import {Browser} from '../src/browser/Browser.js';
 import {startServer} from '../src/server/index.js';
 import {startFixtures} from '../fixtures/server.js';
 import {FixtureProvider} from '../fixtures/FixtureProvider.js';
+import {PlanSchema} from '../src/actions/schema.js';
+
+test('the real cursor is visible before the first model reply and survives document navigation',{timeout:20000},async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-cursor-wait-')),old=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
+  const fixture=await startFixtures();let release!:()=>void,entered!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;}),planning=new Promise<void>(resolve=>{entered=resolve;});
+  const dashboard=await startServer({port:0,quiet:true,provider:{name:'delayed-ui-fixture',plan:async context=>{entered();await gate;return PlanSchema.parse({goal:context.goal,steps:['Open the revenue page','Read the table'],actions:[{type:'navigate',url:fixture.url+'/reports'},{type:'extract',target:{role:'table',name:'Revenue'},format:'table',key:'revenue'}],completion:[{type:'extraction_contains',key:'revenue',value:'March'}]});},repair:async()=>{throw new Error('No repair expected');}}});
+  const browser=await new Browser().launch(),errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));
+  try{
+    await browser.navigate(dashboard.url);await browser.page.locator('#start-url').fill(fixture.url+'/demo');await browser.page.locator('#goal').fill('Open the revenue page and read its monthly figures. Do not submit the contact form.');
+    await browser.page.getByRole('button',{name:'Run task',exact:true}).click();await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();await planning;
+    await browser.page.locator('#agent-cursor').waitFor({state:'visible'});
+    assert.equal(dashboard.getAgent()?.trace?.actions.length,0,'Cursor is visible with no planned actions executed');
+    const parked=dashboard.getAgent()!.browser.interaction.snapshot()!;assert(parked.visible);assert.equal(parked.kind,'idle');
+    assert.match(await browser.page.locator('#interaction-label').innerText(),/Preparing the next actions/);
+    await browser.page.waitForTimeout(1200);assert.match(await browser.page.locator('#interaction-label').innerText(),/Preparing the next actions · [1-9]\d*s/);
+    assert.match(await browser.page.locator('#control-state').innerText(),/Waiting for the model reply/);
+    assert.equal(dashboard.getAgent()?.trace?.actions.length,0,'Waiting indicator does not fabricate activity');
+    release();await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED');
+    await browser.page.waitForFunction(pageId=>Number(document.querySelector('#agent-cursor')?.getAttribute('data-page-id'))===pageId,dashboard.getAgent()!.browser.interaction.snapshot()!.pageId);
+    const after=dashboard.getAgent()!.browser.interaction.snapshot()!;assert(after.pageId!==parked.pageId);assert(after.visible);assert.equal(after.x,parked.x);assert.equal(after.y,parked.y);
+    assert(await browser.page.locator('#agent-cursor').isVisible(),'Navigation did not hide the parked mouse');assert.deepEqual(errors,[]);
+  }finally{release();await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(old===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=old;}
+});
 
 test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;

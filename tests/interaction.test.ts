@@ -54,7 +54,7 @@ test('reject and stop prevent actual clicks during visible interaction',async()=
     const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
     const approval=new Promise<void>(resolve=>control.once('approval',()=>resolve()));
     const execution=executor.run({type:'click',target:{role:'button',name:'Delete record'}});await approval;
-    assert.equal(browser.interaction.snapshot()?.visible,false);control.reject();assert(!(await execution).success);
+    assert.equal(browser.interaction.snapshot()?.visible,true,'The parked pointer remains visible while approval is pending');control.reject();assert(!(await execution).success);
     assert.equal(await browser.page.locator('body').getAttribute('data-clicked'),null);
     const secondControl=new Control(),second=new Executor(browser,new Observer(),new VariableResolver(),secondControl,{confirmation:'never'});
     browser.interaction.once('pointer',()=>secondControl.stop());

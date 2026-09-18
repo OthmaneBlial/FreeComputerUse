@@ -64,6 +64,9 @@ only successfully saved files appear as downloads. The last finished trace is
 restored after a server restart. The pointer stays small without a floating label;
 controls near a viewport edge scroll fully into view before the agent clicks.
 The toolbar arrows scroll the real page while idle or after taking control.
+The blue pointer with a white outline stays visible before the first plan arrives
+and across document changes. While a model reply is pending, the workspace shows
+preparation time rather than suggesting that browser actions are running.
 Use **Take control** to pause, click/type manually or edit the plan, then resume.
 Completed history entries replay their successful actions without a provider.
 

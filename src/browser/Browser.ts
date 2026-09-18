@@ -33,9 +33,10 @@ export class Browser {
     }
     this.context.setDefaultTimeout(this.options.timeoutMs ?? 4000);
     this.context.setDefaultNavigationTimeout(20000);
-    this.context.on('page', page => {this.wire(page);this.page=page;});
+    this.context.on('page', page => {this.wire(page);this.page=page;void this.interaction.initialize(page).catch(()=>{});});
     this.page = this.context.pages()[0] ?? await this.context.newPage();
     this.wire(this.page);
+    await this.interaction.initialize(this.page);
     if (this.options.beforeNavigate || this.options.allowedOrigins?.length && !this.options.allowExternal) {
       await this.context.routeWebSocket('**/*',socket=>{
         const url=socket.url().replace(/^ws:/,'http:').replace(/^wss:/,'https:');
@@ -93,6 +94,7 @@ export class Browser {
     if (!page) throw new Error('Tab index does not exist');
     await page.waitForLoadState('domcontentloaded',{timeout:timeoutMs});
     this.page = page;
+    await this.interaction.initialize(page);
   }
   async closeTab() {
     if (this.context.pages().length === 1) throw new Error('Cannot close the last tab');

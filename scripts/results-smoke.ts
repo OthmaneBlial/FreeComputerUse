@@ -7,7 +7,7 @@ import {startLab} from './lab-server.js';
 import {complexScenarios,planFor} from './complex-scenarios.js';
 const dir=await mkdtemp(join(tmpdir(),'fcu-result-smoke-')),old=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
 const scenario=complexScenarios.find(s=>s.id==='travel')!,lab=await startLab();
-const dashboard=await startServer({port:0,quiet:true,provider:{name:'authored UI check · no model',plan:async context=>planFor(scenario,context.goal),repair:async()=>{throw new Error('The authored UI check must not repair');}}});
+const dashboard=await startServer({port:0,quiet:true,provider:{name:'authored UI check · no model',plan:async context=>{await new Promise(resolve=>setTimeout(resolve,2500));return planFor(scenario,context.goal);},repair:async()=>{throw new Error('The authored UI check must not repair');}}});
 const browser=await new Browser().launch(),errors:string[]=[];browser.page.on('pageerror',e=>errors.push(e.message));browser.page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
 try{
   await mkdir('artifacts/ui',{recursive:true});await browser.page.setViewportSize({width:1600,height:1000});await browser.navigate(dashboard.url);
@@ -15,6 +15,9 @@ try{
   await browser.page.getByRole('button',{name:'Run task',exact:true}).click();await browser.page.locator('#approval').waitFor({state:'visible'});
   if(dashboard.getAgent()?.browser.page.url()!=='about:blank')throw new Error('The website was accessed before approval');
   await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
+  await browser.page.waitForFunction(()=>!document.querySelector<HTMLElement>('#agent-cursor')?.hidden&&document.querySelector('#interaction-label')?.textContent?.includes('Preparing the next actions'));
+  if(dashboard.getAgent()?.trace?.actions.length)throw new Error('The preparation cursor was only shown after an action');
+  await browser.page.screenshot({path:'artifacts/ui/cursor-preparing.png'});
   const deadline=Date.now()+90000;
   while(await browser.page.locator('#status').innerText()!=='COMPLETED'){
     if(Date.now()>deadline||await browser.page.locator('#status').innerText()==='FAILED')throw new Error('The authored journey did not complete');
