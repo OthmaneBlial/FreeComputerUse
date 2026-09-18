@@ -1,0 +1,11 @@
+{
+  "measuredAt": "2026-09-18",
+  "environment": "macOS arm64, Node 25.9.0, Playwright 1.63.0, local synthetic Northstar website",
+  "provider": "deepseek-flash",
+  "source": "Actual provider usage fields, deterministic browser verification",
+  "scenarios": [
+    { "task": "Contact form", "status": "completed", "browserActions": 7, "llmCalls": 1, "inputTokens": 1003, "outputTokens": 204, "durationMs": 1951, "repairs": 0 },
+    { "task": "Job application through confirmation", "status": "completed", "browserActions": 11, "llmCalls": 3, "inputTokens": 3768, "outputTokens": 504, "durationMs": 4456, "repairs": 0, "estimatedCostUSD": 0.001321248 }
+  ],
+  "limitations": "One successful measurement per scenario, synthetic local data, no screenshot-agent baseline. Cost uses configured peak prices including cache hits; it is not a billing receipt. Earlier failed development runs are not part of this measurement."
+}

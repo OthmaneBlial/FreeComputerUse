@@ -34,7 +34,7 @@ export function diffPages(previous:PageState,current:PageState) {
     url:current.url,title:current.title,hash:current.hash,
     removed:previous.elements.filter(e=>!fresh.has(e.ref)).map(e=>e.ref),
     added:current.elements.filter(e=>!old.has(e.ref)).map(e=>({ref:e.ref,role:e.role,name:e.name,type:e.type,required:e.required,options:e.options})),
-    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)).map(e=>({ref:e.ref,role:e.role,name:e.name,hasValue:e.hasValue,checked:e.checked,error:e.error})),
+    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)).map(e=>({ref:e.ref,role:e.role,name:e.name,type:e.type,required:e.required,options:e.options,hasValue:e.hasValue,checked:e.checked,error:e.error})),
     headings:current.headings.filter(h=>!previous.headings.includes(h)),
     text:current.text===previous.text?undefined:current.text,
   };

@@ -37,7 +37,7 @@ export const ActionSchema = z.discriminatedUnion('type', [
     .map(type => z.object({ type: z.literal(type), url: text, ...meta }).strict()),
   z.object({ type: z.literal('upload'), target: TargetSchema, file: text, ...meta }).strict(),
   z.object({ type: z.literal('download'), target: TargetSchema, filename: text.optional(), ...meta }).strict(),
-  z.object({ type: z.literal('extract'), target: TargetSchema.optional(), format: z.enum(['text', 'table', 'links']).default('text'), key: text.default('result'), ...meta }).strict(),
+  z.object({ type: z.literal('extract'), target: TargetSchema.optional(), format: z.enum(['text', 'table', 'links']).default('text'), key: text.default('result'), match: text.optional(), limit: z.number().int().min(1).max(1000).optional(), ...meta }).strict(),
   z.object({ type: z.literal('wait'), condition: ConditionSchema, ...meta }).strict(),
   z.object({ type: z.literal('scroll'), target: TargetSchema.optional(), direction: z.enum(['up','down']).default('down'), pixels: z.number().int().min(1).max(10000).default(600), ...meta }).strict(),
   ...(['closeTab', 'back', 'forward', 'reload'] as const)
@@ -52,9 +52,11 @@ export const PlanSchema = z.object({
 }).strict();
 export type Plan = z.infer<typeof PlanSchema>;
 export const RepairSchema = z.object({
-  actions: z.array(ActionSchema).min(1).max(20),
-  replace: z.number().int().min(1).max(20).default(1),
-}).strict();
+  actions: z.array(ActionSchema).max(20),
+  replace: z.number().int().min(0).max(20).default(1),
+  completion: z.array(ConditionSchema).min(1).max(12).optional(),
+  continue: z.boolean().optional(),
+}).strict().refine(r=>r.actions.length>0||!!r.completion,'Repair needs actions or corrected completion conditions');
 export type Repair = z.infer<typeof RepairSchema>;
 export const validateAction = (value: unknown) => ActionSchema.parse(value);
 export const validatePlan = (value: unknown) => PlanSchema.parse(value);

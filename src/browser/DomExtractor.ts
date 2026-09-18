@@ -1,5 +1,5 @@
 import type { Page } from 'playwright';
-import { createHash } from 'node:crypto';
+import { createHash,randomUUID } from 'node:crypto';
 import type { PageState } from './types.js';
 
 export const stateHash = (state: Pick<PageState, 'url'|'title'|'text'|'elements'>) => createHash('sha256')
@@ -12,7 +12,7 @@ export class DomExtractor {
     for (let index = 0; index < frames.length; index++) {
       const frame = frames[index]!;
       try {
-        const data = await frame.evaluate(({ index, region }) => {
+        const data = await frame.evaluate(({ index, region,documentId }) => {
           // Array destructuring avoids tsx's named-function helper in browser serialization.
           const [clean] = [(s: string | null | undefined, max = 180) => (s ?? '').replace(/\s+/g,' ').trim().slice(0,max)];
           const [visible] = [(el: Element) => {
@@ -31,8 +31,8 @@ export class DomExtractor {
           const scope = region ? all.find(el => el.id === region || el.getAttribute('aria-label') === region || el.tagName.toLowerCase() === region || el.getAttribute('role') === region) : undefined;
           if (region && !scope) return { elements: [], headings: [], text: '', tables: [], dialogs: [], htmlBytes: 0, truncated: false };
           const [included] = [(el: Element) => !scope || scope === el || scope.contains(el)];
-          const global = window as unknown as { __fcuRegistry?: { refs: WeakMap<Element,string>; next: number } };
-          const registry = global.__fcuRegistry ??= { refs: new WeakMap(), next: 1 };
+          const global = window as unknown as { __fcuRegistry?: { refs: WeakMap<Element,string>; next: number;documentId:string } };
+          const registry = global.__fcuRegistry ??= { refs: new WeakMap(), next: 1,documentId };
           const htmlBytes = new TextEncoder().encode(document.documentElement.outerHTML).length;
           const candidates = all.filter(el => included(el) && visible(el) && el.matches('button,a[href],input:not([type=hidden]),textarea,select,summary,[contenteditable=true],[role=button],[role=link],[role=textbox],[role=checkbox],[role=radio],[role=combobox],[role=menuitem],[role=tab],[role=switch],[role=slider]'));
           const elements = candidates.slice(0,500).map(el => {
@@ -42,13 +42,13 @@ export class DomExtractor {
             const implicit = tag === 'button' || ['submit','button','reset'].includes(type) ? 'button'
               : tag === 'a' ? 'link' : tag === 'select' ? 'combobox'
               : type === 'checkbox' ? 'checkbox' : type === 'radio' ? 'radio'
-              : type === 'file' ? 'upload' : tag === 'summary' ? 'button' : 'textbox';
+              : type === 'file' ? 'upload' : type === 'number' ? 'spinbutton' : tag === 'summary' ? 'button' : 'textbox';
             const role = el.getAttribute('role') ?? implicit;
             const labelled = (el.getAttribute('aria-labelledby') ?? '').split(/\s+/).map(id => el.getRootNode() instanceof Document ? document.getElementById(id)?.textContent : (el.getRootNode() as ShadowRoot).getElementById(id)?.textContent).join(' ');
             const label = clean(el.getAttribute('aria-label') || labelled || (input.labels ? [...input.labels].map(l=>l.textContent).join(' ') : ''));
             const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : el.textContent);
             let ref = registry.refs.get(el);
-            if (!ref) { ref = `f${index}e${registry.next++}`; registry.refs.set(el,ref); }
+            if (!ref) { ref = `f${index}d${registry.documentId}e${registry.next++}`; registry.refs.set(el,ref); }
             el.setAttribute('data-fcu-ref',ref);
             const parts: string[] = [];
             let parent: Element | null = el;
@@ -83,10 +83,10 @@ export class DomExtractor {
           });
           const headings = all.filter(el=>included(el)&&visible(el)&&el.matches('h1,h2,h3,[role=heading]')).slice(0,24).map(el=>clean(el.textContent));
           const paragraphs = all.filter(el=>included(el)&&visible(el)&&el.matches('p,li,dt,dd,output,[role=status],[role=alert]')).slice(0,100).map(el=>clean(el.textContent,300));
-          const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>clean(cell.textContent))));
+          const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].filter(visible).slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>clean(cell.textContent))));
           const dialogs = all.filter(el=>included(el)&&visible(el)&&el.matches('dialog,[role=dialog],[role=menu]')).map(el=>clean(el.getAttribute('aria-label') || el.textContent,250));
           return { elements,headings,text:[...new Set(paragraphs)].join('\n').slice(0,8000),tables,dialogs,htmlBytes,truncated:candidates.length>500 };
-        }, { index, region });
+        }, { index, region,documentId:randomUUID().slice(0,8) });
         pieces.push(data);
       } catch(error) {
         if(index===0)throw error;

@@ -8,12 +8,14 @@ import type { Observer } from '../browser/Observer.js';
 import type { VariableResolver } from '../profile/VariableResolver.js';
 import type { Control } from '../agent/Control.js';
 import { Verifier } from '../verification/Verifier.js';
+import { ActionCompiler } from './compiler.js';
 
 export interface ActionResult {
   action:Action;startedAt:number;durationMs:number;success:boolean;
   strategy?:string;data?:unknown;error?:string;uncertain?:boolean;
 }
 export class Executor {
+  readonly compiler=new ActionCompiler();
   readonly verifier:Verifier;
   constructor(readonly browser:Browser,readonly observer:Observer,readonly variables:VariableResolver,
     readonly control:Control,readonly options:{confirmation?:ConfirmationPolicy;downloadDir?:string}={}) {
@@ -30,12 +32,13 @@ export class Executor {
     return 'target'in condition&&typeof condition.target==='string'?{...condition,target:this.observer.selectors.descriptor(condition.target)}:condition;
   }
   async run(input:Action):Promise<ActionResult> {
-    const action=ActionSchema.parse(input);const startedAt=Date.now();
+    let action=ActionSchema.parse(input);const startedAt=Date.now();
     let strategy:string|undefined,executed=false,receiptAction=action;
     try {
       await this.control.checkpoint();
       let locator:Locator|undefined;
-      if('target'in action&&action.target){const selected=await this.observer.selectors.resolve(this.browser.page,action.target,action.timeoutMs);locator=selected.locator;strategy=selected.strategy;}
+      if('target'in action&&action.target){const selected=await this.observer.selectors.resolve(this.browser.page,action.target,action.timeoutMs,action.type==='extract');locator=selected.locator;strategy=selected.strategy;}
+      action=await this.compiler.normalize(action,locator);
       receiptAction=this.semantic(action);
       const reason=await sensitiveReason(action,locator);
       const policy=this.options.confirmation??'sensitive';
@@ -45,8 +48,8 @@ export class Executor {
       const value='value'in action?this.variables.resolve(action.value):'';
       executed=true;
       switch(action.type){
-        case 'navigate':await this.browser.navigate(this.variables.resolve(action.url));break;
-        case 'openTab':await this.browser.openTab(this.variables.resolve(action.url));break;
+        case 'navigate':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.navigate(action.url);break;
+        case 'openTab':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.openTab(action.url);break;
         case 'closeTab':await this.browser.closeTab();break;
         case 'switchTab':this.browser.switchTab(action.index);break;
         case 'back':await page.goBack({waitUntil:'domcontentloaded'});break;
@@ -100,9 +103,14 @@ export class Executor {
         }
         case 'extract':{
           const root=locator??page.locator('body');
-          if(action.format==='table')data=await root.locator('tr').evaluateAll(rows=>rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>cell.textContent?.trim()??'')));
-          else if(action.format==='links')data=await root.locator('a[href]').evaluateAll(links=>links.map(a=>({text:a.textContent?.trim(),url:(a as HTMLAnchorElement).href})));
-          else data=(await root.innerText()).slice(0,100000);
+          if(action.format==='table')data=await root.locator('tr').filter({visible:true}).evaluateAll(rows=>rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>cell.textContent?.trim()??'')));
+          else if(action.format==='links')data=await root.evaluateAll(els=>els.flatMap(el=>[...(el.matches('a[href]')?[el]:el.querySelectorAll('a[href]'))].filter(a=>a.getClientRects().length>0).map(a=>({text:a.textContent?.trim(),url:(a as HTMLAnchorElement).href}))));
+          else data=(await root.filter({visible:true}).allInnerTexts()).join('\n').slice(0,100000);
+          if(Array.isArray(data)){
+            const match=action.match;
+            if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
+            if(action.limit)data=(data as unknown[]).slice(0,action.limit);
+          }
           data={[action.key]:data};break;
         }
       }
