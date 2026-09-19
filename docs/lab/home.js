@@ -4,8 +4,9 @@ function message(text){$('toast').textContent=text;$('toast').hidden=false;clear
 const node=(tag,text,className)=>{const element=document.createElement(tag);if(text)element.textContent=text;if(className)element.className=className;return element;};
 function render(){
   $('task-list').replaceChildren();
-  for(const task of (mode==='real'?realTasks:practiceTasks).filter(task=>category==='all'||task.category===category)){
-    const card=node('article',null,'task-card'),top=node('div',null,'card-top'),symbol=node('span',task.symbol,'site-symbol'),badge=node('span',task.trial==='passed'?'AGENT TRIAL PASSED':task.trial==='failed'?'AGENT TRIAL FAILED':mode==='real'?'SOURCES VERIFIED':'SYNTHETIC PRACTICE','badge '+(mode==='practice'||task.trial==='passed'?'practice':''));top.append(symbol,badge);card.append(top,node('span',task.site,'kicker'),node('h3',task.title),node('p',task.description));
+  const ordered=mode==='real'?realTasks:[...practiceTasks].sort((a,b)=>Number(!!b.featured)-Number(!!a.featured));
+  for(const task of ordered.filter(task=>category==='all'||task.category===category)){
+    const card=node('article',null,'task-card'+(task.featured?' featured':'')),top=node('div',null,'card-top'),symbol=node('span',task.symbol,'site-symbol'),badge=node('span',task.trial==='passed'?'AGENT TRIAL PASSED':task.trial==='failed'?'AGENT TRIAL FAILED':mode==='real'?'SOURCES VERIFIED':task.featured?'SIX-PAGE WORKFLOW':'SYNTHETIC PRACTICE','badge '+(task.featured?'featured':mode==='practice'||task.trial==='passed'?'practice':''));top.append(symbol,badge);card.append(top,node('span',task.site,'kicker'),node('h3',task.title),node('p',task.description));
     const chips=node('div',null,'chips');for(const item of task.interactions)chips.append(node('span',item));card.append(chips,node('span',task.output,'task-output'));
     const details=node('details',null,'card-details');details.append(node('summary','Goal, starting page & sources'),node('code',task.url),node('p',task.goal),node('p',task.note));
     for(const [index,url] of task.sources.entries()){const link=node('a',`Source ${index+1} ↗`);link.href=url;link.target='_blank';link.rel='noopener noreferrer';details.append(link,document.createTextNode(' · '));}card.append(details);

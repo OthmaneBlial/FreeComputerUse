@@ -124,7 +124,7 @@ Verify the local browser and model endpoint with `npm run agent -- doctor --api`
 
 ## Try something useful
 
-The [task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html) has seven complex practice workflows and ten sourced real-world research goals. The practice site is free, styled and synthetic; changes stay in its browser session.
+The [task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html) has eight complex practice workflows and ten sourced real-world research goals. The practice site is free, styled and synthetic; changes stay in its browser session.
 
 | Task | What makes it a useful test |
 | --- | --- |
@@ -135,6 +135,7 @@ The [task library](https://othmaneblial.github.io/FreeComputerUse/lab/index.html
 | Update local preferences | Review changes, save them and verify persistence after reload |
 | Find a document | Combine folder/format filters, preview the right document and check downloaded content |
 | Reconcile a quarter close | Cross six real pages, compare revenue and booked ledger, inspect a pending adjustment and save a policy-consistent review dossier |
+| Investigate an API incident | Filter alerts, inspect a timeline, compare before/after 429 rates and deployment configuration, then save an engineer review brief |
 
 For read-only work beyond the lab, try [Books to Scrape](https://books.toscrape.com/) or the sourced public-data tasks in the library. **A researched example is not automatically a passed agent trial.** Cards and [the examples guide](docs/USEFUL_EXAMPLES.md) distinguish validated runs from untested goals.
 
@@ -158,7 +159,7 @@ Recorded on **18 September 2026**, using real DeepSeek Flash calls:
 
 First-run API usage was **approximately $0.00611 total** at the configured benchmark prices. Repeats ran with **no provider installed**. [Raw public report](artifacts/benchmark-public.json) · [Method and limitations](docs/BENCHMARKS.md).
 
-These are single trials on specified automation sandboxes and project-owned pages, not a general website success rate. The original six complex workflows pass with authored plans; the [new six-page quarter-close case](artifacts/benchmark-complex-authored-close.json) passes an independent oracle in authored mode and in [one live Flash trial](artifacts/benchmark-complex-live-close.json). That live trial used 11 model calls and 30,841 tokens; its compatible repeat used zero. Authored plans validate execution and reuse, not model planning. Other live complex trials include failures. [Original authored execution report](artifacts/benchmark-complex-authored.json) · [Earlier live trial, including failures](artifacts/benchmark-complex-live-travel,billing.json) · [Read-only real-world trial](artifacts/benchmark-real-world.json).
+These are single trials on specified automation sandboxes and project-owned pages, not a general website success rate. [All eight complex workflows](artifacts/benchmark-complex-authored.json) pass independent checks with authored plans and provider-free repeats. The new [quarter-close](artifacts/benchmark-complex-live-close.json) and [incident investigation](artifacts/benchmark-complex-live-incident.json) each also passed in one live Flash trial and then repeated with zero model calls. Authored plans validate execution and reuse, not model planning. Other live complex trials include failures. [Earlier live trial, including failures](artifacts/benchmark-complex-live-travel,billing.json) · [Read-only real-world trial](artifacts/benchmark-real-world.json).
 
 No screenshot-agent baseline was measured, so we do not claim a token or cost savings percentage.
 

@@ -13,16 +13,23 @@ try{
   sessionStorage.setItem('northstar-v2-travel-flow',JSON.stringify({request:{from:'Paris',to:'Lyon',date:'2026-10-15',passengers:'2 adults',stepfree:true,refund:true,changes:1,budget:120}}));
   localStorage.setItem('northstar-v2-itinerary',JSON.stringify({from:'Paris',to:'Lyon',date:'2026-10-15',passengers:'2 adults',service:'Flex Regional',totalEUR:90}));
  });
- for(const [name,path] of [['home',''],['products','workspace.html?view=products'],['travel','workspace.html?view=travel'],['billing','workspace.html?view=billing'],['analytics','workspace.html?view=analytics'],['settings','workspace.html?view=settings'],['documents','workspace.html?view=documents'],['quarter-close','workspace.html?view=close'],['close-revenue','close-revenue.html'],['close-ledger','close-ledger.html'],['close-adjustment','close-adjustment.html'],['close-policy','close-policy.html'],['close-review','close-review.html'],['product-details','product-details.html?id=trail'],['product-comparison','product-comparison.html'],['journey-results','journey-results.html'],['itinerary','itinerary.html'],['invoice-details','invoice-details.html?id=INV-2609-04']] as const){
+ for(const [name,path] of [['home',''],['products','workspace.html?view=products'],['travel','workspace.html?view=travel'],['billing','workspace.html?view=billing'],['analytics','workspace.html?view=analytics'],['settings','workspace.html?view=settings'],['documents','workspace.html?view=documents'],['quarter-close','workspace.html?view=close'],['close-revenue','close-revenue.html'],['close-ledger','close-ledger.html'],['close-adjustment','close-adjustment.html'],['close-policy','close-policy.html'],['close-review','close-review.html'],['incident-desk','workspace.html?view=incident'],['incident-detail','incident-detail.html?id=INC-204'],['incident-metrics','incident-metrics.html'],['incident-deployments','incident-deployments.html'],['incident-runbook','incident-runbook.html'],['incident-brief','incident-brief.html'],['product-details','product-details.html?id=trail'],['product-comparison','product-comparison.html'],['journey-results','journey-results.html'],['itinerary','itinerary.html'],['invoice-details','invoice-details.html?id=INV-2609-04']] as const){
   await browser.page.setViewportSize({width:1440,height:1050});await browser.navigate(lab.url+path);
   await browser.page.screenshot({path:`artifacts/lab/${name}.png`,fullPage:true});
   await browser.page.setViewportSize({width:390,height:900});
   if(!await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))throw new Error('Responsive overflow: '+name);
   await browser.page.screenshot({path:`artifacts/lab/${name}-mobile.png`,fullPage:true});
  }
+ await browser.navigate(lab.url);await browser.page.getByRole('tab',{name:'Practice workflows'}).click();
+ if(await browser.page.locator('.task-card').count()!==8)throw new Error('Practice workflow cards missing');
+ for(const [name,width] of [['practice-workflows',1440],['practice-workflows-mobile',390]] as const){
+  await browser.page.setViewportSize({width,height:900});
+  if(!await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))throw new Error('Practice workflow library overflow: '+name);
+  await browser.page.screenshot({path:`artifacts/lab/${name}.png`,fullPage:true});
+ }
  await browser.page.setViewportSize({width:1600,height:1000});await browser.navigate(dashboard.url);
  await browser.page.locator('.brandmark').evaluate(el=>{if(!(el instanceof HTMLImageElement)||!el.complete||el.naturalWidth===0)throw new Error('Brand SVG did not load');});
  await browser.page.locator('header').screenshot({path:'artifacts/ui/brand.png'});
  await browser.page.screenshot({path:'artifacts/ui/workspace.png'});
- if(errors.length)throw new Error('Lab console errors: '+JSON.stringify(errors));console.log(JSON.stringify({pages:18,widths:[1440,390],brandLoaded:true,consoleErrors:errors}));
+ if(errors.length)throw new Error('Lab console errors: '+JSON.stringify(errors));console.log(JSON.stringify({pages:24,practiceCards:8,widths:[1440,390],brandLoaded:true,consoleErrors:errors}));
 }finally{await browser.close();await lab.close();await dashboard.close();}

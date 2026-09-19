@@ -63,6 +63,27 @@ ceilings. If an older local `.env` still has `20000` / `10`, adjust those two
 values before trying it. These are maximums, not tokens spent by default;
 the dashboard shows actual usage and the configured cap.
 
+## Incident desk: compare the signal before writing a brief
+
+Start at `workspace.html?view=incident`. The six-document sequence is
+`alert queue → incident timeline → request metrics → deployments → runbook → local brief`.
+Filter to **API Gateway / High / Last 24 hours** so INC-204 is isolated. The
+timeline places deployment `dep-7c3` at 09:58 UTC and the alert at 10:04.
+For `/v1/search`, the 429 rate rises from **0.4% to 12.4%**. The prior stable
+deployment used `burst_limit=100`; `dep-7c3` uses `20`. The runbook asks for
+**Needs engineer review**, not an automatic rollback or a claim of proven
+causality. The final page rejects the wrong endpoint, figures, deployment or
+decision. A valid local draft downloads as `northstar-incident-brief.txt`.
+
+The [authored-plan report](../artifacts/benchmark-complex-authored-incident.json)
+verifies filtered state, source extracts, all document visits, the saved draft
+and actual file bytes, then repeats without a provider. The
+[separate live Flash trial](../artifacts/benchmark-complex-live-incident.json)
+passed with 23 successful actions, two repaired failures, 12 model calls,
+35,968 tokens and a configured-price estimate of $0.00818. Its compatible
+repeat used zero model calls. One controlled trial does not establish a
+general success rate or prove that a real deployment caused a real incident.
+
 ## Ten researched tasks on real free websites
 
 Research checks public sources and the task design. It does not by itself prove
@@ -96,7 +117,7 @@ and [professional research](../research_useful_browser_tasks/findings_profession
 ```bash
 npm run lab:build
 npm run lab:serve                 # http://127.0.0.1:4319/lab/
-npm run lab:smoke                 # 18 screens, desktop/mobile, console and overflow
+npm run lab:smoke                 # 24 screens, desktop/mobile, console and overflow
 npm run ui:results                # authored local journey: cards, cursor, visible controls
 npm run benchmark:complex         # supplied action plans; no model-planning claim
 npm run benchmark:complex -- --live  # real Flash planning; spends API tokens
@@ -109,3 +130,8 @@ repeats a compatible learned workflow with no provider installed. Each live tria
 reports correctness, model calls, tokens, cost estimates, repairs and repeat
 outcomes. Historical failed trials remain visible; individual passes are not a
 general success-rate claim.
+
+The [aggregate authored report](../artifacts/benchmark-complex-authored.json)
+covers all eight practice workflows. The two long cases also have separate
+real-Flash reports linked above. Supplied action plans and real model plans are
+not interchangeable evidence.

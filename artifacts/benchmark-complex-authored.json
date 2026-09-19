@@ -1,15 +1,15 @@
 {
-  "measuredAt": "2026-09-18T19:11:54.756Z",
+  "measuredAt": "2026-09-19T10:07:38.231Z",
   "mode": "authored-action-plans-no-model",
   "safety": "Project-owned synthetic pages on loopback. Harness explicitly approves this local origin and simulated browser-only actions. Product normal mode waits for human approval. No real bookings, messages, purchases or account changes.",
-  "method": "Six complex goals, independent state/content/file oracles; three flows use distinct HTML documents. Each successful run repeats with no provider installed. Authored mode validates execution only; it is not model-planning evidence.",
+  "method": "8 selected complex goals, independent state/content/file oracles. Multi-page cases use distinct HTML documents. Each successful run repeats with no provider installed. Authored mode validates execution only; it is not model-planning evidence.",
   "limitations": "Single trials on controlled pages, not general website success rates. Costs are estimates, not billing receipts.",
   "results": [
     {
       "scenario": "compare",
       "status": "completed",
       "correct": true,
-      "durationMs": 1236,
+      "durationMs": 1115,
       "browserActions": 14,
       "failedActions": 0,
       "llmCalls": 0,
@@ -22,13 +22,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 12,
       "planBatches": 0,
-      "compressionReduction": 0.5682199561120433,
+      "compressionReduction": 0.5521634918632522,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html",
@@ -38,7 +38,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 1356,
+        "durationMs": 870,
         "browserActions": 14,
         "failedActions": 0,
         "llmCalls": 0,
@@ -51,13 +51,13 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 12,
         "planBatches": 0,
-        "compressionReduction": 0.5682199561120433,
+        "compressionReduction": 0.5521634918632522,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
         ]
       }
     },
@@ -65,7 +65,7 @@
       "scenario": "travel",
       "status": "completed",
       "correct": true,
-      "durationMs": 854,
+      "durationMs": 859,
       "browserActions": 17,
       "failedActions": 0,
       "llmCalls": 0,
@@ -78,13 +78,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 10,
       "planBatches": 0,
-      "compressionReduction": 0.3230608513972316,
+      "compressionReduction": 0.30231978049388875,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html",
@@ -94,7 +94,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 835,
+        "durationMs": 862,
         "browserActions": 17,
         "failedActions": 0,
         "llmCalls": 0,
@@ -107,13 +107,13 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 10,
         "planBatches": 0,
-        "compressionReduction": 0.3230608513972316,
+        "compressionReduction": 0.30231978049388875,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
         ]
       }
     },
@@ -121,7 +121,7 @@
       "scenario": "billing",
       "status": "completed",
       "correct": true,
-      "durationMs": 472,
+      "durationMs": 525,
       "browserActions": 8,
       "failedActions": 0,
       "llmCalls": 0,
@@ -134,13 +134,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 6,
       "planBatches": 0,
-      "compressionReduction": 0.4219582138467841,
+      "compressionReduction": 0.4020150138285262,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html",
@@ -149,7 +149,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 434,
+        "durationMs": 603,
         "browserActions": 8,
         "failedActions": 0,
         "llmCalls": 0,
@@ -162,13 +162,13 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 6,
         "planBatches": 0,
-        "compressionReduction": 0.4219582138467841,
+        "compressionReduction": 0.4020150138285262,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
         ]
       }
     },
@@ -176,7 +176,7 @@
       "scenario": "analytics",
       "status": "completed",
       "correct": true,
-      "durationMs": 453,
+      "durationMs": 567,
       "browserActions": 7,
       "failedActions": 0,
       "llmCalls": 0,
@@ -189,13 +189,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 3,
       "planBatches": 0,
-      "compressionReduction": 0.4847024813298001,
+      "compressionReduction": 0.4587854998845532,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html"
@@ -203,7 +203,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 435,
+        "durationMs": 556,
         "browserActions": 7,
         "failedActions": 0,
         "llmCalls": 0,
@@ -216,13 +216,13 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 3,
         "planBatches": 0,
-        "compressionReduction": 0.4847024813298001,
+        "compressionReduction": 0.4587854998845532,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
         ]
       }
     },
@@ -230,7 +230,7 @@
       "scenario": "settings",
       "status": "completed",
       "correct": true,
-      "durationMs": 562,
+      "durationMs": 676,
       "browserActions": 12,
       "failedActions": 0,
       "llmCalls": 0,
@@ -243,13 +243,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 6,
       "planBatches": 0,
-      "compressionReduction": 0.34420724394339175,
+      "compressionReduction": 0.3242124626350885,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html"
@@ -257,7 +257,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 517,
+        "durationMs": 602,
         "browserActions": 12,
         "failedActions": 0,
         "llmCalls": 0,
@@ -270,13 +270,13 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 3,
         "planBatches": 0,
-        "compressionReduction": 0.34092561182456993,
+        "compressionReduction": 0.32087299744601816,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
         ]
       }
     },
@@ -284,7 +284,7 @@
       "scenario": "documents",
       "status": "completed",
       "correct": true,
-      "durationMs": 401,
+      "durationMs": 448,
       "browserActions": 7,
       "failedActions": 0,
       "llmCalls": 0,
@@ -297,13 +297,13 @@
       "workflowCacheHits": 0,
       "pageCacheEntries": 3,
       "planBatches": 0,
-      "compressionReduction": 0.3682904826341904,
+      "compressionReduction": 0.3485045513654096,
       "selectorSuccessRate": 1,
       "usageEstimated": false,
       "provider": "none",
       "mode": "normal",
       "approvedSites": [
-        "http://127.0.0.1:64835"
+        "http://127.0.0.1:58284"
       ],
       "documentPages": [
         "/lab/workspace.html"
@@ -311,7 +311,7 @@
       "learnedRepeat": {
         "status": "completed",
         "correct": true,
-        "durationMs": 397,
+        "durationMs": 398,
         "browserActions": 7,
         "failedActions": 0,
         "llmCalls": 0,
@@ -324,13 +324,131 @@
         "workflowCacheHits": 1,
         "pageCacheEntries": 3,
         "planBatches": 0,
-        "compressionReduction": 0.3682904826341904,
+        "compressionReduction": 0.3485045513654096,
         "selectorSuccessRate": 1,
         "usageEstimated": false,
         "provider": "none",
         "mode": "normal",
         "approvedSites": [
-          "http://127.0.0.1:64835"
+          "http://127.0.0.1:58284"
+        ]
+      }
+    },
+    {
+      "scenario": "close",
+      "status": "completed",
+      "correct": true,
+      "durationMs": 1063,
+      "browserActions": 18,
+      "failedActions": 0,
+      "llmCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "estimatedCostUSD": 0,
+      "actionsPerLLMCall": null,
+      "tokensPerAction": 0,
+      "repairs": 0,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 17,
+      "planBatches": 0,
+      "compressionReduction": 0.23765020026702266,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "none",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:58284"
+      ],
+      "documentPages": [
+        "/lab/workspace.html",
+        "/lab/close-revenue.html",
+        "/lab/close-ledger.html",
+        "/lab/close-adjustment.html",
+        "/lab/close-policy.html",
+        "/lab/close-review.html"
+      ],
+      "learnedRepeat": {
+        "status": "completed",
+        "correct": true,
+        "durationMs": 913,
+        "browserActions": 18,
+        "failedActions": 0,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "estimatedCostUSD": null,
+        "actionsPerLLMCall": null,
+        "tokensPerAction": 0,
+        "repairs": 0,
+        "workflowCacheHits": 1,
+        "pageCacheEntries": 12,
+        "planBatches": 0,
+        "compressionReduction": 0.23765020026702266,
+        "selectorSuccessRate": 1,
+        "usageEstimated": false,
+        "provider": "none",
+        "mode": "normal",
+        "approvedSites": [
+          "http://127.0.0.1:58284"
+        ]
+      }
+    },
+    {
+      "scenario": "incident",
+      "status": "completed",
+      "correct": true,
+      "durationMs": 950,
+      "browserActions": 22,
+      "failedActions": 0,
+      "llmCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "estimatedCostUSD": 0,
+      "actionsPerLLMCall": null,
+      "tokensPerAction": 0,
+      "repairs": 0,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 20,
+      "planBatches": 0,
+      "compressionReduction": 0.2941805733846812,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "none",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:58284"
+      ],
+      "documentPages": [
+        "/lab/workspace.html",
+        "/lab/incident-detail.html",
+        "/lab/incident-metrics.html",
+        "/lab/incident-deployments.html",
+        "/lab/incident-runbook.html",
+        "/lab/incident-brief.html"
+      ],
+      "learnedRepeat": {
+        "status": "completed",
+        "correct": true,
+        "durationMs": 1055,
+        "browserActions": 22,
+        "failedActions": 0,
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "estimatedCostUSD": null,
+        "actionsPerLLMCall": null,
+        "tokensPerAction": 0,
+        "repairs": 0,
+        "workflowCacheHits": 1,
+        "pageCacheEntries": 13,
+        "planBatches": 0,
+        "compressionReduction": 0.2941805733846812,
+        "selectorSuccessRate": 1,
+        "usageEstimated": false,
+        "provider": "none",
+        "mode": "normal",
+        "approvedSites": [
+          "http://127.0.0.1:58284"
         ]
       }
     }
