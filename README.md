@@ -26,16 +26,22 @@ Research products, find an invoice, extract a dashboard or work through a multi-
 
 ## See it work
 
-![Real Flash-planned invoice task: approve website access, filter invoices, open the detail page and retrieve the result](assets/readme/demo.gif)
+[![Watch the agent fill the synthetic INC-204 brief with a visible cursor; click for the full six-page recording](assets/readme/incident-demo.gif)](https://othmaneblial.github.io/FreeComputerUse/lab/index.html#watch)
 
-**One goal → four filters → a separate invoice page → two extracted tables → a verified download.**
+**One goal → six pages → a checked incident brief.** Watch the cursor follow the alert, timeline, metrics, deployment comparison and runbook before completing the synthetic brief.
 
-**8 browser actions · 2 model calls · 5,263 tokens · no repairs.**
+This is one continuous, unsped dashboard recording with real DeepSeek Flash planning and Playwright actions. Normal mode asks before website access and before the synthetic brief is saved; the capture harness approves only that practice origin and local save. The downloaded file is checked against the incident evidence; no production system is changed.
 
-This recording uses real DeepSeek Flash planning and real Playwright actions on our styled, synthetic workspace, at the dashboard’s readable pace. No scripted plan or sped-up actions. The capture harness approves only this local practice site. [Watch the full recording](assets/readme/demo.mp4) · [Inspect this run’s evidence](assets/readme/demo-evidence.json).
+This filmed run completed with **21 successful browser actions, 10 model calls and 32,053 tokens**; it recovered from one failed action in four repair batches. The configured price estimate was **$0.00650** (not a provider invoice).
+
+[Watch the video on the site](https://othmaneblial.github.io/FreeComputerUse/lab/index.html#watch) · [Open the MP4](docs/lab/media/incident-demo.mp4) · [Inspect this run’s evidence](assets/readme/incident-evidence.json) · [Read the downloaded brief](assets/readme/INC-204-incident-brief.txt)
 
 <details>
-<summary><strong>See the result: extracted tables and a saved invoice</strong></summary>
+<summary><strong>Another recorded task: find and download an invoice</strong></summary>
+
+![Real Flash-planned invoice task: approve website access, filter invoices, open the detail page and retrieve the result](assets/readme/demo.gif)
+
+**Four filters → a separate invoice page → two extracted tables → a verified download.** That run used 8 browser actions, 2 model calls and 5,263 tokens, with no repairs. [Watch its full recording](assets/readme/demo.mp4) · [Inspect its evidence](assets/readme/demo-evidence.json).
 
 ![Readable task results with extracted tables and a saved file](assets/readme/results.png)
 

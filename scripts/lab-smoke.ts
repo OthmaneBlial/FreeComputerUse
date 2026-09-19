@@ -8,6 +8,16 @@ browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('
 try{
  await mkdir('artifacts/lab',{recursive:true});
  await browser.navigate(lab.url);
+ await browser.page.locator('#watch video').evaluate(async element=>{
+  if(!(element instanceof HTMLVideoElement))throw new Error('Incident film is missing');
+  const poster=await fetch(element.poster);
+  if(!poster.ok||!poster.headers.get('content-type')?.startsWith('image/jpeg'))throw new Error('Incident poster did not load');
+  element.muted=true;
+  await element.play();
+  await new Promise(resolve=>setTimeout(resolve,500));
+  if(element.videoWidth!==1600||element.videoHeight!==900||element.currentTime<=0)throw new Error('Incident film did not play');
+  element.pause();
+ });
  await browser.page.evaluate(()=>{
   sessionStorage.setItem('northstar-v2-product-flow',JSON.stringify({compared:['trail','summit']}));
   sessionStorage.setItem('northstar-v2-travel-flow',JSON.stringify({request:{from:'Paris',to:'Lyon',date:'2026-10-15',passengers:'2 adults',stepfree:true,refund:true,changes:1,budget:120}}));

@@ -1,0 +1,52 @@
+{
+  "task": "INC-204 synthetic incident investigation",
+  "recording": "one continuous, unsped dashboard run",
+  "start": "https://othmaneblial.github.io/FreeComputerUse/lab/workspace.html?view=incident",
+  "goal": "Investigate synthetic incident INC-204. Filter the alert queue to API Gateway, High severity, and Last 24 hours. Open the incident, inspect its timeline, request metrics, deployment comparison, and runbook. Use the evidence you find to complete the incident brief: affected endpoint, before/after 429 rates, relevant deployment, configuration change, and the appropriate review decision. Save the brief locally and download it. Do not roll back a service, contact customers, or claim the cause is proven.",
+  "status": "completed",
+  "provider": "deepseek-flash",
+  "metrics": {
+    "durationMs": 74591,
+    "browserActions": 21,
+    "failedActions": 1,
+    "llmCalls": 10,
+    "inputTokens": 30584,
+    "outputTokens": 1469,
+    "estimatedCostUSD": 0.006497424,
+    "actionsPerLLMCall": 2.1,
+    "tokensPerAction": 1526.3333333333333,
+    "repairs": 4,
+    "workflowCacheHits": 0,
+    "pageCacheEntries": 16,
+    "planBatches": 5,
+    "compressionReduction": 0.24349064279902355,
+    "selectorSuccessRate": 1,
+    "usageEstimated": false,
+    "provider": "deepseek-flash",
+    "mode": "normal",
+    "approvedSites": [
+      "https://othmaneblial.github.io"
+    ]
+  },
+  "visibleCursorSamples": 241,
+  "approved": [
+    "Practice site access",
+    "Synthetic brief save"
+  ],
+  "pages": [
+    "/FreeComputerUse/lab/workspace.html",
+    "/FreeComputerUse/lab/incident-detail.html",
+    "/FreeComputerUse/lab/incident-metrics.html",
+    "/FreeComputerUse/lab/incident-deployments.html",
+    "/FreeComputerUse/lab/incident-runbook.html",
+    "/FreeComputerUse/lab/incident-brief.html"
+  ],
+  "downloadedBrief": "INC-204-incident-brief.txt",
+  "checks": [
+    "brief content",
+    "six distinct page visits",
+    "visible agent cursor",
+    "normal-mode site approval"
+  ],
+  "disclaimer": "Synthetic practice workspace. No production rollback or customer message."
+}

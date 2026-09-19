@@ -1,0 +1,9 @@
+NORTHSTAR SYNTHETIC INCIDENT BRIEF
+Incident: INC-204
+Endpoint: /v1/search
+429 baseline: 0.4%
+429 during incident: 12.4%
+Change: burst_limit: 100 → 20
+Triggering deployment: dep-7c3
+Decision: Needs engineer review
+Draft only. No rollback, customer message or production change was made.
