@@ -9,7 +9,7 @@ import {TraceStore} from '../src/history/TraceStore.js';
 import {startLab} from '../scripts/lab-server.js';
 import {complexScenarios,planFor} from '../scripts/complex-scenarios.js';
 
-test('styled lab contains sourced real tasks and six complex browser-only workflows',{timeout:90000},async()=>{
+test('styled lab contains sourced real tasks and seven complex browser-only workflows',{timeout:120000},async()=>{
   const lab=await startLab(),dir=await mkdtemp(join(tmpdir(),'fcu-lab-'));
   const tasks=(await import(new URL('../lab/examples.js',import.meta.url).href)).practiceTasks as {id:string;goal:string}[];
   const browser=await new Browser().launch(),errors:string[]=[];
@@ -17,8 +17,8 @@ test('styled lab contains sourced real tasks and six complex browser-only workfl
   browser.page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   try{
     await browser.navigate(lab.url);assert.equal(await browser.page.locator('.task-card').count(),10);
-    await browser.page.getByRole('tab',{name:'Practice workflows'}).click();assert.equal(await browser.page.locator('.task-card').count(),6);
-    await browser.page.getByRole('button',{name:'Research & documents'}).click();assert.equal(await browser.page.locator('.task-card').count(),2);
+    await browser.page.getByRole('tab',{name:'Practice workflows'}).click();assert.equal(await browser.page.locator('.task-card').count(),7);
+    await browser.page.getByRole('button',{name:'Research & documents'}).click();assert.equal(await browser.page.locator('.task-card').count(),3);
     for(const width of [1440,390]){await browser.page.setViewportSize({width,height:900});assert(await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
     assert.deepEqual(errors,[]);
     for(const scenario of complexScenarios){
@@ -35,4 +35,39 @@ test('styled lab contains sourced real tasks and six complex browser-only workfl
       finally{await repeated.close();store.close();}
     }
   }finally{await browser.close();await lab.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('quarter-close review rejects a plausible but unposted ledger total',{timeout:20000},async()=>{
+  const lab=await startLab(),browser=await new Browser().launch();
+  try{
+    await browser.navigate(lab.url+'workspace.html?view=close');
+    await browser.page.evaluate(()=>sessionStorage.setItem('northstar-v3-close-scope',JSON.stringify({quarter:'Q3 2026',channel:'Direct'})));
+    await browser.navigate(lab.url+'close-review.html');
+    await browser.page.getByLabel('Revenue EUR').fill('9400');
+    await browser.page.getByLabel('Booked ledger EUR').fill('9400');
+    await browser.page.getByLabel('Variance EUR').fill('0');
+    await browser.page.getByLabel('Open adjustment').selectOption('ADJ-042');
+    await browser.page.getByLabel('Review decision').selectOption('Ready to close');
+    await browser.page.getByRole('button',{name:'Save review draft'}).click();
+    assert.match(await browser.page.getByRole('alert').innerText(),/do not match/);
+    assert.equal(await browser.page.getByRole('button',{name:'Download close dossier'}).isVisible(),false);
+    assert.equal(await browser.page.evaluate(()=>localStorage.getItem('northstar-v3-close-report')),null);
+  }finally{await browser.close();await lab.close();}
+});
+
+test('a clicked export button produces a saved download receipt instead of an unverified click',{timeout:30000},async()=>{
+  const lab=await startLab(),dir=await mkdtemp(join(tmpdir(),'fcu-export-')),store=new TraceStore(':memory:');
+  const scenario=complexScenarios.find(item=>item.id==='close')!;
+  const goal='Reconcile Q3 2026 Direct revenue and ledger, review ADJ-042, save and download the close dossier.';
+  const url=lab.url+'workspace.html?view=close';
+  const plan=planFor(scenario,goal);
+  plan.actions[plan.actions.length-1]={type:'click',target:{role:'button',name:'Download close dossier'}};
+  const agent=new Agent({store,browser:{allowedOrigins:[new URL(url).origin],profileDir:join(dir,'profile')},downloadDir:join(dir,'downloads'),completionCriteria:scenario.criteria});
+  agent.control.on('approval',()=>agent.control.approve());
+  try{
+    const trace=await agent.run(goal,url,plan);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
+    assert.equal(trace.actions.at(-1)?.action.type,'download');
+    assert(await scenario.oracle(agent));
+  }finally{await agent.close();store.close();await lab.close();await rm(dir,{recursive:true,force:true});}
 });

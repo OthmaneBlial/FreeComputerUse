@@ -1,7 +1,8 @@
 import {productFlow,travelFlow,billingFlow} from './flows.js';
+import {closeFlow} from './cases.js';
 const $=id=>document.getElementById(id),main=$('workspace-main');
 const screen=document.body.dataset.screen;
-const view=screen?.startsWith('product-')?'products':screen==='journey-results'||screen==='itinerary'?'travel':screen==='invoice-details'?'billing':new URL(location.href).searchParams.get('view')||'products';
+const view=screen?.startsWith('product-')?'products':screen==='journey-results'||screen==='itinerary'?'travel':screen==='invoice-details'?'billing':screen?.startsWith('close-')?'close':new URL(location.href).searchParams.get('view')||'products';
 const escape=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 let toastTimer;
@@ -71,4 +72,4 @@ function renderDocuments(){
 }
 for(const link of document.querySelectorAll('[data-view]'))if(link.dataset.view===view)link.setAttribute('aria-current','page');
 const context={main,products,journeys,invoices,keyboardArt,heading,escape,dialog,wireClose,saveFile,read};
-({products:()=>productFlow(context,screen),travel:()=>travelFlow(context,screen),billing:()=>billingFlow(context,screen),analytics:renderAnalytics,settings:renderSettings,documents:renderDocuments}[view]??(()=>productFlow(context,screen)))();
+({products:()=>productFlow(context,screen),travel:()=>travelFlow(context,screen),billing:()=>billingFlow(context,screen),analytics:renderAnalytics,settings:renderSettings,documents:renderDocuments,close:()=>closeFlow(main,screen)}[view]??(()=>productFlow(context,screen)))();

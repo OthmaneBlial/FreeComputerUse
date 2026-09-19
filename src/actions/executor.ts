@@ -1,6 +1,6 @@
 import { mkdir, stat } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
-import type { Locator } from 'playwright';
+import type { Download, Locator } from 'playwright';
 import { ActionSchema, type Action, type Condition } from './schema.js';
 import { sensitiveReason, type ConfirmationPolicy } from './policy.js';
 import type { Browser } from '../browser/Browser.js';
@@ -30,6 +30,17 @@ export class Executor {
   }
   semanticCondition(condition:Condition):Condition {
     return 'target'in condition&&typeof condition.target==='string'?{...condition,target:this.observer.selectors.descriptor(condition.target)}:condition;
+  }
+  private async storeDownload(download:Download,requestedName?:string){
+    const folder=resolve(this.options.downloadDir??'.fcu/downloads');
+    await mkdir(folder,{recursive:true,mode:0o700});
+    const filename=basename(requestedName??download.suggestedFilename());
+    if(!filename||filename==='.'||filename==='..')throw new Error('Invalid download filename');
+    const path=resolve(folder,`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${filename}`);
+    await download.saveAs(path);
+    if(await download.failure())throw new Error('Browser download failed');
+    this.browser.downloads.push({path,filename});
+    return {path,filename};
   }
   async run(input:Action):Promise<ActionResult> {
     let action=ActionSchema.parse(input);const startedAt=Date.now();
@@ -81,6 +92,8 @@ export class Executor {
         case 'forward':await page.goForward({waitUntil:'domcontentloaded'});break;
         case 'reload':await page.reload({waitUntil:'domcontentloaded'});break;
         case 'click':{
+          const downloadIntent=await locator!.evaluate(el=>/^\s*(download|export)\b/i.test(el.getAttribute('aria-label')||el.textContent||el.getAttribute('value')||''));
+          const downloadEvent=downloadIntent?page.waitForEvent('download',{timeout}).catch(()=>undefined):Promise.resolve(undefined);
           await interaction.perform(locator!,'click',async()=>{
           const newTab=await locator!.evaluate(el=>el.matches('a[target="_blank"]'));
           if(newTab){
@@ -90,6 +103,8 @@ export class Executor {
             await both[0].value.waitForLoadState('domcontentloaded',{timeout});this.browser.page=both[0].value;
           }else await locator!.click({timeout});
           },interactionOptions);
+          const observed=await downloadEvent;
+          if(observed){data=await this.storeDownload(observed);receiptAction=this.semantic(ActionSchema.parse({...action,type:'download'}));}
           break;
         }
         case 'doubleClick':await interaction.perform(locator!,'doubleClick',()=>locator!.dblclick({timeout}),interactionOptions);break;
@@ -117,13 +132,7 @@ export class Executor {
           const both=await interaction.perform(locator!,'click',()=>Promise.allSettled([page.waitForEvent('download',{timeout}),locator!.click({timeout})]),interactionOptions);
           if(both[0].status==='rejected')throw both[0].reason;
           if(both[1].status==='rejected')throw both[1].reason;
-          const download=both[0].value;const folder=resolve(this.options.downloadDir??'.fcu/downloads');
-          await mkdir(folder,{recursive:true,mode:0o700});
-          const filename=basename(action.filename??download.suggestedFilename());
-          if(!filename||filename==='.'||filename==='..')throw new Error('Invalid download filename');
-          const path=resolve(folder,`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${filename}`);await download.saveAs(path);
-          if(await download.failure())throw new Error('Browser download failed');
-          this.browser.downloads.push({path,filename});data={path,filename};break;
+          data=await this.storeDownload(both[0].value,action.filename);break;
         }
         case 'wait':{
           const verification=await this.verifier.check([action.condition],timeout,startedAt);

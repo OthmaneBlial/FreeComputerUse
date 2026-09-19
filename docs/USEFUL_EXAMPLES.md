@@ -32,6 +32,37 @@ Three further practice cases exercise scoped analytics, dependent preferences
 with review/save/reload, and finding the newest finance document before download.
 They test realistic interactions within one page and dialogs.
 
+## Quarter-close audit: six documents, one defensible decision
+
+The new Northstar quarter-close case starts at
+`workspace.html?view=close`. It moves through **six actual HTML documents**:
+
+`scope → revenue → booked ledger → pending adjustment → policy → review`.
+
+Choose **Q3 2026 / Direct**. The revenue report shows EUR 9,400, while the
+posted ledger contains EUR 9,300. The EUR 100 difference matches ADJ-042, but
+that adjustment is still pending. The policy says every non-zero difference
+needs human review, even at EUR 100. A correct review draft must therefore use
+**Needs review**, keep the adjustment separate from booked totals, and download
+`northstar-close-review.txt`. Incorrect figures or a premature "Ready to close"
+decision are rejected by the practice site.
+
+The [authored-plan run](../artifacts/benchmark-complex-authored-close.json)
+checks the selected scope, extracted source values, every document visit,
+saved review state and actual downloaded file bytes. It also replays the
+compatible workflow with no model provider. This validates execution and reuse.
+The [separate live Flash trial](../artifacts/benchmark-complex-live-close.json)
+completed with 24 successful actions, two repaired failures, 11 model calls,
+30,841 tokens and a configured-price estimate of $0.00650. Its compatible
+repeat passed with zero model calls. Earlier failures with tighter budgets and
+the pre-fix export handling are preserved as separate reports; one controlled
+success is not a general website success rate.
+
+The longer case may need the current `48000` input-token / `14` model-call
+ceilings. If an older local `.env` still has `20000` / `10`, adjust those two
+values before trying it. These are maximums, not tokens spent by default;
+the dashboard shows actual usage and the configured cap.
+
 ## Ten researched tasks on real free websites
 
 Research checks public sources and the task design. It does not by itself prove
@@ -65,7 +96,7 @@ and [professional research](../research_useful_browser_tasks/findings_profession
 ```bash
 npm run lab:build
 npm run lab:serve                 # http://127.0.0.1:4319/lab/
-npm run lab:smoke                 # 12 screens, desktop/mobile, console and overflow
+npm run lab:smoke                 # 18 screens, desktop/mobile, console and overflow
 npm run ui:results                # authored local journey: cards, cursor, visible controls
 npm run benchmark:complex         # supplied action plans; no model-planning claim
 npm run benchmark:complex -- --live  # real Flash planning; spends API tokens

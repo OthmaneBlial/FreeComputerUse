@@ -4,7 +4,7 @@ export interface Reservation {id:number;maxOutput:number;inputBound:number}
 export class TokenBudget {
   calls=0;input=0;output=0;cost:number|null;
   private reservations=new Map<number,Reservation>();
-  constructor(readonly limits:BudgetLimits={maxLLMCalls:10,maxInputTokens:20000,maxOutputTokens:5000},
+  constructor(readonly limits:BudgetLimits={maxLLMCalls:14,maxInputTokens:48000,maxOutputTokens:5000},
     readonly prices?:{input:number;output:number;cachedInput?:number}){this.cost=prices?0:null;}
   get tight(){return this.calls>=this.limits.maxLLMCalls*.7||this.input+this.pendingInput>=this.limits.maxInputTokens*.7||this.output+this.pendingOutput>=this.limits.maxOutputTokens*.7;}
   get pendingInput(){return [...this.reservations.values()].reduce((n,r)=>n+r.inputBound,0);}

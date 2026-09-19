@@ -1,0 +1,41 @@
+{
+  "measuredAt": "2026-09-19T09:57:13.277Z",
+  "mode": "real-deepseek-flash-local-styled-lab",
+  "safety": "Project-owned synthetic pages on loopback. Harness explicitly approves this local origin and simulated browser-only actions. Product normal mode waits for human approval. No real bookings, messages, purchases or account changes.",
+  "method": "Six complex goals, independent state/content/file oracles; three flows use distinct HTML documents. Each successful run repeats with no provider installed. Authored mode validates execution only; it is not model-planning evidence.",
+  "limitations": "Single trials on controlled pages, not general website success rates. Costs are estimates, not billing receipts.",
+  "results": [
+    {
+      "scenario": "close",
+      "status": "failed",
+      "correct": false,
+      "durationMs": 12757,
+      "browserActions": 6,
+      "failedActions": 1,
+      "llmCalls": 6,
+      "inputTokens": 13292,
+      "outputTokens": 949,
+      "estimatedCostUSD": 0.002943744,
+      "actionsPerLLMCall": 1,
+      "tokensPerAction": 2373.5,
+      "repairs": 1,
+      "workflowCacheHits": 0,
+      "pageCacheEntries": 6,
+      "planBatches": 5,
+      "compressionReduction": 0.24671412924424974,
+      "selectorSuccessRate": 1,
+      "usageEstimated": false,
+      "provider": "deepseek-flash",
+      "mode": "normal",
+      "approvedSites": [
+        "http://127.0.0.1:57692"
+      ],
+      "documentPages": [
+        "/lab/workspace.html",
+        "/lab/close-revenue.html",
+        "/lab/close-ledger.html"
+      ],
+      "error": "LLM input budget cannot admit this request; narrow context or raise the explicit budget"
+    }
+  ]
+}
