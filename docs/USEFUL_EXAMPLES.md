@@ -58,10 +58,10 @@ repeat passed with zero model calls. Earlier failures with tighter budgets and
 the pre-fix export handling are preserved as separate reports; one controlled
 success is not a general website success rate.
 
-The longer case may need the current `48000` input-token / `14` model-call
-ceilings. If an older local `.env` still has `20000` / `10`, adjust those two
-values before trying it. These are maximums, not tokens spent by default;
-the dashboard shows actual usage and the configured cap.
+Model-call and token caps are optional. New installs have no total model budget
+cap; an older local `.env` may still set `FCU_MAX_INPUT_TOKENS` or
+`FCU_MAX_LLM_CALLS`. Remove those lines if long tasks stop on a budget limit.
+The dashboard shows actual usage and configured-price cost estimates.
 
 ## Incident desk: compare the signal before writing a brief
 
@@ -83,6 +83,20 @@ passed with 23 successful actions, two repaired failures, 12 model calls,
 35,968 tokens and a configured-price estimate of $0.00818. Its compatible
 repeat used zero model calls. One controlled trial does not establish a
 general success rate or prove that a real deployment caused a real incident.
+
+For a harder test, use the same starting page with this prompt. It leaves the
+rates and configuration change for the agent to discover:
+
+```text
+Investigate synthetic incident INC-204. Filter the alert queue to API Gateway, High severity, and Last 24 hours. Open the incident, inspect its timeline, request metrics, deployment comparison, and runbook. Use the evidence you find to complete the incident brief: affected endpoint, before/after 429 rates, relevant deployment, configuration change, and the appropriate review decision. Save the brief locally and download it. Do not roll back a service, contact customers, or claim the cause is proven.
+```
+
+After the navigation and evidence-context fixes, this exact prompt passed in
+[one live Flash trial](../artifacts/benchmark-complex-live-incident-challenge.json):
+21 successful browser actions, one repaired failure, 10 model calls, 31,973
+tokens and an estimated $0.00635 at the configured prices. Its compatible
+repeat passed with zero model calls. This is one controlled run on synthetic
+pages, not a reliability estimate for other websites.
 
 ## Ten researched tasks on real free websites
 

@@ -60,12 +60,14 @@ export class Agent extends EventEmitter {
     return state;
   }
   private context(goal:string,state:PageState,completed:string[],previous?:PageState):PlanningContext{
-    const remaining=this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
+    const remaining=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
     const maxChars=Math.min(this.budget.tight?3000:9000,Math.max(1200,remaining-9000));
     const full=this.observer.compressor.compress(state,{goal,maxChars});
     let page=full.text;
     if(previous){const diff=JSON.stringify(diffPages(previous,state));if(diff.length<page.length)page=`PAGE DIFF\n${diff}`;}
-    page+='\nOPEN TABS '+JSON.stringify(this.browser.context.pages().map((p,index)=>({index,url:p.url(),active:p===this.browser.page})))+'\nEXTRACTIONS '+this.variables.redact(JSON.stringify(this.browser.extractions.slice(-3).map(e=>({key:e.key,preview:JSON.stringify(e.value).slice(0,800)}))));
+    const structured=this.browser.extractions.filter(e=>e.value!==null&&typeof e.value==='object').slice(-16).map(e=>({key:e.key,preview:JSON.stringify(e.value).slice(0,1400)}));
+    const priorText=this.browser.extractions.filter(e=>typeof e.value==='string').slice(-16).map(e=>({key:e.key,preview:(e.value as string).slice(-1800)}));
+    page+='\nOPEN TABS '+JSON.stringify(this.browser.context.pages().map((p,index)=>({index,url:p.url,active:p===this.browser.page})))+'\nEXTRACTED EVIDENCE FROM PRIOR PAGES '+this.variables.redact(JSON.stringify([...structured,...priorText]));
     return {goal:this.variables.redact(goal),page:this.variables.redact(page),aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.options.browser?.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
   }
   async run(goal:string,url?:string,providedPlan?:Plan,allowProvider=true):Promise<Trace>{
@@ -77,7 +79,7 @@ export class Agent extends EventEmitter {
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:url??this.browser.page?.url()??'',status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);
     const repeated=new Map<string,number>(),navigations=new Map<string,number>(),completed:string[]=[];
-    let revision=this.control.revision;
+    let revision=this.control.revision,completionReplans=0;
     try{
       if(!this.browser.context)await this.browser.launch();
       this.browser.extractions.length=0;this.browser.downloads.length=0;this.browser.formReceipts.length=0;
@@ -127,7 +129,7 @@ export class Agent extends EventEmitter {
             await this.control.confirm('The previous action may already have happened. Approve a repair only after checking the browser.',result.action);
             await this.observe();
           }
-          if(!provider||repairs>=(this.options.maxRepairs??3))throw new Error(result.error??'Repair limit reached');
+          if(!provider||repairs>=(this.options.maxRepairs??8))throw new Error(result.error??'Repair limit reached');
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
           const context=this.context(goal,after,completed,before);
           if(repairs>1)context.page+='\nACCESSIBILITY\n'+this.variables.redact(await this.observer.accessibility(this.browser.page));
@@ -142,13 +144,18 @@ export class Agent extends EventEmitter {
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);
         if(!verification.success){
-          if(!provider||repairs>=(this.options.maxRepairs??3))throw new Error('Task completion could not be verified');
+          if(provider&&completionReplans<3&&/\b(download|export)\b/i.test(goal)&&verification.failed.some(item=>item.type==='download_created')&&!actions.some(item=>item.type==='download')&&actions.some(item=>item.type==='click'&&typeof item.target==='object'&&/save|export/i.test(item.target.name??''))){
+            completionReplans++;this.event('PLAN','Download still missing; observing controls revealed after the last action');
+            previous=batchState;await this.observe();plan=undefined;continue;
+          }
+          if(!provider||repairs>=(this.options.maxRepairs??8))throw new Error('Task completion could not be verified');
           repairs++;const after=await this.observe();this.event('REPAIR','Repairing failed completion conditions');
           const repaired=RepairSchema.parse(await provider.repair({...this.context(goal,after,completed),failedAction:{type:'verification'},error:'Completion conditions failed; user-specified criteria cannot be weakened or removed',remaining:[],failedConditions:criteria()}));
           if(repaired.completion)plan.completion=repaired.completion;
           if(repaired.continue!==undefined)plan.continue=repaired.continue;
           if(repaired.actions.length){plan={...plan,actions:repaired.actions};continue;}
           verification=await this.executor.verifier.check(criteria(),3000,startedAt);
+          if(!verification.success&&repaired.continue){previous=batchState;await this.observe();plan=undefined;continue;}
           if(!verification.success)throw new Error('Repaired task completion could not be verified');
         }
         if(plan.continue){previous=batchState;await this.observe();plan=undefined;continue;}

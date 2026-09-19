@@ -26,7 +26,7 @@ async function makeAgent(url:string,options:RunOptions){
       mode:options.ultra?'ultra':'normal',
       confirmation:policySchema.parse(options.confirmation??'sensitive'),downloadDir:join(config.dataDir,'downloads'),
       completionCriteria:[...(options.expectText?[{type:'text_exists' as const,value:options.expectText}]:[]),...(options.expectUrl?[{type:'url_contains' as const,value:options.expectUrl}]:[])],
-      maxSteps:z.coerce.number().int().positive().parse(options.maxSteps??120),maxRepairs:z.coerce.number().int().nonnegative().parse(options.maxRepairs??3),
+      maxSteps:z.coerce.number().int().positive().parse(options.maxSteps??120),maxRepairs:z.coerce.number().int().nonnegative().parse(options.maxRepairs??8),
       browser:{headless:!options.headed,profileDir:options.ephemeral?undefined:join(config.dataDir,'browser'),allowedOrigins:[new URL(url).origin,...options.allowOrigin??[]],allowExternal:options.allowExternal}});
     return{agent,store};
   }catch(error){store.close();throw error;}

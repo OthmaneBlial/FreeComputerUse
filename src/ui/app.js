@@ -74,7 +74,9 @@ function render(snapshot){
   const calls=metrics.llmCalls??trace?.calls?.length??0,actions=metrics.browserActions??trace?.actions?.filter(a=>a.success).length??0;
   const input=metrics.inputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.input,0)??0,output=metrics.outputTokens??trace?.calls?.reduce((n,c)=>n+c.usage.output,0)??0;
   text('calls',fmt(calls));text('actions',fmt(actions));text('ratio',calls?(actions/calls).toFixed(1):actions?'local':'—');text('tokens',fmt(input+output));text('cost',metrics.estimatedCostUSD==null?'—':'$'+Number(metrics.estimatedCostUSD).toFixed(5));
-  const fraction=Math.min(1,Math.max(input/(state.limits?.maxInputTokens||48000),output/(state.limits?.maxOutputTokens||5000),calls/(state.limits?.maxLLMCalls||14)));text('budget-value',Math.round(fraction*100)+'%');$('budget-meter').style.width=fraction*100+'%';text('budget-limit',`${fmt(state.limits?.maxInputTokens)} input / ${fmt(state.limits?.maxOutputTokens)} output`);
+  const caps=[['input',input,state.limits?.maxInputTokens],['output',output,state.limits?.maxOutputTokens],['calls',calls,state.limits?.maxLLMCalls]].filter(([, ,limit])=>Number.isFinite(limit));
+  $('budget').hidden=!caps.length;
+  if(caps.length){const fraction=Math.min(1,Math.max(...caps.map(([,used,limit])=>used/limit)));text('budget-value',Math.round(fraction*100)+'%');$('budget-meter').style.width=fraction*100+'%';text('budget-limit',caps.map(([name,,limit])=>`${fmt(limit)} ${name}`).join(' / '));}
   const nextResultKey=JSON.stringify([trace?.id,trace?.status,trace?.actions?.filter(a=>a.success&&a.data!==undefined).map(a=>[a.action.type,a.action.key,a.data])]);
   if(nextResultKey!==resultKey){resultKey=nextResultKey;resultCount=renderResults($('result-output'),trace);}
   const outputs=resultCount;

@@ -5,15 +5,17 @@ import {TraceStore} from '../src/history/TraceStore.js';
 import {loadEnvironment,runtimeConfig} from '../src/config.js';
 import {startLab} from './lab-server.js';
 import {complexScenarios,planFor} from './complex-scenarios.js';
-const live=process.argv.includes('--live'),selection=process.argv.find(arg=>arg.startsWith('--only='))?.slice(7);
+const live=process.argv.includes('--live'),challenge=process.argv.includes('--challenge'),selection=process.argv.find(arg=>arg.startsWith('--only='))?.slice(7);
 const chosen=complexScenarios.filter(s=>!selection||selection.split(',').includes(s.id));if(!chosen.length)throw new Error('No selected complex scenario');
+if(challenge&&(!live||chosen.length!==1||chosen[0]?.id!=='incident'))throw new Error('--challenge requires --live --only=incident');
+const incidentChallenge='Investigate synthetic incident INC-204. Filter the alert queue to API Gateway, High severity, and Last 24 hours. Open the incident, inspect its timeline, request metrics, deployment comparison, and runbook. Use the evidence you find to complete the incident brief: affected endpoint, before/after 429 rates, relevant deployment, configuration change, and the appropriate review decision. Save the brief locally and download it. Do not roll back a service, contact customers, or claim the cause is proven.';
 const tasks=(await import(new URL('../lab/examples.js',import.meta.url).href)).practiceTasks as {id:string;goal:string}[];
 loadEnvironment();const lab=await startLab(),dir=await mkdtemp(resolve('.fcu/complex-'));
 const results=[];
 try{
  for(const scenario of chosen){
   const config=runtimeConfig();if(live&&!config.provider)throw new Error('Live mode needs the ignored local LLM_API_KEY');
-  const store=new TraceStore(join(dir,scenario.id+'.sqlite')),goal=tasks.find(task=>task.id===scenario.id)!.goal,url=lab.url+'workspace.html?view='+scenario.view;
+  const store=new TraceStore(join(dir,scenario.id+'.sqlite')),goal=challenge?incidentChallenge:tasks.find(task=>task.id===scenario.id)!.goal,url=lab.url+'workspace.html?view='+scenario.view;
   const options={store,browser:{allowedOrigins:[new URL(url).origin],profileDir:join(dir,scenario.id)},downloadDir:join(dir,'downloads'),completionCriteria:scenario.criteria};
   const agent=new Agent({...options,provider:live?config.provider:undefined,budget:config.budget});
   const permit=(current:Agent)=>current.control.on('approval',pending=>{const action=typeof pending.action==='string'?JSON.parse(pending.action):pending.action;if(action?.type==='siteAccess'&&action.origin!==new URL(url).origin)current.control.reject();else current.control.approve();});
@@ -29,5 +31,5 @@ try{
   }finally{await agent.close();store.close();}
  }
 }finally{await lab.close();}
-await mkdir('artifacts',{recursive:true});const path=`artifacts/benchmark-complex-${live?'live':'authored'}${selection?'-'+selection.replace(/[^a-z0-9,-]/g,''):''}.json`;
+await mkdir('artifacts',{recursive:true});const path=`artifacts/benchmark-complex-${live?'live':'authored'}${selection?'-'+selection.replace(/[^a-z0-9,-]/g,''):''}${challenge?'-challenge':''}.json`;
 await writeFile(path,JSON.stringify({measuredAt:new Date().toISOString(),mode:live?'real-deepseek-flash-local-styled-lab':'authored-action-plans-no-model',safety:'Project-owned synthetic pages on loopback. Harness explicitly approves this local origin and simulated browser-only actions. Product normal mode waits for human approval. No real bookings, messages, purchases or account changes.',method:`${chosen.length} selected complex goals, independent state/content/file oracles. Multi-page cases use distinct HTML documents. Each successful run repeats with no provider installed. Authored mode validates execution only; it is not model-planning evidence.`,limitations:'Single trials on controlled pages, not general website success rates. Costs are estimates, not billing receipts.',results},null,2)+'\n');console.log('Report: '+path);

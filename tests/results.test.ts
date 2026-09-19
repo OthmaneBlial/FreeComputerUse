@@ -13,7 +13,7 @@ test('results present facts and tables, preserve partial status, export a safe r
   const downloads=join(dir,'downloads');await mkdir(downloads);
   const file=join(downloads,'itinerary.txt'),outside=join(dir,'private.txt');await writeFile(file,'Paris → Lyon\nEUR 90');await writeFile(outside,'Private content');await symlink(outside,join(downloads,'escape.txt'));
   const summary='Northstar\nWorkspace navigation\nYour shortlisted itinerary\nRoute\nParis → Lyon\nDate\n2026-10-15\nPassengers\n2 adults\nService\nFlex Regional\nTotal price\nEUR 90\nDuration\n175 minutes\nAccess\nStep-free\nFare\nRefundable';
-  const trace:Trace={version:1,id:'results-test',goal:'Find an accessible itinerary',url:'https://example.test',status:'failed',startedAt:Date.now(),durationMs:0,plans:[],completion:[],calls:[],metrics:{},actions:[]};
+  const trace:Trace={version:1,id:'results-test',goal:'Find an accessible itinerary',url:'https://example.test',status:'failed',error:'The requested download was not created',startedAt:Date.now(),durationMs:0,plans:[],completion:[],calls:[],metrics:{},actions:[]};
   const add=(action:unknown,data:unknown)=>trace.actions.push({action:ActionSchema.parse(action),startedAt:Date.now(),durationMs:0,success:true,data});
   add({type:'extract',format:'text',key:'itinerarySummary'},{itinerarySummary:summary});add({type:'extract',format:'text',key:'duplicate'},{duplicate:summary});
   add({type:'extract',format:'table',key:'comparison'},{comparison:[['Service','Price'],['Flex Regional','EUR 90']]});
@@ -24,6 +24,7 @@ test('results present facts and tables, preserve partial status, export a safe r
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'View result'}).click();
     assert.equal(await browser.page.locator('.result-status').textContent(),'Partial result');
+    assert.match(await browser.page.locator('.result-error').innerText(),/download was not created/);
     assert.equal(await browser.page.locator('.result-card').count(),4,'Repeated extraction content is deduplicated');
     assert.equal(await browser.page.locator('.result-facts dd').first().innerText(),'Paris → Lyon');
     assert.equal(await browser.page.locator('.result-table tbody tr').count(),1);

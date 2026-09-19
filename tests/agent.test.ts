@@ -18,6 +18,13 @@ test('bounded token budget reserves calls/output and tracks cache-aware configur
   assert.throws(()=>small.reserve(11),/input budget/);assert.equal(small.calls,0);
 });
 
+test('default model budget allows long tasks while explicit caps still work',()=>{
+  const budget=new TokenBudget();
+  for(let i=0;i<20;i++){const reservation=budget.reserve(4000,1200);budget.record({input:4000,output:1200},reservation.id);}
+  assert.equal(budget.calls,20);assert.equal(budget.input,80000);assert.equal(budget.output,24000);
+  assert.equal(budget.limits.maxInputTokens,null);
+});
+
 test('observe/plan/execute/verify learns semantic workflow and replays without a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
   const vault={profile:{firstName:'Alex',lastName:'Example',email:'private@example.test',country:'France',message:'Synthetic message'},files:{}};

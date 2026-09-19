@@ -26,7 +26,7 @@ export class FlashProvider implements LLMProvider {
     const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:z.toJSONSchema(schema,{unrepresentable:'any',reused:'ref'}),strict:false}}:{type:'json_object'};
     // UTF-8 byte count is a deliberately conservative token admission bound.
     const bound=()=>Buffer.byteLength(JSON.stringify({messages,response_format}))+256;
-    const available=this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
+    const available=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
     // Preserve the goal, policy, repair contract and user criteria. Reduce only
     // optional webpage data when the next conservative reservation will not fit.
     let pageText=page??'';

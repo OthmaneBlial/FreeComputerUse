@@ -111,12 +111,12 @@ DeepSeek Flash is the live-validated default, with thinking mode explicitly disa
 
 | Setting | Default |
 | --- | --- |
-| `FCU_MAX_LLM_CALLS` | `14` |
-| `FCU_MAX_INPUT_TOKENS` | `48000` |
-| `FCU_MAX_OUTPUT_TOKENS` | `5000` |
+| `FCU_MAX_LLM_CALLS` | No total cap; set this only if you want one |
+| `FCU_MAX_INPUT_TOKENS` | No total cap; set this only if you want one |
+| `FCU_MAX_OUTPUT_TOKENS` | No total cap; set this only if you want one |
 | `FCU_DATA_DIR` | `.fcu` |
 
-Optional `LLM_INPUT_PRICE`, `LLM_OUTPUT_PRICE` and `LLM_CACHED_INPUT_PRICE` are USD per million tokens. Leave prices blank to show unknown cost; estimates are not billing receipts. Check [current provider pricing](https://api-docs.deepseek.com/quick_start/pricing/) before setting them.
+Long tasks may use more model calls; the dashboard shows actual calls, tokens and estimated cost. Browser action, repair and loop guards still stop runaway execution. Optional `LLM_INPUT_PRICE`, `LLM_OUTPUT_PRICE` and `LLM_CACHED_INPUT_PRICE` are USD per million tokens. Leave prices blank to show unknown cost; estimates are not billing receipts. Check [current provider pricing](https://api-docs.deepseek.com/quick_start/pricing/) before setting them.
 
 Verify the local browser and model endpoint with `npm run agent -- doctor --api`.
 
@@ -160,6 +160,8 @@ Recorded on **18 September 2026**, using real DeepSeek Flash calls:
 First-run API usage was **approximately $0.00611 total** at the configured benchmark prices. Repeats ran with **no provider installed**. [Raw public report](artifacts/benchmark-public.json) · [Method and limitations](docs/BENCHMARKS.md).
 
 These are single trials on specified automation sandboxes and project-owned pages, not a general website success rate. [All eight complex workflows](artifacts/benchmark-complex-authored.json) pass independent checks with authored plans and provider-free repeats. The new [quarter-close](artifacts/benchmark-complex-live-close.json) and [incident investigation](artifacts/benchmark-complex-live-incident.json) each also passed in one live Flash trial and then repeated with zero model calls. Authored plans validate execution and reuse, not model planning. Other live complex trials include failures. [Earlier live trial, including failures](artifacts/benchmark-complex-live-travel,billing.json) · [Read-only real-world trial](artifacts/benchmark-real-world.json).
+
+An [open-ended incident prompt](docs/USEFUL_EXAMPLES.md) that omits the answer values also passed [one separate live trial](artifacts/benchmark-complex-live-incident-challenge.json) and then replayed with zero model calls. The report keeps this single run distinct from the guided trial.
 
 No screenshot-agent baseline was measured, so we do not claim a token or cost savings percentage.
 
