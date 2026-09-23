@@ -39,11 +39,11 @@ try{
   if(interaction&&(!output.includes('$39')||!output.includes('Available in stock')||!dashboard.getAgent()?.browser.page.url().endsWith('/product.html')))throw new Error('Product details or destination failed the independent oracle');
   const capture=await cursorCapture;if(capture&&!capture.captured)throw new Error('Visible typing cursor was not captured: '+capture.error);
   if(interaction)await browser.page.getByRole('button',{name:'Close task result'}).click();else await browser.page.keyboard.press('Escape');
-  for(const [name,width] of [['desktop',1600],['mobile',390]] as const){
+  for(const [name,width] of [['desktop',1600],['narrow',320],['mobile',390],['tablet',768]] as const){
     await browser.page.setViewportSize({width,height:1000});await browser.page.waitForTimeout(600);
     if(!await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))throw new Error('Responsive overflow');
     await browser.page.screenshot({path:`artifacts/ui/${name}.png`,fullPage:true});
   }
   if(errors.length)throw new Error('UI console errors: '+JSON.stringify(errors));
-  console.log(JSON.stringify({status:dashboard.getAgent()?.trace?.status,model:dashboard.getAgent()?.trace?.metrics.provider,metrics:dashboard.getAgent()?.trace?.metrics,consoleErrors:errors,responsiveWidths:[1600,390],previewLoaded:true,visibleTypingCaptured:capture?.captured}));
+  console.log(JSON.stringify({status:dashboard.getAgent()?.trace?.status,model:dashboard.getAgent()?.trace?.metrics.provider,metrics:dashboard.getAgent()?.trace?.metrics,consoleErrors:errors,responsiveWidths:[1600,320,390,768],previewLoaded:true,visibleTypingCaptured:capture?.captured}));
 }finally{await browser.close();await dashboard.close();await rm(process.env.FCU_DATA_DIR,{recursive:true,force:true});}
