@@ -38,6 +38,14 @@ import {Observer} from '../src/browser/Observer.js';
 import {Executor} from '../src/actions/executor.js';
 import {VariableResolver} from '../src/profile/VariableResolver.js';
 
+test('credentialed initial URLs are rejected before agent traces persist them',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra'});
+  try{
+    await assert.rejects(agent.run('Open this page','https://user:private-token@example.test/'),/without embedded credentials/);
+    assert.equal(agent.active,false);assert.equal(store.history().length,0);
+  }finally{await agent.close();store.close();}
+});
+
 test('concurrent permissions remain distinct and stopping rejects queued approvals',async()=>{
   const control=new Control(),seen:unknown[]=[];control.on('approval',p=>seen.push(p.action));
   const firstVisible=once(control,'approval');

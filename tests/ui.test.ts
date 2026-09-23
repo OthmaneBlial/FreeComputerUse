@@ -9,6 +9,19 @@ import {startFixtures} from '../fixtures/server.js';
 import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 import {PlanSchema} from '../src/actions/schema.js';
 
+test('dashboard rejects credentialed run URLs and origins before creating an agent',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-url-guard-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
+  const dashboard=await startServer({port:0,quiet:true});
+  try{
+    const page=await fetch(dashboard.url),html=await page.text(),token=html.match(/<meta name="csrf-token" content="([^"]+)"/)?.[1],cookie=page.headers.get('set-cookie')?.split(';')[0];
+    assert(token);assert(cookie);
+    const request=async(body:object)=>fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify(body)});
+    const badTarget=await request({goal:'Read the page',url:'https://user:private-token@example.test/'});assert.equal(badTarget.status,400);assert.match((await badTarget.json() as {error:string}).error,/without embedded credentials/);
+    const badOrigin=await request({goal:'Read the page',url:'https://example.test/',allowedOrigins:['https://user:private-token@example.test/']});assert.equal(badOrigin.status,400);assert.match((await badOrigin.json() as {error:string}).error,/without embedded credentials/);
+    assert.equal(dashboard.getAgent(),undefined);
+  }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
+});
+
 test('the real cursor is visible before the first model reply and survives document navigation',{timeout:20000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-cursor-wait-')),old=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures();let release!:()=>void,entered!:()=>void;

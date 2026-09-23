@@ -59,10 +59,14 @@ parameters, endpoint and terms before use.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
-- Focused security file: 13/13 tests passed on system Chrome
+- Earlier focused security-file run: 13/13 tests passed on system Chrome
   `154.0.8037.57`; the fast popup redirect test observed zero target requests
-  when denied and one when approved. Existing popup navigation test also passed
+  when denied and one when approved. The run preceded addition of the initial
+  credential-URL regression case; existing popup navigation test also passed
   standalone.
+- Credentialed initial URL: two focused tests passed. The library agent rejects
+  credentials before persisting a trace; the dashboard rejects credentials in
+  the starting URL or allowed-origin list before creating an agent.
 - DNS rebinding and other browser builds remain unverified.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input

@@ -4,6 +4,7 @@ import { readFile,realpath,stat } from 'node:fs/promises';
 import { join,sep } from 'node:path';
 import { z } from 'zod';
 import { Agent } from '../agent/Agent.js';
+import { checkedHttpURL } from '../browser/Browser.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
@@ -11,13 +12,14 @@ import { runtimeConfig } from '../config.js';
 import { PlanSchema } from '../actions/schema.js';
 import type { LLMProvider } from '../llm/LLMProvider.js';
 
-const RunRequest=z.object({goal:z.string().min(1).max(4000),url:z.url(),allowedOrigins:z.array(z.url()).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
+const browserURL=z.url().refine(value=>{try{checkedHttpURL(value);return true;}catch{return false;}},'Only HTTP(S) destinations without embedded credentials are supported');
+const RunRequest=z.object({goal:z.string().min(1).max(4000),url:browserURL,allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
 const Manual=z.discriminatedUnion('type',[
   z.object({type:z.literal('click'),x:z.number().min(0).max(10000),y:z.number().min(0).max(10000)}).strict(),
   z.object({type:z.literal('type'),value:z.string().max(10000)}).strict(),
   z.object({type:z.literal('press'),value:z.string().max(50)}).strict(),
   z.object({type:z.literal('scroll'),y:z.number().min(-10000).max(10000)}).strict(),
-  z.object({type:z.literal('navigate'),url:z.url()}).strict(),
+  z.object({type:z.literal('navigate'),url:browserURL}).strict(),
 ]);
 async function body(req:IncomingMessage){
   let buffer='';for await(const chunk of req){buffer+=chunk;if(Buffer.byteLength(buffer)>65536)throw new Error('Request too large');}
@@ -85,7 +87,6 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         const replay=path==='/api/replay'?store.get(z.object({id:z.string()}).strict().parse(input).id):undefined;
         if(path==='/api/replay'&&!replay)throw new Error('Run not found');
         const request=replay?RunRequest.parse({goal:replay.goal,url:replay.url}):RunRequest.parse(input);
-        if(!['http:','https:'].includes(new URL(request.url).protocol))throw new Error('Only HTTP(S) URLs are supported');
         await agent?.close();const fresh=runtimeConfig();
         agent=new Agent({store,provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),useWorkflows:request.useWorkflows,confirmation:request.confirmation,mode:request.mode,
           completionCriteria:[...(request.expectText?[{type:'text_exists' as const,value:request.expectText}]:[]),...(request.expectUrl?[{type:'url_contains' as const,value:request.expectUrl}]:[])],

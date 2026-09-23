@@ -16,6 +16,11 @@ type CDPPending={resolve:(value:unknown)=>void;reject:(error:Error)=>void;timer:
 const browserChannels=['chrome','chrome-beta','chrome-dev','chrome-canary','msedge','msedge-beta','msedge-dev','msedge-canary'];
 const pageTargetFilter:{type?:string;exclude:boolean}[]=[{type:'page',exclude:false},{exclude:true}];
 const nestedTargetFilter:{type?:string;exclude:boolean}[]=[...['iframe','worker','shared_worker','service_worker'].map(type=>({type,exclude:false})),{exclude:true}];
+export function checkedHttpURL(value:string,base?:string){
+  const url=base?new URL(value,base):new URL(value);
+  if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Only HTTP(S) destinations without embedded credentials are supported');
+  return url;
+}
 function launchOptions(headless:boolean):LaunchOptions{
   const channel=process.env.FCU_BROWSER_CHANNEL;
   if(channel&&!browserChannels.includes(channel))throw new Error(`FCU_BROWSER_CHANNEL must be one of: ${browserChannels.join(', ')}`);
@@ -175,24 +180,22 @@ export class Browser {
   }
   permits(value: string) {
     try {
-      const url = new URL(value);
-      if (!['http:', 'https:'].includes(url.protocol)) return false;
-      if (url.username || url.password) return false;
+      const url = checkedHttpURL(value);
       return this.options.allowExternal===true || !!this.options.allowedOrigins?.includes(url.origin);
     } catch { return false; }
   }
   async navigate(value: string) {
-    const url = new URL(value, this.page.url());
-    if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Only HTTP(S) destinations without embedded credentials are supported');
+    const url = checkedHttpURL(value,this.page.url());
     await this.options.beforeNavigate?.(url.href);
     if (!this.permits(url.href)) throw new Error('Navigation destination is outside the local origin policy');
     await this.page.goto(url.href, { waitUntil: 'domcontentloaded' });
   }
   async openTab(url: string) {
-    await this.options.beforeNavigate?.(new URL(url,this.page.url()).href);
-    if (!this.permits(new URL(url, this.page.url()).href)) throw new Error('Tab destination is outside the origin policy');
+    const destination=checkedHttpURL(url,this.page.url());
+    await this.options.beforeNavigate?.(destination.href);
+    if (!this.permits(destination.href)) throw new Error('Tab destination is outside the origin policy');
     this.page = await this.context.newPage();
-    await this.navigate(url);
+    await this.navigate(destination.href);
   }
   async switchTab(index: number,timeoutMs=4000) {
     const deadline=Date.now()+timeoutMs;
