@@ -117,6 +117,12 @@ parameters, endpoint and terms before use.
   23 September 2026 with its authored local planning fixture. The independent
   journey oracle, result facts, fullscreen view, viewer scrolling and browser
   console checks passed. This validates result presentation, not model planning.
+- Lab/site smoke: `FCU_BROWSER_CHANNEL=chrome npm run lab:smoke` passed on
+  23 September 2026. It rendered 24 lab pages and eight task cards, played the
+  local 1600x900 demo clip, loaded the brand asset, and reported no browser
+  console errors. Horizontal overflow checks passed at 320, 390, 768 and 1440 px
+  for the lab pages/workflow library. It refreshed 50 lab and two dashboard PNG
+  captures. Keyboard accessibility and the dashboard at 320/768 remain untested.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other

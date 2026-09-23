@@ -151,6 +151,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** chaque permission est contextualisée et révocable ; progression, attente utilisateur, erreur fournisseur, blocage sécurité et succès vérifié ont des états distincts ; annulation arrête les actions en attente.
 - **Validation :** tests UI et smoke manuel de parcours avec refus, approbation, timeout et résultat incorrect.
 - **Dépendances / risques :** utiliser les événements/résultats existants au lieu de créer une seconde machine d’état.
+- **État intermédiaire (23 septembre 2026) :** `FCU_BROWSER_CHANNEL=chrome npm run ui:results` passe avec un planificateur local de test, sans preuve de planification par modèle. L’approbation précède toute visite du labo ; l’oracle vérifie le trajet et le fichier téléchargé ; les faits du résultat, le bouton de téléchargement visible, l’affichage plein écran et le viewer passent, sans erreur console ni débordement à 390 px. Les parcours de refus, timeout, critère de résultat incorrect et clavier restent à valider ; ne pas cocher.
 
 #### 3.3 [ ] Vérifier accessibilité et rendu multi-écran
 
@@ -160,6 +161,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** parcours principal réalisable au clavier ; aucune perte de contenu ou action hors écran aux largeurs retenues ; captures représentatives de l’interface réelle et à jour.
 - **Validation :** smoke responsive aux largeurs 320, 390, 768 et desktop ; contrôle clavier et console ; tests automatisés des interactions prioritaires.
 - **Dépendances / risques :** ne pas utiliser des maquettes ou des états synthétiques comme captures du produit.
+- **État intermédiaire (23 septembre 2026) :** `FCU_BROWSER_CHANNEL=chrome npm run lab:smoke` passe sur Chrome système `154.0.8037.57` : 24 pages du labo, huit cartes de parcours, logo chargé et film local réellement lu en `1600x900`. Aucun débordement horizontal à 320, 390, 768 ou 1440 px sur les pages/parcours couverts ; aucune erreur console. Le smoke a rafraîchi 50 captures du labo et deux captures du tableau de bord sous `artifacts/`. Les captures montrent les fixtures synthétiques du dépôt. Le contrôle clavier, les contrastes/labels, les largeurs intermédiaires du tableau de bord et la revue complète des captures README restent ouverts ; ne pas cocher.
 
 ### Phase 4 — Robustesse du code et validation reproductible (P0)
 
