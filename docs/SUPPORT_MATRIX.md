@@ -121,6 +121,13 @@ parameters, endpoint and terms before use.
   23 September 2026 with its authored local planning fixture. The independent
   journey oracle, result facts, fullscreen view, viewer scrolling and browser
   console checks passed. This validates result presentation, not model planning.
+- Dashboard UI tests: `FCU_BROWSER_CHANNEL=chrome ./node_modules/.bin/tsx --test
+  tests/ui.test.ts` passed 9/9 on 23 September 2026. New cases cover rejecting
+  site access before a visit, stopping while approval is pending, a synthetic
+  provider timeout shown as failed in the execution log, and a false extraction
+  criterion shown as a partial result. Timeout/error behavior used an in-process
+  fake provider; this is not a live provider timeout test. Explicit permission
+  revocation and a dedicated security-block UI state remain unverified.
 - Lab/site smoke: `FCU_BROWSER_CHANNEL=chrome npm run lab:smoke` passed on
   23 September 2026. It rendered 24 lab pages and eight task cards, played the
   local 1600x900 demo clip, loaded the brand asset, and reported no browser

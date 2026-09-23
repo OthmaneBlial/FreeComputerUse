@@ -9,6 +9,21 @@ import {TraceStore,type Trace} from '../src/history/TraceStore.js';
 import {startFixtures} from '../fixtures/server.js';
 import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 import {PlanSchema} from '../src/actions/schema.js';
+import type {LLMProvider} from '../src/llm/LLMProvider.js';
+
+async function startApprovalSession(provider:LLMProvider,goal='Read the page'){
+  const dir=await mkdtemp(join(tmpdir(),'fcu-ui-state-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
+  const fixture=await startFixtures(),dashboard=await startServer({port:0,quiet:true,provider}),browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();
+  try{
+    await browser.navigate(dashboard.url);await browser.page.locator('#start-url').fill(fixture.url+'/demo');await browser.page.locator('#goal').fill(goal);
+    await browser.page.getByRole('button',{name:'Run task',exact:true}).click();await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});
+  }catch(error){
+    await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});
+    if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;
+    throw error;
+  }
+  return{browser,dashboard,fixture,close:async()=>{await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}};
+}
 
 test('dashboard rejects credentialed run URLs and origins before creating an agent',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-url-guard-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
@@ -141,4 +156,54 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     const unauthenticated=await fetch(dashboard.url+'/api/state');assert.equal(unauthenticated.status,401);
     const crossOrigin=await browser.page.evaluate(async()=>{const response=await fetch('/api/control/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});return response.status;});assert.equal(crossOrigin,403);
   }finally{await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
+});
+
+test('dashboard shows rejected, stopped, timed-out and unverified runs accurately',{timeout:120000},async t=>{
+  await t.test('rejecting website access fails before visiting it',async()=>{
+    const provider=new FixtureProvider(),session=await startApprovalSession(provider);
+    try{
+      await session.browser.page.getByRole('button',{name:'Reject',exact:true}).click();
+      await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='FAILED');
+      assert.equal(session.dashboard.getAgent()?.browser.page.url(),'about:blank');assert.equal(provider.planCalls,0);
+      assert.match(session.dashboard.getAgent()?.trace?.error??'',/Sensitive action rejected/);
+    }finally{await session.close();}
+  });
+  await t.test('stopping during website approval ends as stopped',async()=>{
+    const session=await startApprovalSession(new FixtureProvider());
+    try{
+      await session.browser.page.getByRole('button',{name:'Stop',exact:true}).click();
+      await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='STOPPED');
+      assert.equal(session.dashboard.getAgent()?.browser.page.url(),'about:blank');assert.equal(await session.browser.page.locator('#approval').isHidden(),true);
+    }finally{await session.close();}
+  });
+  await t.test('a simulated provider timeout is shown as a failure',async()=>{
+    let calls=0;
+    const provider:LLMProvider={name:'timeout-fixture',plan:async()=>{calls++;throw new Error('Synthetic provider request timed out');},repair:async()=>{throw new Error('No repair expected');}};
+    const session=await startApprovalSession(provider);
+    try{
+      await session.browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
+      await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='FAILED');
+      await session.browser.page.getByRole('button',{name:'Execution log',exact:true}).click();
+      assert.equal(calls,1);assert.match(await session.browser.page.locator('#events').innerText(),/Synthetic provider request timed out/);
+      assert.equal(session.dashboard.getAgent()?.trace?.status,'failed');assert.equal(session.dashboard.getAgent()?.trace?.actions.length,0);
+    }finally{await session.close();}
+  });
+  await t.test('incorrect completion criteria remain a partial result',async()=>{
+    const expected=[{type:'extraction_contains' as const,key:'visible',value:'UNAVAILABLE_SENTINEL'}];
+    const provider:LLMProvider={
+      name:'incorrect-result-fixture',
+      plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Read the visible page'],actions:[{type:'extract',target:{css:'body'},format:'text',key:'visible'}],completion:expected}),
+      repair:async()=>({actions:[],replace:0,completion:expected}),
+    };
+    const session=await startApprovalSession(provider);
+    try{
+      await session.browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
+      await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='FAILED',undefined,{timeout:15000});
+      await session.browser.page.waitForFunction(()=>(document.querySelector('#result-open') as HTMLButtonElement)?.disabled===false);
+      assert.equal(session.dashboard.getAgent()?.trace?.status,'failed');assert.match(session.dashboard.getAgent()?.trace?.error??'',/completion could not be verified/i);
+      await session.browser.page.getByRole('button',{name:'View result',exact:true}).click();
+      assert.match(await session.browser.page.locator('.result-status').innerText(),/partial result/i);
+      assert.match(await session.browser.page.locator('.result-error').innerText(),/completion could not be verified/i);
+    }finally{await session.close();}
+  });
 });
