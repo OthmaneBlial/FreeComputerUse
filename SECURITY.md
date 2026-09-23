@@ -58,7 +58,11 @@ path. User restrictions and final completion criteria still apply.
   tests. Chrome 154 also completes an approved WSS handshake/frame through the
   proxy and blocks an unapproved WSS origin before the target receives a TCP
   connection. That fixture ignores errors from its generated local certificate;
-  it does not verify public certificate trust. Chromium's persistent profile
+  it does not verify public certificate trust. The separate opt-in
+  `FCU_BROWSER_CHANNEL=chrome npm run security:wss` smoke connected to Postman
+  Echo using Chrome's normal TLS validation and received its fixed synthetic
+  payload on 24 September 2026; this covers one endpoint/runtime only.
+  Chromium's persistent profile
   disables WebRTC UDP the proxy cannot carry. A Chrome 154 local STUN fixture
   received no packets, but sites requiring direct UDP for voice/video may fail.
   Network-specific NAT64 prefixes, other non-HTTP traffic and other browser

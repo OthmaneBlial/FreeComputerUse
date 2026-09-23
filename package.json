@@ -23,6 +23,7 @@
     "fixtures": "tsx fixtures/server.ts",
     "benchmark": "tsx scripts/benchmark.ts",
     "security": "node scripts/security-check.mjs --history",
+    "security:wss": "tsx scripts/wss-smoke.ts",
     "benchmark:public": "tsx scripts/public-benchmark.ts",
     "lab:build": "tsx scripts/build-lab.ts",
     "lab:serve": "tsx scripts/lab-server.ts",

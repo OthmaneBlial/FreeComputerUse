@@ -26,6 +26,12 @@ and full umbrella command remain unverified; see the
 Browser smoke tests and live-provider benchmarks are also run locally and are
 separate opt-in commands because they can spend API tokens.
 
+`FCU_BROWSER_CHANNEL=chrome npm run security:wss` is an optional live network
+check. It uses installed Chrome to connect to Postman Echo over WSS, relies on
+Chrome’s default TLS validation, and sends one fixed synthetic string. It does not
+use a model key and is excluded from `npm run validate`; endpoint availability
+can change.
+
 `FCU_BROWSER_CHANNEL=chrome npm run ui:smoke` is a local no-provider first-run
 smoke. It checks visible control names, text contrast (4.5:1 for normal text and 3:1
 for large text), approval before site navigation, a sandbox extraction and

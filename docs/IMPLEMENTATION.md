@@ -22,12 +22,14 @@ uses a loopback-only proxy, which connects to the vetted address it resolved;
 synthetic DNS-rebinding and plain WebSocket tests pass on system Chrome 154.
 Chrome-originated approved WSS returns a frame through the proxy, while an
 unapproved WSS origin is blocked before the target receives a TCP connection.
-The test ignores errors from its generated local certificate, so public
-certificate trust is not verified. Other browser builds, network-specific NAT64
-and non-HTTP egress remain open in Phase 2.2 of `ROADMAP.md`.
-Closing the active page stops its run and closes the browser context, which also
-cancels a pending site approval. Closing a tab through an action first switches
-the active page to the remaining tab.
+The test ignores errors from its generated local certificate. A separate
+opt-in WSS smoke on 24 September 2026 connected to Postman Echo with Chrome's
+normal TLS validation and received its fixed synthetic payload; this proves one
+endpoint/runtime only. Other browser builds, network-specific NAT64 and
+non-HTTP egress remain open in Phase 2.2 of `ROADMAP.md`.
+Closing the active page stops its run and cancels a pending site approval. The
+browser context stays open; the next task starts in a fresh tab. Closing a tab
+through an action first switches the active page to the remaining tab.
 
 Semantic references are stable for each live document and frame. Selector ranking
 prefers role/name, label, placeholder, test ID, ID/name, text, CSS and observed DOM
