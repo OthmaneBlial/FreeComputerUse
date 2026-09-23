@@ -6,6 +6,7 @@ import type { ActionResult } from '../actions/executor.js';
 import type { LLMCall } from '../llm/LLMProvider.js';
 export interface Trace {
   version:1;id:string;goal:string;url:string;status:'running'|'completed'|'failed'|'stopped';
+  failureKind?:'security';
   startedAt:number;durationMs:number;plans:Plan[];actions:ActionResult[];
   completion:Condition[];calls:LLMCall[];metrics:Record<string,unknown>;error?:string;
 }

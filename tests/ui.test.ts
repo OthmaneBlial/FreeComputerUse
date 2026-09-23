@@ -11,11 +11,12 @@ import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 import {PlanSchema} from '../src/actions/schema.js';
 import type {LLMProvider} from '../src/llm/LLMProvider.js';
 
-async function startApprovalSession(provider:LLMProvider,goal='Read the page'){
+async function startApprovalSession(provider:LLMProvider,goal='Read the page',hostname?:string){
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-state-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures(),dashboard=await startServer({port:0,quiet:true,provider}),browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();
   try{
-    await browser.navigate(dashboard.url);await browser.page.locator('#start-url').fill(fixture.url+'/demo');await browser.page.locator('#goal').fill(goal);
+    const target=new URL(fixture.url+'/demo');if(hostname)target.hostname=hostname;
+    await browser.navigate(dashboard.url);await browser.page.locator('#start-url').fill(target.href);await browser.page.locator('#goal').fill(goal);
     await browser.page.getByRole('button',{name:'Run task',exact:true}).click();await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});
   }catch(error){
     await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});
@@ -206,4 +207,35 @@ test('dashboard shows rejected, stopped, timed-out and unverified runs accuratel
       assert.match(await session.browser.page.locator('.result-error').innerText(),/completion could not be verified/i);
     }finally{await session.close();}
   });
+});
+
+test('dashboard revokes approved sites and blocks their browser requests',{timeout:30000},async()=>{
+  let release!:()=>void,entered!:()=>void,plans=0;
+  const gate=new Promise<void>(resolve=>{release=resolve;}),planning=new Promise<void>(resolve=>{entered=resolve;});
+  const provider:LLMProvider={name:'revocation-fixture',plan:async context=>{plans++;if(plans===1){entered();await gate;}return PlanSchema.parse({goal:context.goal,steps:['Read the page'],actions:[{type:'extract',target:{css:'h1'},format:'text',key:'heading'}],completion:[{type:'extraction_created',key:'heading'}]});},repair:async()=>{throw new Error('No repair expected');}};
+  const session=await startApprovalSession(provider);
+  let blockedRequestHits=0;session.fixture.server.on('request',request=>{if(new URL(request.url??'/',session.fixture.url).searchParams.has('after-revoke'))blockedRequestHits++;});
+  try{
+    await session.browser.page.getByRole('button',{name:'Approve action',exact:true}).click();await planning;
+    await session.browser.page.locator('#options-open').click();
+    const revoke=session.browser.page.getByRole('button',{name:`Revoke access to ${session.fixture.url}`,exact:true});await revoke.waitFor();await revoke.click();
+    await session.browser.page.waitForFunction(()=>document.querySelector('#notice')?.textContent?.startsWith('Access revoked for'));
+    assert.equal(session.dashboard.getAgent()?.browser.permits(session.fixture.url),false);
+    const denied=await session.dashboard.getAgent()!.browser.page.evaluate(async url=>{try{await fetch(url);return false;}catch{return true;}},session.fixture.url+'/demo?after-revoke=1');assert.equal(denied,true);assert.equal(blockedRequestHits,0);
+    release();await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='STOPPED');
+    assert.deepEqual(session.dashboard.getAgent()?.approvedSites,[]);assert.equal(session.dashboard.getAgent()?.trace?.actions.length,0);
+    assert(session.dashboard.getAgent()?.events.some(event=>event.phase==='PERMISSION'&&event.message.includes('access revoked')));
+  }finally{release();await session.close();}
+});
+
+test('dashboard marks private-network navigation as a security block',{timeout:30000},async()=>{
+  const provider=new FixtureProvider(),session=await startApprovalSession(provider,'Read the page','localhost');
+  try{
+    await session.browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
+    await session.browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='BLOCKED');
+    assert.equal(session.dashboard.getAgent()?.trace?.status,'failed');assert.equal(session.dashboard.getAgent()?.trace?.failureKind,'security');
+    assert.equal(session.dashboard.getAgent()?.browser.page.url(),'about:blank');assert.equal(provider.planCalls,0);
+    assert(session.dashboard.getAgent()?.events.some(event=>event.phase==='BLOCKED'));
+    assert.match(await session.browser.page.locator('#control-state').innerText(),/security policy/i);
+  }finally{await session.close();}
 });

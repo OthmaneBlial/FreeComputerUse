@@ -14,6 +14,7 @@ import { PlanSchema } from '../actions/schema.js';
 import type { LLMProvider } from '../llm/LLMProvider.js';
 
 const browserURL=z.url().refine(value=>{try{checkedHttpURL(value);return true;}catch{return false;}},'Only HTTP(S) destinations without embedded credentials are supported');
+const SitePermission=z.object({origin:z.url().refine(value=>{const url=new URL(value);return url.origin===value&&!url.username&&!url.password;},'Expected a canonical site origin')}).strict();
 const RunRequest=z.object({goal:z.string().min(1).max(4000),url:browserURL,allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
 const Manual=z.discriminatedUnion('type',[
   z.object({type:z.literal('click'),x:z.number().min(0).max(10000),y:z.number().min(0).max(10000)}).strict(),
@@ -58,7 +59,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='GET'&&path==='/api/state'){
         send(200,{active:agent?.active??false,paused:agent?.control.paused??false,pending:agent?.control.pending,
-          trace:agent?.trace?redactLocalData({...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}):restored?redactLocalData(restored):undefined,state:agent?.state?{url:redactLocal(agent.state.url),title:redactLocal(agent.state.title),hash:agent.state.hash,warnings:agent.state.warnings.map(redactLocal),elements:agent.state.elements.length}:undefined,
+          trace:agent?.trace?redactLocalData({...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}):restored?redactLocalData(restored):undefined,approvedSites:agent?.approvedSites.map(redactLocal)??[],state:agent?.state?{url:redactLocal(agent.state.url),title:redactLocal(agent.state.title),hash:agent.state.hash,warnings:agent.state.warnings.map(redactLocal),elements:agent.state.elements.length}:undefined,
           pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?redactLocal(agent.browser.page.url()):undefined,events:agent?.events.map(event=>redactLocalData(event))??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12).map(row=>redactLocalData(row)),workflows:new WorkflowEngine(store).list()});return;
       }
       if(req.method==='GET'&&path==='/api/events'){
@@ -105,6 +106,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         if(!agent)throw new Error('No browser task yet');
         const command=path.slice('/api/control/'.length);
         if(command==='pause')agent.control.pause();else if(command==='resume')agent.control.resume();else if(command==='stop')agent.control.stop();
+        else if(command==='revoke-site')agent.revokeSite(SitePermission.parse(await body(req)).origin);
         else if(command==='approve')agent.control.approve();else if(command==='reject')agent.control.reject();
         else if(command==='edit'){const plan=PlanSchema.parse(await body(req));agent.control.edit(plan);}
         else if(command==='manual'){

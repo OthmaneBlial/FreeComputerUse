@@ -1,6 +1,6 @@
 # Support matrix
 
-Updated 23 September 2026. This matrix separates code that exists, automated
+Updated 24 September 2026. This matrix separates code that exists, automated
 contract coverage, and evidence from a real provider. An OpenAI-compatible URL
 does not prove that every service using that label accepts the same request.
 
@@ -122,12 +122,19 @@ parameters, endpoint and terms before use.
   journey oracle, result facts, fullscreen view, viewer scrolling and browser
   console checks passed. This validates result presentation, not model planning.
 - Dashboard UI tests: `FCU_BROWSER_CHANNEL=chrome ./node_modules/.bin/tsx --test
-  tests/ui.test.ts` passed 9/9 on 23 September 2026. New cases cover rejecting
+  tests/ui.test.ts` passed 11/11 on 24 September 2026. Cases cover rejecting
   site access before a visit, stopping while approval is pending, a synthetic
-  provider timeout shown as failed in the execution log, and a false extraction
-  criterion shown as a partial result. Timeout/error behavior used an in-process
-  fake provider; this is not a live provider timeout test. Explicit permission
-  revocation and a dedicated security-block UI state remain unverified.
+  provider timeout shown as failed, a false extraction criterion shown as a
+  partial result, revoking an approved origin and blocking a fetch before the
+  local fixture receives it, and the distinct `BLOCKED` state for a
+  private-network DNS refusal. The
+  timeout used an in-process fake provider; this is not a live provider timeout
+  test. The dashboard run still reports its historical trace status as `failed`
+  with `failureKind: security` for policy blocks.
+- Agent and security tests: `FCU_BROWSER_CHANNEL=chrome ./node_modules/.bin/tsx
+  --test tests/agent.test.ts tests/security.test.ts` passed 35/35 on 24 September
+  2026 after the permission and security-state changes. This remains local test
+  evidence, not a cross-platform or full-suite result.
 - Lab/site smoke: `FCU_BROWSER_CHANNEL=chrome npm run lab:smoke` passed on
   23 September 2026. It rendered 24 lab pages and eight task cards, played the
   local 1600x900 demo clip, loaded the brand asset, and reported no browser

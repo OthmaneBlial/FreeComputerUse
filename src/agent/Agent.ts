@@ -4,6 +4,7 @@ import type { BrowserContext, Page } from 'playwright';
 import { PlanSchema,RepairSchema,type Plan,type Condition } from '../actions/schema.js';
 import { Executor,type ActionResult } from '../actions/executor.js';
 import { Browser,checkedHttpURL,type BrowserOptions } from '../browser/Browser.js';
+import { SecurityBoundaryError } from '../browser/SecurityBoundaryError.js';
 import { Observer } from '../browser/Observer.js';
 import { diffPages } from '../browser/PageCompressor.js';
 import type { PageState } from '../browser/types.js';
@@ -43,11 +44,22 @@ export class Agent extends EventEmitter {
   }
   private async authorizeSite(value:string){
     const origin=new URL(value).origin;
-    if(this.options.mode==='ultra'||this.permittedSites.has(origin))return;
+    const blocked=this.browser.options.blockedOrigins??=[];
+    if(!blocked.includes(origin)&&(this.options.mode==='ultra'||this.permittedSites.has(origin))){this.permittedSites.add(origin);return;}
     await this.control.confirm(`Allow browser access to ${origin}?`,{type:'siteAccess',origin,scope:'This browser session: inspect pages and perform the requested task',mode:'normal'});
     this.permittedSites.add(origin);
+    this.browser.options.blockedOrigins=blocked.filter(item=>item!==origin);
     const origins=this.browser.options.allowedOrigins??=[];if(!origins.includes(origin))origins.push(origin);
     this.event('PERMISSION',`Website approved: ${origin}`);
+  }
+  get approvedSites(){return [...this.permittedSites].sort();}
+  revokeSite(value:string){
+    const origin=checkedHttpURL(value).origin;
+    if(!this.permittedSites.delete(origin))throw new Error('Website is not currently approved');
+    this.browser.options.allowedOrigins=(this.browser.options.allowedOrigins??[]).filter(item=>item!==origin);
+    const blocked=this.browser.options.blockedOrigins??=[];if(!blocked.includes(origin))blocked.push(origin);
+    this.event('PERMISSION',`Website access revoked: ${origin}`);
+    if(this.active&&this.browser.page&&!this.browser.page.isClosed()&&new URL(this.browser.page.url()).origin===origin)this.control.stop();
   }
   private watchLastPageClose() {
     const context=this.browser.context;
@@ -80,7 +92,7 @@ export class Agent extends EventEmitter {
     const structured=this.browser.extractions.filter(e=>e.value!==null&&typeof e.value==='object').slice(-16).map(e=>({key:e.key,preview:JSON.stringify(e.value).slice(0,1400)}));
     const priorText=this.browser.extractions.filter(e=>typeof e.value==='string').slice(-16).map(e=>({key:e.key,preview:(e.value as string).slice(-1800)}));
     page+='\nOPEN TABS '+JSON.stringify(this.browser.context.pages().map((p,index)=>({index,url:p.url,active:p===this.browser.page})))+'\nEXTRACTED EVIDENCE FROM PRIOR PAGES '+this.variables.redact(JSON.stringify([...structured,...priorText]));
-    return {goal:this.variables.redact(goal),page:this.variables.redact(page),aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.options.browser?.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
+    return {goal:this.variables.redact(goal),page:this.variables.redact(page),aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.browser.options.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
   }
   async run(goal:string,url?:string,providedPlan?:Plan,allowProvider=true):Promise<Trace>{
     if(this.active)throw new Error('An agent task is already running');
@@ -175,7 +187,7 @@ export class Agent extends EventEmitter {
         if(plan.continue){previous=batchState;await this.observe();plan=undefined;continue;}
         trace.completion=criteria().map(c=>this.executor.semanticCondition(c));trace.status='completed';break;
       }
-    }catch(error){trace.status=this.control.stopped?'stopped':'failed';trace.error=this.variables.redact(error instanceof Error?error.message:'Task failed');this.control.stop();this.event('ERROR',trace.error);}
+    }catch(error){trace.status=this.control.stopped?'stopped':'failed';if(error instanceof SecurityBoundaryError)trace.failureKind='security';trace.error=this.variables.redact(error instanceof Error?error.message:'Task failed');this.control.stop();this.event(trace.failureKind==='security'?'BLOCKED':'ERROR',trace.error);}
     finally{
       trace.durationMs=Date.now()-startedAt;trace.calls=this.providerCalls().slice(callStart);
       const usage=this.budget.snapshot(trace.actions.filter(a=>a.success).length);

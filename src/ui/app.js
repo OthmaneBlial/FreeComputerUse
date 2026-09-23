@@ -1,7 +1,7 @@
 import {renderResults,reportHtml} from './results.js';
 const $=id=>document.getElementById(id);
 const token=document.querySelector('meta[name=csrf-token]').content;
-let state={},busy=false,lastEventCount=0,previewPending=false,refreshPending=false,resultKey='',resultCount=0;
+let state={},busy=false,lastEventCount=0,previewPending=false,refreshPending=false,resultKey='',resultCount=0,approvedSitesKey='';
 let currentRunId='',previewPageId=0,pointer,lastPointerSequence=-1,lastClickSequence=-1,approvalKey='';
 function mobileView(view){document.body.dataset.mobileView=view;for(const button of document.querySelectorAll('[data-mobile-view]'))button.setAttribute('aria-pressed',String(button.dataset.mobileView===view));}
 mobileView('task');for(const button of document.querySelectorAll('[data-mobile-view]'))button.onclick=()=>mobileView(button.dataset.mobileView);
@@ -38,7 +38,7 @@ function paintPointer(){
   const visible=pointer?.visible&&rect&&pointer.pageId===previewPageId;
   cursor.hidden=!visible;
   const preparing=preparation();cursor.classList.toggle('preparing',!!preparing);
-  text('interaction-label',state.pending?'Waiting for your approval':state.paused?'You have control':preparing?preparing.label:state.active?(interactionNames[pointer?.kind]||'Planning the next browser actions'):state.trace?.status==='completed'?'Task complete':state.trace?.status==='stopped'?'Task stopped':'Watch the browser work here');
+  text('interaction-label',state.pending?'Waiting for your approval':state.paused?'You have control':preparing?preparing.label:state.active?(interactionNames[pointer?.kind]||'Planning the next browser actions'):state.trace?.failureKind==='security'?'Blocked by local browser policy':state.trace?.status==='completed'?'Task complete':state.trace?.status==='stopped'?'Task stopped':'Watch the browser work here');
   $('interaction-label').title=preparing?.detail||'';
   if(preparing)text('control-state',preparing.detail);
   if(!visible){ring.hidden=true;return;}
@@ -61,10 +61,12 @@ function render(snapshot){
   }
   acceptPointer(state.pointer);paintPointer();
   text('model',state.model);text('model-note',state.configured?'Batch planning. Local execution.':'Configure a provider in .env to plan new tasks.');
-  const status=state.pending?'APPROVAL':paused?'PAUSED':active?'RUNNING':trace?.status?.toUpperCase()||'IDLE';text('status',status);$('status').classList.toggle('active',active);
+  const approvedSites=state.approvedSites||[],sitesKey=JSON.stringify(approvedSites);
+  if(sitesKey!==approvedSitesKey){approvedSitesKey=sitesKey;const list=$('approved-sites');list.replaceChildren();if(!approvedSites.length){const empty=document.createElement('li');empty.className='empty';empty.textContent='No sites approved in this session.';list.append(empty);}for(const origin of approvedSites){const item=document.createElement('li'),site=document.createElement('span'),button=document.createElement('button');site.textContent=origin;button.type='button';button.textContent='Revoke';button.setAttribute('aria-label',`Revoke access to ${origin}`);button.onclick=protect(async()=>{await api('control/revoke-site',{origin});notice(`Access revoked for ${origin}.`);await refresh();});item.append(site,button);list.append(item);}}
+  const blocked=trace?.failureKind==='security',status=state.pending?'APPROVAL':paused?'PAUSED':active?'RUNNING':blocked?'BLOCKED':trace?.status?.toUpperCase()||'IDLE';text('status',status);$('status').classList.toggle('active',active);$('status').classList.toggle('blocked',blocked);
   $('run').disabled=active||busy;$('run').firstChild.textContent=active?'Task running ':'Run task ';
   $('pause').disabled=!active||paused;$('resume').disabled=!paused||!active;$('stop').disabled=!active;$('edit-open').disabled=!active||!paused;
-  text('page-url',state.browserUrl||state.state?.url||'No page open');text('control-state',paused?'Manual control · browser clicks enabled':active?'Agent is controlling the browser':trace?.status==='completed'?'Task verified and completed':'Ready when you are');
+  text('page-url',state.browserUrl||state.state?.url||'No page open');text('control-state',paused?'Manual control · browser clicks enabled':active?'Agent is controlling the browser':blocked?'Blocked by local browser security policy':trace?.status==='completed'?'Task verified and completed':'Ready when you are');
   $('manual-tools').hidden=!paused;$('preview').classList.toggle('manual',paused);
   $('approval').hidden=!state.pending;if(state.pending){
     const nextKey=currentRunId+JSON.stringify(state.pending)+(state.events?.filter(e=>e.phase==='HUMAN').at(-1)?.time??'');

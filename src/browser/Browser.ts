@@ -7,10 +7,11 @@ import { tmpdir } from 'node:os';
 import type {SemanticTarget} from '../actions/schema.js';
 import { Interaction } from './Interaction.js';
 import { NetworkGuardProxy, resolvePublicAddresses } from './NetworkGuardProxy.js';
+import { SecurityBoundaryError } from './SecurityBoundaryError.js';
 
 export interface BrowserOptions {
   headless?: boolean; profileDir?: string; timeoutMs?: number;
-  allowedOrigins?: string[]; allowExternal?: boolean;
+  allowedOrigins?: string[]; blockedOrigins?:string[]; allowExternal?: boolean;
   beforeNavigate?:(url:string)=>Promise<void>;
   visualInteraction?:boolean;
 }
@@ -70,7 +71,7 @@ export class Browser {
   private closePromise?:Promise<void>;
   readonly interaction:Interaction;
   constructor(readonly options: BrowserOptions = {}) {this.interaction=new Interaction(()=>this.page,options.visualInteraction);}
-  private async checkNetworkDestination(value:string){if(!this.options.allowExternal)await assertNoPrivateDNSResolution(value);}
+  private async checkNetworkDestination(value:string){if(!this.options.allowExternal)try{await assertNoPrivateDNSResolution(value);}catch(error){throw new SecurityBoundaryError(error instanceof Error?error.message:'Destination blocked by local browser policy');}}
   async launch() {
     const folder=this.options.profileDir?resolve(this.options.profileDir):await mkdtemp(join(tmpdir(),'free-computer-use-'));
     if(this.options.profileDir){await mkdir(folder,{recursive:true,mode:0o700});const info=await lstat(folder);if(!info.isDirectory()||info.isSymbolicLink())throw new Error('Browser profile must be a local directory');await chmod(folder,0o700);}
@@ -213,6 +214,7 @@ export class Browser {
   permits(value: string) {
     try {
       const url = checkedHttpURL(value);
+      if(this.options.blockedOrigins?.includes(url.origin))return false;
       return this.options.allowExternal===true || !!this.options.allowedOrigins?.some(origin=>{
         try{const allowed=checkedHttpURL(origin);return allowed.origin===url.origin&&allowed.pathname==='/'&&!allowed.search&&!allowed.hash;}catch{return false;}
       });
@@ -222,14 +224,14 @@ export class Browser {
     const url = checkedHttpURL(value,this.page.url());
     await this.options.beforeNavigate?.(url.href);
     await this.checkNetworkDestination(url.href);
-    if (!this.permits(url.href)) throw new Error('Navigation destination is outside the local origin policy');
+    if (!this.permits(url.href)) throw new SecurityBoundaryError('Navigation destination is outside the local origin policy');
     await this.page.goto(url.href, { waitUntil: 'domcontentloaded' });
   }
   async openTab(url: string) {
     const destination=checkedHttpURL(url,this.page.url());
     await this.options.beforeNavigate?.(destination.href);
     await this.checkNetworkDestination(destination.href);
-    if (!this.permits(destination.href)) throw new Error('Tab destination is outside the origin policy');
+    if (!this.permits(destination.href)) throw new SecurityBoundaryError('Tab destination is outside the origin policy');
     this.page = await this.context.newPage();
     await this.navigate(destination.href);
   }
