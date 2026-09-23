@@ -192,17 +192,7 @@ Local `.env`, `.fcu`, sessions and downloads are ignored by Git and use restrict
 
 ## Under the hood
 
-```mermaid
-flowchart LR
-  G[Goal + website approval] --> O[Observe DOM locally]
-  O --> W{Compatible workflow?}
-  W -->|Yes: no model| E[Execute with Playwright]
-  W -->|No| P[Flash plans a batch]
-  P --> E
-  E --> V[Verify locally]
-  V -->|Unknown content or bounded repair| O
-  V -->|Success| S[Save result + workflow]
-```
+![The four-step FreeComputerUse execution loop](assets/readme/architecture-loop.svg)
 
 Actions use a strict, validated DSL: navigation, click, fill/type, select, keyboard, scrolling, upload/download, tabs, waits and extraction. Ambiguous mutation targets are rejected. Repairs preserve successful actions and replace the failed portion.
 

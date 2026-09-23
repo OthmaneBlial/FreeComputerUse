@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-labelledby="title description">
+  <title id="title">How FreeComputerUse plans and runs browser tasks</title>
+  <desc id="description">A four-step local browser workflow: inspect the page, reuse a local workflow or ask a configured model to plan a batch, execute validated actions with Playwright, then verify and save the result. Incomplete work returns through bounded repair to observation.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#77896a"/>
+    </marker>
+    <marker id="loop-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#729353"/>
+    </marker>
+    <style>
+      text{font-family:Arial,Helvetica,sans-serif}
+      .eyebrow{font-family:monospace;font-size:11px;font-weight:700;letter-spacing:2px;fill:#75806e}
+      .stage{font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;fill:#68785d}
+      .title{font-size:21px;font-weight:700;letter-spacing:-.5px;fill:#202b24}
+      .copy{font-size:14px;fill:#68736a}
+      .tiny{font-size:12px;fill:#697565}
+    </style>
+  </defs>
+  <rect width="1280" height="480" rx="18" fill="#f4f6ef"/>
+  <text x="38" y="39" class="eyebrow">A LOCAL, CLOSED LOOP</text>
+  <text x="36" y="75" font-size="27" font-weight="700" letter-spacing="-.8" fill="#202b24">Model decisions. Code execution.</text>
+  <rect x="1008" y="35" width="232" height="30" rx="15" fill="#e5ecd9"/>
+  <circle cx="1026" cy="50" r="4" fill="#729353"/>
+  <text x="1038" y="54" font-family="monospace" font-size="10" font-weight="700" letter-spacing="1.1" fill="#536e43">BROWSER ACTIONS STAY LOCAL</text>
+
+  <g fill="none" stroke="#96a38a" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M308 212H338"/>
+    <path d="M620 212H650"/>
+    <path d="M932 212H962"/>
+  </g>
+
+  <g>
+    <rect x="32" y="98" width="276" height="230" rx="12" fill="#fff" stroke="#d9e1d1"/>
+    <circle cx="60" cy="132" r="15" fill="#dff0ad"/>
+    <text x="60" y="137" text-anchor="middle" font-size="12" font-weight="700" fill="#34452e">01</text>
+    <text x="84" y="136" class="stage">OBSERVE</text>
+    <text x="52" y="180" class="title">Inspect the page</text>
+    <text x="52" y="211" class="copy">Compress DOM and controls</text>
+    <text x="52" y="233" class="copy">on your machine.</text>
+    <path d="M52 258H288" stroke="#e7ebe1"/>
+    <text x="52" y="283" class="tiny">Ask before first website access.</text>
+  </g>
+
+  <g>
+    <rect x="344" y="98" width="276" height="230" rx="12" fill="#fff" stroke="#d9e1d1"/>
+    <circle cx="372" cy="132" r="15" fill="#dff0ad"/>
+    <text x="372" y="137" text-anchor="middle" font-size="12" font-weight="700" fill="#34452e">02</text>
+    <text x="396" y="136" class="stage">CHOOSE A PLAN</text>
+    <text x="364" y="180" class="title">Reuse or ask the model</text>
+    <rect x="364" y="196" width="236" height="42" rx="7" fill="#edf4de"/>
+    <circle cx="379" cy="217" r="4" fill="#729353"/>
+    <text x="391" y="214" font-size="12" font-weight="700" fill="#41563a">Saved workflow or</text>
+    <text x="391" y="228" font-size="12" fill="#5f7055">local strategy · no model call</text>
+    <rect x="364" y="247" width="236" height="48" rx="7" fill="#f3f4ef"/>
+    <circle cx="379" cy="271" r="4" fill="#98a18e"/>
+    <text x="391" y="268" font-size="12" font-weight="700" fill="#485148">Otherwise, the chosen model</text>
+    <text x="391" y="283" font-size="12" fill="#69736a">plans one action batch.</text>
+  </g>
+
+  <g>
+    <rect x="656" y="98" width="276" height="230" rx="12" fill="#fff" stroke="#d9e1d1"/>
+    <circle cx="684" cy="132" r="15" fill="#dff0ad"/>
+    <text x="684" y="137" text-anchor="middle" font-size="12" font-weight="700" fill="#34452e">03</text>
+    <text x="708" y="136" class="stage">EXECUTE</text>
+    <text x="676" y="180" class="title">Playwright does the work</text>
+    <text x="676" y="211" class="copy">Validate actions, then click,</text>
+    <text x="676" y="233" class="copy">type, navigate and extract</text>
+    <path d="M676 258H912" stroke="#e7ebe1"/>
+    <text x="676" y="283" class="tiny">No model-generated code runs.</text>
+  </g>
+
+  <g>
+    <rect x="968" y="98" width="280" height="230" rx="12" fill="#fff" stroke="#d9e1d1"/>
+    <circle cx="996" cy="132" r="15" fill="#dff0ad"/>
+    <text x="996" y="137" text-anchor="middle" font-size="12" font-weight="700" fill="#34452e">04</text>
+    <text x="1020" y="136" class="stage">VERIFY</text>
+    <text x="988" y="180" class="title">Check the outcome</text>
+    <text x="988" y="211" class="copy">Verify the page and requested</text>
+    <text x="988" y="233" class="copy">result locally.</text>
+    <path d="M988 258H1228" stroke="#e7ebe1"/>
+    <text x="988" y="283" class="tiny">Save the result and workflow.</text>
+  </g>
+
+  <path d="M1108 328V382Q1108 398 1092 398H188Q172 398 172 382V332" fill="none" stroke="#729353" stroke-width="2" marker-end="url(#loop-arrow)"/>
+  <rect x="413" y="366" width="454" height="32" rx="16" fill="#f4f6ef"/>
+  <text x="640" y="386" text-anchor="middle" font-size="13" font-weight="700" fill="#536e43">Incomplete or unknown result → bounded repair → observe again</text>
+  <path d="M38 433H1242" stroke="#dce3d5"/>
+  <text x="40" y="456" class="tiny">Selected page context goes to the configured model · Preview screenshots stay on your machine.</text>
+</svg>
