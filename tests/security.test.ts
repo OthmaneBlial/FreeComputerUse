@@ -80,6 +80,65 @@ test('unapproved cross-origin fetches are blocked before receiving a request',as
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>receiver.close(()=>resolve()))]);}
 });
 
+test('a bare Browser denies navigation and page requests without an explicit origin policy',async()=>{
+  let visits=0;
+  const server=createServer((_req,res)=>{visits++;res.end('Unexpected request');});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${(server.address() as {port:number}).port}`,browser=await new Browser().launch();
+  try{
+    await assert.rejects(browser.navigate(url),/outside the local origin policy/);
+    const blocked=browser.page.waitForEvent('requestfailed');
+    await browser.page.setContent(`<img src="${url}/pixel">`);
+    assert.equal((await blocked).url(),`${url}/pixel`);assert.equal(visits,0);
+  }finally{await browser.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
+test('a redirected navigation is stopped before an unapproved origin receives it',async()=>{
+  let sourceVisits=0,targetVisits=0,targetPrompted=false;
+  const target=createServer((_req,res)=>{targetVisits++;res.end('<h1>Unapproved target</h1>');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://127.0.0.1:${(target.address() as {port:number}).port}`;
+  const source=createServer((_req,res)=>{sourceVisits++;res.writeHead(302,{Location:targetURL+'/private'});res.end();});
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));
+  const sourceURL=`http://127.0.0.1:${(source.address() as {port:number}).port}`,store=new TraceStore(':memory:');
+  const agent=new Agent({store,browser:{allowedOrigins:[sourceURL]}});
+  agent.control.on('approval',pending=>{
+    if((pending.action as {origin?:string}).origin===sourceURL)agent.control.approve();
+    else{targetPrompted=true;agent.control.reject();}
+  });
+  const plan=PlanSchema.parse({goal:'Read the page',steps:['Read'],actions:[{type:'extract',format:'text',key:'text'}],completion:[{type:'extraction_created'}],continue:false});
+  try{
+    const trace=await agent.run('Read the page',sourceURL,plan);
+    assert.equal(trace.status,'failed');assert.equal(sourceVisits,1);assert.equal(targetPrompted,true);assert.equal(targetVisits,0);
+  }finally{
+    await agent.close();store.close();
+    await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
+  }
+});
+
+test('a redirected navigation reaches a second origin after explicit approval',async()=>{
+  let targetVisits=0,targetApprovals=0;
+  const target=createServer((_req,res)=>{targetVisits++;res.end('<h1>Approved target</h1>');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://127.0.0.1:${(target.address() as {port:number}).port}`;
+  const source=createServer((_req,res)=>{res.writeHead(302,{Location:targetURL+'/private'});res.end();});
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));
+  const sourceURL=`http://127.0.0.1:${(source.address() as {port:number}).port}`,store=new TraceStore(':memory:');
+  const agent=new Agent({store,browser:{allowedOrigins:[sourceURL]}});
+  agent.control.on('approval',pending=>{
+    if((pending.action as {origin?:string}).origin===targetURL)targetApprovals++;
+    agent.control.approve();
+  });
+  const plan=PlanSchema.parse({goal:'Read the approved page',steps:['Read'],actions:[{type:'extract',format:'text',key:'text'}],completion:[{type:'extraction_created'}],continue:false});
+  try{
+    const trace=await agent.run('Read the approved page',sourceURL,plan);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(targetApprovals,1);assert.equal(targetVisits,1);
+  }finally{
+    await agent.close();store.close();
+    await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
+  }
+});
+
 test('a prior download cannot satisfy a new task and a repair cannot weaken trusted criteria',async()=>{
   const store=new TraceStore(':memory:');
   const agent=new Agent({store,mode:'ultra',completionCriteria:[{type:'download_created',value:'old.txt'}],provider:{name:'fixture',plan:async()=>{throw new Error('unexpected');},repair:async()=>({actions:[],replace:0,completion:[{type:'extraction_created'}]})}});

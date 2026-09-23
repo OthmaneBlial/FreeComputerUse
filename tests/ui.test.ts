@@ -14,7 +14,7 @@ test('the real cursor is visible before the first model reply and survives docum
   const fixture=await startFixtures();let release!:()=>void,entered!:()=>void;
   const gate=new Promise<void>(resolve=>{release=resolve;}),planning=new Promise<void>(resolve=>{entered=resolve;});
   const dashboard=await startServer({port:0,quiet:true,provider:{name:'delayed-ui-fixture',plan:async context=>{entered();await gate;return PlanSchema.parse({goal:context.goal,steps:['Open the revenue page','Read the table'],actions:[{type:'navigate',url:fixture.url+'/reports'},{type:'extract',target:{role:'table',name:'Revenue'},format:'table',key:'revenue'}],completion:[{type:'extraction_contains',key:'revenue',value:'March'}]});},repair:async()=>{throw new Error('No repair expected');}}});
-  const browser=await new Browser().launch(),errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));
+  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch(),errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));
   try{
     await browser.navigate(dashboard.url);await browser.page.locator('#start-url').fill(fixture.url+'/demo');await browser.page.locator('#goal').fill('Open the revenue page and read its monthly figures. Do not submit the contact form.');
     await browser.page.getByRole('button',{name:'Run task',exact:true}).click();await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();await planning;
@@ -35,7 +35,7 @@ test('the real cursor is visible before the first model reply and survives docum
 test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true,provider:new FixtureProvider()}),fixture=await startFixtures();
-  const browser=await new Browser().launch();const errors:string[]=[],consoleErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));
+  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'Local profile'}).click();
     await browser.page.locator('#profile-json').fill(JSON.stringify({profile:{firstName:'Alex',lastName:'Example',email:'alex@example.test',message:'Synthetic message',country:'France'},files:{}}));

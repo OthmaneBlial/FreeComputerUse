@@ -20,7 +20,7 @@ test('results present facts and tables, preserve partial status, export a safe r
   add({type:'extract',format:'links',key:'sources'},{sources:[{text:'<img src=x onerror=alert(1)>',url:'javascript:alert(1)'},{text:'Public source',url:'https://example.test/evidence'}]});
   add({type:'download',target:{css:'a'},filename:'itinerary.txt'},{filename:'itinerary.txt',path:file});
   const store=new TraceStore(join(dir,'history.sqlite'));store.save(trace);store.close();
-  const dashboard=await startServer({port:0,quiet:true}),browser=await new Browser().launch(),errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));
+  const dashboard=await startServer({port:0,quiet:true}),browser=await new Browser({allowedOrigins:[dashboard.url]}).launch(),errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'View result'}).click();
     assert.equal(await browser.page.locator('.result-status').textContent(),'Partial result');

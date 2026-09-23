@@ -26,7 +26,7 @@ test('building the public lab preserves the landing page and produces a stable l
 test('styled lab contains sourced real tasks and eight complex browser-only workflows',{timeout:120000},async()=>{
   const lab=await startLab(),dir=await mkdtemp(join(tmpdir(),'fcu-lab-'));
   const tasks=(await import(new URL('../lab/examples.js',import.meta.url).href)).practiceTasks as {id:string;goal:string}[];
-  const browser=await new Browser().launch(),errors:string[]=[];
+  const browser=await new Browser({allowedOrigins:[new URL(lab.url).origin]}).launch(),errors:string[]=[];
   browser.page.on('pageerror',error=>errors.push(error.message));
   browser.page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
   try{
@@ -52,7 +52,7 @@ test('styled lab contains sourced real tasks and eight complex browser-only work
 });
 
 test('incident brief refuses to mark a synthetic rate-limit regression resolved',{timeout:20000},async()=>{
-  const lab=await startLab(),browser=await new Browser().launch();
+  const lab=await startLab(),browser=await new Browser({allowedOrigins:[new URL(lab.url).origin]}).launch();
   try{
     await browser.navigate(lab.url+'workspace.html?view=incident');
     await browser.page.evaluate(()=>sessionStorage.setItem('northstar-v3-incident-filters',JSON.stringify({service:'API Gateway',severity:'High',window:'Last 24 hours'})));
@@ -72,7 +72,7 @@ test('incident brief refuses to mark a synthetic rate-limit regression resolved'
 });
 
 test('incident stage links use stable accessible names across documents',{timeout:20000},async()=>{
-  const lab=await startLab(),browser=await new Browser().launch();
+  const lab=await startLab(),browser=await new Browser({allowedOrigins:[new URL(lab.url).origin]}).launch();
   try{
     await browser.navigate(lab.url+'incident-detail.html?id=INC-204');
     for(const [name,path] of [['Metrics','incident-metrics.html'],['Deployments','incident-deployments.html'],['Runbook','incident-runbook.html'],['Brief','incident-brief.html']] as const){
@@ -111,7 +111,7 @@ test('saving a brief can reveal a download control for the next model batch',{ti
 });
 
 test('quarter-close review rejects a plausible but unposted ledger total',{timeout:20000},async()=>{
-  const lab=await startLab(),browser=await new Browser().launch();
+  const lab=await startLab(),browser=await new Browser({allowedOrigins:[new URL(lab.url).origin]}).launch();
   try{
     await browser.navigate(lab.url+'workspace.html?view=close');
     await browser.page.evaluate(()=>sessionStorage.setItem('northstar-v3-close-scope',JSON.stringify({quarter:'Q3 2026',channel:'Direct'})));

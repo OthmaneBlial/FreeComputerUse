@@ -35,9 +35,15 @@ path. User restrictions and final completion criteria still apply.
 - In normal mode, local vault aliases require a goal authorizing profile, details,
   credentials, resume/CV or local files. Vault values cannot appear in navigation
   URL templates. Uploads require an explicit `{{files.alias}}` defined locally.
-- HTTP(S) only; URL credentials are rejected. Cross-origin resources are limited
-  to configured/approved origins in normal mode. WebSockets follow the same
-  policy. Service workers are blocked to keep request interception effective.
+- HTTP(S) only; URL credentials are rejected. `Agent` grants origins after
+  approval, while the low-level exported `Browser` denies all network requests
+  unless the caller supplies `allowedOrigins` or explicitly opts into
+  `allowExternal`. Cross-origin resources and WebSockets follow that policy.
+  Chromium's DevTools Protocol request interception checks redirect hops in a
+  page with an installed session; redirected document navigations ask for
+  approval, and redirected subresources need a preapproved origin. A newly
+  opened popup can start its first redirect before Playwright exposes its page
+  session, so that case is not yet contained. Service workers are blocked.
 - Selector ambiguity is rejected for mutations; collection extraction may select
   several nodes. Browser dialogs are dismissed by default.
 - A failed click/submit with an uncertain outcome requires human review before

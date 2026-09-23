@@ -11,6 +11,13 @@ selectors, local variables, browser state, permission gates and final verificati
 Known narrow tasks use local strategies; compatible learned tasks reuse semantic
 actions. New page content needs another batch; ordinary clicks do not.
 
+`Agent` asks permission for each new origin. The exported low-level `Browser`
+blocks network requests by default; library callers must pass `allowedOrigins`
+or explicitly choose `allowExternal`. Chromium DevTools Protocol interception
+checks redirect hops after a page session is installed; redirected document
+navigations use the same approval callback. A newly opened popup's first
+redirect may start before that session attaches; see Phase 2.2 in `ROADMAP.md`.
+
 Semantic references are stable for each live document and frame. Selector ranking
 prefers role/name, label, placeholder, test ID, ID/name, text, CSS and observed DOM
 path. Multiple matches fail for mutations. Extraction permits collections.

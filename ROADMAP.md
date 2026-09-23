@@ -117,6 +117,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** aucun scénario interdit n’atteint une cible locale non approuvée ni n’écrit hors du répertoire autorisé ; les cas autorisés continuent de fonctionner ; chaque refus expose sa raison sans divulguer d’information secrète.
 - **Validation :** tests unitaires négatifs et tests Playwright locaux sur fixtures dédiées ; vérifier aussi les cas autorisés pour éviter les faux blocages.
 - **Dépendances / risques :** les protections réseau varient selon OS et navigateur ; toute exception localhost doit rester limitée au mode de test documenté.
+- **État intermédiaire :** le contrôle des redirections d’une page déjà ouverte a des tests négatifs et positifs. Une reproduction locale montre qu’une redirection HTTP rapide depuis un popup peut atteindre la cible avant l’attachement du contrôle. Cette frontière, DNS rebinding et les autres tests listés restent ouverts ; ne pas cocher la phase.
 
 #### 2.3 [ ] Garantir le traitement local des secrets et données de session
 
