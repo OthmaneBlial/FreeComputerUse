@@ -116,6 +116,27 @@ test('connection-time DNS rebinding is blocked inside HTTPS and secure WebSocket
   }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
+test('the proxy rejects a cleartext non-HTTP CONNECT protocol before dialing the target',{timeout:10000},async()=>{
+  let connections=0;
+  const target=createServer();target.on('connection',()=>{connections++;});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const port=(target.address() as {port:number}).port,proxy=new NetworkGuardProxy({allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}],permits:url=>url===`https://non-http.test:${port}/`});
+  try{
+    const address=new URL(await proxy.start());
+    await new Promise<void>((resolve,reject)=>{
+      const request=httpRequest({hostname:address.hostname,port:Number(address.port),method:'CONNECT',path:`non-http.test:${port}`,agent:false});
+      const timer=setTimeout(()=>reject(new Error('The unsupported tunnel stayed open')),3000);
+      request.once('connect',(response,socket)=>{
+        socket.on('error',()=>{});
+        if(response.statusCode!==200){clearTimeout(timer);reject(new Error(`CONNECT returned ${response.statusCode}`));return;}
+        socket.once('close',()=>{clearTimeout(timer);resolve();});socket.write('SSH-2.0-test-client\r\n');
+      });
+      request.once('error',error=>{clearTimeout(timer);reject(error);});request.end();
+    });
+    assert.equal(connections,0);
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
 test('the proxy connects to its single vetted address without resolving the hostname again',{timeout:10000},async()=>{
   let visits=0,resolutions=0;
   const target=createServer((_req,res)=>{visits++;res.end('Pinned destination');});
