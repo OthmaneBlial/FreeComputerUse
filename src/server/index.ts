@@ -3,7 +3,7 @@ import { randomBytes,timingSafeEqual } from 'node:crypto';
 import { readFile,realpath,stat } from 'node:fs/promises';
 import { join,sep } from 'node:path';
 import { z } from 'zod';
-import { Agent } from '../agent/Agent.js';
+import { Agent,type AgentOptions } from '../agent/Agent.js';
 import { checkedHttpURL } from '../browser/Browser.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
@@ -92,13 +92,17 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         const replay=path==='/api/replay'?store.get(z.object({id:z.string()}).strict().parse(input).id):undefined;
         if(path==='/api/replay'&&!replay)throw new Error('Run not found');
         const request=replay?RunRequest.parse({goal:replay.goal,url:replay.url}):RunRequest.parse(input);
-        await agent?.close();const fresh=runtimeConfig();
-        agent=new Agent({store,provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),useWorkflows:request.useWorkflows,confirmation:request.confirmation,mode:request.mode,
+        const fresh=runtimeConfig(),runOptions={provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),useWorkflows:request.useWorkflows,confirmation:request.confirmation,mode:request.mode,
           completionCriteria:[...(request.expectText?[{type:'text_exists' as const,value:request.expectText}]:[]),...(request.expectUrl?[{type:'url_contains' as const,value:request.expectUrl}]:[])],
-          downloadDir:join(config.dataDir,'downloads'),browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(request.url).origin,...request.allowedOrigins.map(url=>new URL(url).origin)]}});
-        agent.on('event',event=>{for(const listener of listeners)listener.write(`data: ${JSON.stringify(event)}\n\n`);});
+          downloadDir:join(config.dataDir,'downloads'),browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(request.url).origin,...request.allowedOrigins.map(url=>new URL(url).origin)]}} satisfies Omit<AgentOptions,'store'>;
+        if(agent)await agent.prepareForNextRun(runOptions);
+        else{
+          agent=new Agent({store,...runOptions});
+          agent.on('event',event=>{for(const listener of listeners)listener.write(`data: ${JSON.stringify(event)}\n\n`);});
+          const running=agent;
+          running.browser.interaction.on('pointer',pointer=>{for(const listener of listeners)listener.write(`event: pointer\ndata: ${JSON.stringify({runId:running.trace?.id,pointer})}\n\n`);});
+        }
         const running=agent;
-        running.browser.interaction.on('pointer',pointer=>{for(const listener of listeners)listener.write(`event: pointer\ndata: ${JSON.stringify({runId:running.trace?.id,pointer})}\n\n`);});
         pending=(replay?running.replay(replay):running.run(request.goal,request.url)).catch(error=>running.event('ERROR',error instanceof Error?error.message:'Task failed')).finally(()=>{pending=undefined;});
         send(202,{started:true});return;
       }

@@ -132,6 +132,8 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:25000});
     assert.equal(await browser.page.locator('#actions').innerText(),'7');
+    const priorAgent=dashboard.getAgent(),priorContext=priorAgent?.browser.context;
+    assert(priorAgent&&priorContext);
     assert.equal(await browser.page.locator('#calls').innerText(),'0'); // Scripted fixture is not a model.
     await browser.page.waitForFunction(()=>(document.querySelector('#preview') as HTMLImageElement)?.naturalWidth>0,undefined,{timeout:8000});
     await browser.page.getByRole('button',{name:'Execution log',exact:true}).click();await browser.page.locator('#stream-dialog').waitFor({state:'visible'});assert(await browser.page.locator('#events li').count()>0);await browser.page.getByRole('button',{name:'Close execution log'}).click();
@@ -141,6 +143,8 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     await browser.page.waitForFunction(()=>!document.querySelector('#approval-reason')?.textContent?.includes('Allow browser access'),undefined,{timeout:15000});
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:25000});
+    assert.equal(dashboard.getAgent(),priorAgent,'The dashboard reuses its local agent between tasks');
+    assert.equal(dashboard.getAgent()?.browser.context,priorContext,'The dashboard keeps one browser context between tasks');
     assert.equal(dashboard.getAgent()?.trace?.metrics.llmCalls,0);
     for(const width of [1440,390]){
       await browser.page.setViewportSize({width,height:900});assert(await browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

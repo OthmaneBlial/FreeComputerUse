@@ -12,6 +12,7 @@ export class Control extends EventEmitter {
   approve(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(true);}
   reject(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(false);}
   edit(value:unknown){if(!this.paused)throw new Error('Pause before editing the plan');this.replacement=PlanSchema.parse(value);}
+  reset(){if(this.pending||this.decide)throw new Error('Cannot reset control while approval is pending');this.paused=false;this.stopped=false;this.replacement=undefined;this.revision++;this.emit('change');}
   async checkpoint(){
     while(this.paused&&!this.stopped) await new Promise<void>(resolve=>this.once('change',resolve));
     if(this.stopped)throw new Error('Task stopped by human');

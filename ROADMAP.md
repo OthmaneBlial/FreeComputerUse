@@ -165,7 +165,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 4 — Robustesse du code et validation reproductible (P0)
 
-#### 4.1 [ ] Stabiliser les tests et les critères indépendants
+#### 4.1 [x] Stabiliser les tests et les critères indépendants
 
 - **Objectif :** vérifier la justesse des effets, pas seulement l’absence d’exception.
 - **Changements :** compléter les tests pour interruption, délais, réponses mal formées, retry, navigateur fermé, stockage interrompu, actions multi-étapes et workflow devenu incompatible. Garder des oracles indépendants sur les états/fichiers/données.
@@ -173,7 +173,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** les chemins critiques disposent de tests déterministes sans clé réseau ; tests live et coûts sont séparés ; échec partiel et flaky ne sont pas comptés comme réussite.
 - **Validation :** `npm run check`, `npm test`, puis `npm run validate` après correction de la génération Pages ; rapporter précisément les échecs au lieu de les masquer.
 - **Dépendances / risques :** les tests navigateurs peuvent être sensibles à la version Playwright ; épingler/enregistrer versions et diagnostiquer les flakiness.
-- **État intermédiaire, 23 septembre 2026 :** `FCU_BROWSER_CHANNEL=chrome npm test` donne 78/79 ; seul le replay multi-workflows du laboratoire échoue. Le diagnostic a confirmé un arrêt natif de Chrome `154.0.8037.57` (`SIGSEGV`, rapport macOS `EXC_BAD_ACCESS`, thread `CrBrowserMain`) lors d’un run puis replay avec le même profil persistant. Un replay Playwright local reproduit aussi ce comportement sans l’agent ; les huit scénarios passent en isolation avec un profil vierge. Ce résultat ne valide pas la réutilisation d’un profil utilisateur. Chromium livré avec Playwright n’est pas présent ici ; garder la tâche ouverte jusqu’à une validation reproductible sur une combinaison navigateur supportée.
+- **État validé, 24 septembre 2026 :** le serveur conserve le même `Agent` et le même contexte Chromium entre tâches du tableau de bord, tout en ouvrant un onglet neuf à chaque tâche pour repartir sans le `sessionStorage` précédent. Le proxy réseau relit le mode courant pour appliquer le blocage des adresses privées après une tâche Ultra. Des régressions vérifient le même contexte durant le replay, les huit workflows du labo, la reprise après fermeture du dernier onglet et le retour du proxy au mode privé. `npm run check` passe et `FCU_BROWSER_CHANNEL=chrome npm test` passe 97/97 en série, sans clé fournisseur. `FCU_BROWSER_CHANNEL=chrome npm run validate` a passé la génération du labo, les types, les 97 tests et le build ; j’ai arrêté le scan de tout l’historique après 2 min 30 sans résultat. Le scan du checkout courant passe (245 versions de fichiers) et l’audit npm séparé signale zéro vulnérabilité. Chrome système `154.0.8037.57`, macOS `26.6`, Node `25.9.0`. Chromium Playwright n’a pas été téléchargé. Le scan historique, le redémarrage autonome de Chrome sur un profil identique, les autres navigateurs et Windows/Linux restent non vérifiés.
 
 #### 4.2 [ ] Documenter et vérifier la plateforme réellement supportée
 

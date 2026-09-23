@@ -6,7 +6,7 @@ function sensitiveQueryParameter(value:string){
     /^(?:key|apikey|accesskey|clientkey|privatekey|subscriptionkey|signingkey|code|oauthcode|authorizationcode|codeverifier)$/.test(normalized);
 }
 export class VariableResolver {
-  constructor(readonly vault:Vault={profile:{},files:{}}) {}
+  constructor(public vault:Vault={profile:{},files:{}}) {}
   resolve(value:string):string {
     return value.replace(/\{\{([^}]+)\}\}/g,(_,path:string)=>{
       const [group,key,...extra]=path.trim().split('.');

@@ -29,7 +29,7 @@ export interface AgentEvent {phase:string;message:string;time:number;data?:unkno
 export class Agent extends EventEmitter {
   readonly browser:Browser;readonly observer=new Observer();readonly control=new Control();
   readonly variables:VariableResolver;readonly executor:Executor;readonly workflows:WorkflowEngine;
-  readonly budget:TokenBudget;state?:PageState;trace?:Trace;events:AgentEvent[]=[];
+  budget:TokenBudget;state?:PageState;trace?:Trace;events:AgentEvent[]=[];
   active=false;
   private cache=new Map<string,PageState>();
   private permittedSites=new Set<string>();
@@ -67,7 +67,7 @@ export class Agent extends EventEmitter {
     this.watchedContexts.add(context);
     const watch=(page:Page)=>page.once('close',()=>{
       if(!this.active||this.control.stopped||page!==this.browser.page)return;
-      this.control.stop();void this.browser.close().catch(()=>{});
+      this.control.stop();
     });
     context.pages().forEach(watch);context.on('page',watch);
   }
@@ -209,6 +209,22 @@ export class Agent extends EventEmitter {
     if(trace.status!=='completed')throw new Error('Only completed traces can be replayed; failed runs may contain incomplete side effects');
     const plan=PlanSchema.parse({goal:trace.goal,steps:['Replay successful semantic actions'],actions:trace.actions.filter(a=>a.success).map(a=>a.action),completion:trace.completion,continue:false});
     return this.run(trace.goal,url??trace.url,plan,false);
+  }
+  async prepareForNextRun(options:Partial<Omit<AgentOptions,'store'>>={}){
+    if(this.active||this.control.pending)throw new Error('Cannot prepare an active browser task for another run');
+    Object.assign(this.options,options);
+    this.control.reset();
+    if(Object.hasOwn(options,'vault'))this.variables.vault=options.vault??{profile:{},files:{}};
+    if(options.budget)this.budget=options.budget;
+    Object.assign(this.browser.options,options.browser);
+    this.browser.options.allowedOrigins=[...(options.browser?.allowedOrigins??[])];
+    this.browser.options.blockedOrigins=[...(options.browser?.blockedOrigins??[])];
+    this.browser.options.allowExternal=this.options.mode==='ultra'||options.browser?.allowExternal===true;
+    this.executor.options.confirmation=this.options.mode==='ultra'?'never':this.options.confirmation;
+    this.executor.options.downloadDir=this.options.downloadDir;
+    this.state=undefined;this.trace=undefined;this.events=[];this.cache.clear();this.permittedSites.clear();
+    this.browser.downloads.length=0;this.browser.extractions.length=0;this.browser.responses.length=0;this.browser.formReceipts.length=0;
+    await this.browser.prepareForNextRun();
   }
   async close(){this.control.stop();await this.browser.close();}
 }

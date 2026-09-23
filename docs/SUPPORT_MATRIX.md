@@ -33,8 +33,8 @@ parameters, endpoint and terms before use.
 | Area | Declared or implemented | Verified evidence | Limit |
 | --- | --- | --- | --- |
 | Node.js | `package.json` requires Node `>=22.13.0`. | Clean source export installed with `npm ci --offline --no-audit --no-fund`; TypeScript checks and first-run CLI/UI smoke passed on Node `25.9.0`, macOS `26.6`, Apple Silicon on 23 September 2026. | Minimum Node version and other operating systems have not been validated. |
-| Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | System Chrome `154.0.8037.57` launched and passed the focused security and fresh-install sandbox UI smokes. A same-profile multi-workflow replay ended in `SIGSEGV`; earlier synthetic download coverage also ended in `SIGTRAP`. | Matching Playwright Chromium is absent. System Chrome evidence is limited to the recorded focused and onboarding paths; Playwright warns that non-bundled browsers may be incompatible. No browser was downloaded. |
-| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. A second loopback proxy enforces origin policy for HTTP(S)/WebSocket traffic, blocks private/reserved DNS answers and checks private IPv4 embedded in prefixes learned through `ipv4only.arpa`. The persistent Chromium profile disables WebRTC UDP that the proxy cannot carry. Explicit IP literals need exact origin approval. Ultra/`allowExternal` opts out of origin and private-address checks. Closing the active page cancels its run and pending approval. | The focused security suite passed on system Chrome `154.0.8037.57`, including popup redirect denial/approval, simulated public-to-loopback DNS rebinding, IPv4/IPv6 reserved-range checks, exact IP-origin policy, normal/Ultra behavior and approved/blocked WebSockets. A Chrome-originated WSS fixture returns a frame through the proxy; an unapproved WSS origin is blocked before the target receives a TCP connection. The generated local certificate is explicitly ignored by the test, so public certificate trust is not proven. Synthetic DNS64 fixtures cover private and public embedded IPv4 for all six RFC 6052 prefix lengths. The local resolver returned only A records for `ipv4only.arpa`, so actual NAT64 discovery is unverified. A local STUN receiver got no WebRTC UDP packets; the browser profile setting coexisted with an unrelated existing preference. A cleartext SSH-style CONNECT was closed before the target received a connection. The separate actions and results suites passed 8/8 and 1/1. | A multi-step lab replay after relaunching the same persistent profile caused system Chrome `154.0.8037.57` to exit with `SIGSEGV` on macOS `26.6` on 23 September 2026. The matching local `.ips` report identifies `CrBrowserMain` and `EXC_BAD_ACCESS`; a raw Playwright reproduction also failed. A fresh-profile replay of all eight lab workflows passed in isolation. This records a browser/profile combination failure, not a successful same-profile replay. The full suite is not verified. Live NAT64 discovery, trusted-certificate WSS, non-HTTP traffic beyond the WebRTC STUN fixture, other browser builds and universal website success remain unverified. WebRTC services needing direct UDP may fail. |
+| Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | System Chrome `154.0.8037.57` passed the serial 97/97 suite on 24 September 2026 after the dashboard stopped relaunching its persistent profile between tasks. | Matching Playwright Chromium is absent. Playwright warns that non-bundled browsers may be incompatible. Other browser builds and operating systems remain unverified. No browser was downloaded. |
+| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. A second loopback proxy enforces origin policy for HTTP(S)/WebSocket traffic, blocks private/reserved DNS answers and checks private IPv4 embedded in prefixes learned through `ipv4only.arpa`. The persistent Chromium profile disables WebRTC UDP that the proxy cannot carry. Explicit IP literals need exact origin approval. Ultra/`allowExternal` opts out of origin and private-address checks. Closing the active page cancels its run and pending approval. | On 24 September, the dashboard was changed to reuse one `Agent` and Chromium context between tasks, opening a fresh tab for each task. Regression checks confirm dashboard replay keeps the same context, all eight lab workflows replay in that context, and the persistent network proxy reapplies private-address policy when the mode changes. The serial full suite passed 97/97 on system Chrome `154.0.8037.57`, macOS `26.6`, Node `25.9.0`. Security cases include popup redirects, simulated DNS rebinding, reserved ranges, normal/Ultra behavior and approved/blocked WebSockets. A Chrome-originated WSS fixture returns a frame through the proxy; its generated local certificate is ignored, so public certificate trust is not proven. Synthetic DNS64 fixtures cover all six RFC 6052 prefix lengths; actual NAT64 discovery remains unverified. A local STUN receiver got no WebRTC UDP packets. | Before context reuse, relaunching Chrome `154.0.8037.57` with the same persistent profile caused a `SIGSEGV` on 23 September; the `.ips` report identifies `CrBrowserMain` and `EXC_BAD_ACCESS`. The dashboard now avoids this process boundary, and its full local regression suite passes. Reopening the same profile through a standalone Playwright process remains unverified. Matching Playwright Chromium is absent; no browser was downloaded. Live NAT64 discovery, trusted-certificate WSS, non-HTTP traffic beyond the WebRTC STUN fixture, other browser builds, Windows/Linux and universal website success remain unverified. WebRTC services needing direct UDP may fail. |
 | Vision and canvas | Local screenshots/preview exist. | Screenshot paths are documented as local. | Images are not sent to the model; model vision and visual-only/canvas control are not implemented. |
 | npm package | Package metadata declares a CLI and library entry point; package name is `free-computer-use`. | `npm pack` has not been validated from a clean installation in this run. | No npm publication is verified; registry lookup returned 404 during the 23 September audit. `0.1.0` is manifest metadata, not a published release. |
 | GitHub release / binary | No release tag or GitHub release was present at audit time. | None. | No downloadable release binary or archive is currently offered. |
@@ -47,12 +47,12 @@ parameters, endpoint and terms before use.
   keyboard-only no-key `ui:smoke`, and `npm run dev -- --port 0` all passed on
   macOS `26.6` / Node `25.9.0` / system Chrome `154.0.8037.57`. Dashboard
   returned HTTP `200`; export was removed.
-- `npm run check`: passed on Node `25.9.0`.
+- `npm run check`: passed on Node `25.9.0` on 24 September 2026.
 - `npm run build`: passed.
 - Previous recorded `npm run security` pass covered 6,005 tracked file versions.
-  The history rescan in this iteration was stopped after more than one minute
-  while traversing Git; it produced no new result. This pattern scan is not a
-  complete security audit.
+  On 24 September 2026, the checkout-only scan passed 245 tracked file versions;
+  the full history rescan was stopped after 2 minutes 30 seconds without a
+  result. This pattern scan is not a complete security audit.
 - `npm audit --omit=dev --audit-level=high`: passed; zero production dependency
   advisories reported.
 - `FCU_BROWSER_CHANNEL=chrome LLM_API_KEY= npm run agent -- doctor`: passed the
@@ -146,11 +146,18 @@ parameters, endpoint and terms before use.
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other
   vendors.
-- Full `npm test`: **not verified**. A run was stopped after process inspection
-  found the suite idle in `tests/security.test.ts` with a headless Chrome child;
-  no full-suite result is claimed. A prior run passed 49/50 and hit a Chrome
-  `SIGTRAP` in a synthetic-download case. Matching Playwright Chromium is
-  absent; no browser was downloaded.
+- Full serial `FCU_BROWSER_CHANNEL=chrome npm test`: passed 97/97 on 24 September
+  2026 in 150.5 seconds, with system Chrome `154.0.8037.57`, macOS `26.6`, and
+  Node `25.9.0`. `npm test` pins test-file concurrency to one to keep the local
+  browser suite reproducible. This does not validate standalone same-profile
+  Chrome relaunches, bundled Playwright Chromium, Windows, or Linux. No browser
+  was downloaded.
+- `FCU_BROWSER_CHANNEL=chrome npm run validate` passed lab generation, TypeScript
+  checks, all 97 tests and the package build, then was stopped during its full
+  Git-history security scan after 2 minutes 30 seconds without a result. The
+  checkout-only security scan passed for 245 tracked file versions; a separate
+  `npm audit --omit=dev --audit-level=high` found zero vulnerabilities. The
+  historical scan and the complete umbrella command remain unverified.
 - ChatGPT subscription smoke: one synthetic plan completed on 23 September 2026
   using Codex CLI `0.156.1`; local budget estimates 7,022 input / 97 output
   tokens. The model ID and actual provider usage were not reported. No browser

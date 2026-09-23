@@ -199,6 +199,21 @@ test('the proxy connects to its single vetted address without resolving the host
   }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
+test('a persistent proxy reapplies the current private-network policy',{timeout:10000},async()=>{
+  let visits=0,allowPrivate=true;
+  const target=createServer((_req,res)=>{visits++;res.end('Local fixture');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://mode.test:${(target.address() as {port:number}).port}`;
+  const proxy=new NetworkGuardProxy({allowPrivate:()=>allowPrivate,resolver:async()=>[{address:'127.0.0.1',family:4}],permits:url=>url===targetURL+'/'});
+  try{
+    const proxyURL=await proxy.start();
+    assert.deepEqual(await requestThroughProxy(proxyURL,targetURL+'/'),{status:200,body:'Local fixture'});
+    allowPrivate=false;
+    assert.equal((await requestThroughProxy(proxyURL,targetURL+'/')).status,403);
+    assert.equal(visits,1,'Normal mode blocks the request before it reaches the local fixture');
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
 test('concurrent permissions remain distinct and stopping rejects queued approvals',async()=>{
   const control=new Control(),seen:unknown[]=[];control.on('approval',p=>seen.push(p.action));
   const firstVisible=once(control,'approval');
@@ -449,10 +464,10 @@ test('a prior download cannot satisfy a new task and a repair cannot weaken trus
 });
 
 test('closing a page cancels its pending frame grant and cannot make a later request',{timeout:15000},async()=>{
-  let visits=0;
+  let visits=0,includeChild=true;
   const child=createServer((_req,res)=>{visits++;res.end('<h1>Child</h1>');});
   await new Promise<void>(resolve=>child.listen(0,'127.0.0.1',resolve));const childURL=`http://127.0.0.1:${(child.address() as {port:number}).port}`;
-  const parent=createServer((_req,res)=>res.end(`<h1>Parent</h1><iframe src="${childURL}"></iframe>`));
+  const parent=createServer((_req,res)=>res.end(`<h1>Parent</h1>${includeChild?`<iframe src="${childURL}"></iframe>`:''}`));
   await new Promise<void>(resolve=>parent.listen(0,'127.0.0.1',resolve));const url=`http://127.0.0.1:${(parent.address() as {port:number}).port}`;
   const store=new TraceStore(':memory:'),agent=new Agent({store,browser:{allowedOrigins:[url]}});let childPrompt=false;let signalChild!:()=>void;const pendingChild=new Promise<void>(resolve=>{signalChild=resolve;});
   agent.control.on('approval',pending=>{if((pending.action as {origin:string}).origin===url)agent.control.approve();else{childPrompt=true;signalChild();}});
@@ -464,9 +479,14 @@ test('closing a page cancels its pending frame grant and cannot make a later req
     let timer:NodeJS.Timeout|undefined;
     try{await Promise.race([pendingChild,running.then(()=>{throw new Error('Task ended before requesting the child permission');}),new Promise<void>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Timed out waiting for the child-origin permission')),5000);})]);}
     finally{if(timer)clearTimeout(timer);}
+    const context=agent.browser.context;
     await agent.browser.page.close();const trace=await running;
     assert(childPrompt);assert.equal(trace.status,'stopped');assert.equal(agent.control.pending,undefined);assert.equal(visits,0);
     assert.throws(()=>agent.control.approve(),/No action/);
+    includeChild=false;await agent.prepareForNextRun({browser:{allowedOrigins:[url]}});
+    const resumed=await agent.run('Read the parent page again',url,PlanSchema.parse({goal:'Read the parent page again',steps:['Read the parent'],actions:[{type:'extract',format:'text',key:'parent'}],completion:[{type:'text_exists',value:'Parent'}],continue:false}));
+    assert.equal(resumed.status,'completed',resumed.error??'The next run should use a fresh tab in the same browser');
+    assert.equal(agent.browser.context,context);assert.equal(context.pages().length,1);
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>parent.close(()=>resolve())),new Promise<void>(resolve=>child.close(()=>resolve()))]);}
 });
 

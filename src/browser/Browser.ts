@@ -76,7 +76,7 @@ export class Browser {
     const folder=this.options.profileDir?resolve(this.options.profileDir):await mkdtemp(join(tmpdir(),'free-computer-use-'));
     if(this.options.profileDir){await mkdir(folder,{recursive:true,mode:0o700});const info=await lstat(folder);if(!info.isDirectory()||info.isSymbolicLink())throw new Error('Browser profile must be a local directory');await chmod(folder,0o700);}
     else this.temporaryProfileDir=folder;
-    this.networkProxy=new NetworkGuardProxy({allowPrivate:this.options.allowExternal===true,permits:url=>this.permits(url)});
+    this.networkProxy=new NetworkGuardProxy({allowPrivate:()=>this.options.allowExternal===true,permits:url=>this.permits(url)});
     try{
       await restrictUnproxiedWebRTC(folder);
       const proxy=await this.networkProxy.start();
@@ -250,6 +250,12 @@ export class Browser {
     if (this.context.pages().length === 1) throw new Error('Cannot close the last tab');
     const closing=this.page;this.page=this.context.pages().filter(page=>page!==closing).at(-1)!;
     await closing.close();
+  }
+  async prepareForNextRun(){
+    if(!this.context)return;
+    await Promise.all(this.context.pages().map(page=>page.close()));
+    this.page=await this.context.newPage();
+    await this.interaction.initialize(this.page);
   }
   async close() {
     if(this.closePromise)return this.closePromise;

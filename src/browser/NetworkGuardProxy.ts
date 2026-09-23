@@ -94,7 +94,7 @@ export class NetworkGuardProxy {
   private server?:Server;
   private readonly sockets=new Set<Duplex>();
   private readonly agent=new Agent({keepAlive:true,maxSockets:32});
-  constructor(private readonly options:{allowPrivate?:boolean;resolver?:HostResolver;permits?:(url:string)=>boolean}={}){}
+  constructor(private readonly options:{allowPrivate?:boolean|(()=>boolean);resolver?:HostResolver;permits?:(url:string)=>boolean}={}){}
 
   async start(){
     const server=createServer((request,response)=>void this.forward(request,response));
@@ -129,7 +129,8 @@ export class NetworkGuardProxy {
     const normalized=hostname.replace(/^\[|\]$/g,'');
     const family=isIP(normalized);
     if(family)return[{address:normalized,family}];
-    return resolveAddresses(normalized,this.options.resolver,this.options.allowPrivate===true);
+    const allowPrivate=typeof this.options.allowPrivate==='function'?this.options.allowPrivate():this.options.allowPrivate===true;
+    return resolveAddresses(normalized,this.options.resolver,allowPrivate);
   }
 
   private connectionOptions(hostname:string,addresses:Address[]){

@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {tmpdir} from 'node:os';
 import {Agent} from '../src/agent/Agent.js';
+import {TokenBudget} from '../src/agent/TokenBudget.js';
 import {Browser} from '../src/browser/Browser.js';
 import {TraceStore} from '../src/history/TraceStore.js';
 import {PlanSchema} from '../src/actions/schema.js';
@@ -43,10 +44,9 @@ test('styled lab contains sourced real tasks and eight complex browser-only work
       try{
         const trace=await agent.run(goal,url,planFor(scenario,goal));assert.equal(trace.status,'completed',scenario.id+': '+trace.error);assert(await scenario.oracle(agent),scenario.id+' independent result oracle');
         for(const width of [1440,390]){await agent.browser.page.setViewportSize({width,height:900});assert(await agent.browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),scenario.id+' responsive overflow');}
-      }finally{await agent.close();}
-      const repeated=new Agent(options);repeated.control.on('approval',()=>repeated.control.approve());
-      try{const repeat=await repeated.run(goal,url);assert.equal(repeat.status,'completed',scenario.id+' learned repeat: '+repeat.error+' '+JSON.stringify(repeated.events.slice(-8)));assert.equal(repeat.metrics.llmCalls,0);assert(await scenario.oracle(repeated),scenario.id+' repeat oracle');}
-      finally{await repeated.close();store.close();}
+        await agent.prepareForNextRun({budget:new TokenBudget()});
+        const repeat=await agent.run(goal,url);assert.equal(repeat.status,'completed',scenario.id+' learned repeat: '+repeat.error+' '+JSON.stringify(agent.events.slice(-8)));assert.equal(repeat.metrics.llmCalls,0);assert(await scenario.oracle(agent),scenario.id+' repeat oracle');
+      }finally{await agent.close();store.close();}
     }
   }finally{await browser.close();await lab.close();await rm(dir,{recursive:true,force:true});}
 });
