@@ -10,6 +10,8 @@ import { ProfileStore } from '../profile/ProfileStore.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
 import { Browser } from '../browser/Browser.js';
 import { Observer } from '../browser/Observer.js';
+import { FlashProvider } from '../llm/FlashProvider.js';
+import { CodexSubscriptionProvider } from '../llm/CodexSubscriptionProvider.js';
 import { loadEnvironment,runtimeConfig } from '../config.js';
 import type { ConfirmationPolicy } from '../actions/policy.js';
 import { z } from 'zod';
@@ -102,10 +104,14 @@ program.command('config').option('--profile <file>','Import a profile/files JSON
   if(options.profile){await profile.save(JSON.parse(await readFile(resolve(options.profile),'utf8')));console.log('Local profile imported (mode 0600).');}
   const vault=await profile.load();console.log(JSON.stringify({dataDir:config.dataDir,model:config.provider?.name??'not configured',apiKeyConfigured:!!process.env.LLM_API_KEY,budget:config.budget.limits,profileAliases:Object.keys(vault.profile),fileAliases:Object.keys(vault.files)},null,2));
 });
-program.command('doctor').option('--api','Validate model credentials through the models endpoint').action(async(options:{api?:boolean})=>{
+program.command('doctor').option('--api','Validate provider credentials or subscription login').action(async(options:{api?:boolean})=>{
   const config=runtimeConfig();console.log(`Node ${process.version}; model ${config.provider?.name??'not configured'}; data ${config.dataDir}`);
   const browser=new Browser();try{await browser.launch();console.log('Chromium launch: passed');}finally{await browser.close();}
-  if(options.api){if(!config.provider)throw new Error('LLM_API_KEY not configured');const anthropic=config.provider.config.protocol==='anthropic';const response=await fetch(config.provider.config.baseURL.replace(/\/$/,'')+'/models',{headers:anthropic?{'x-api-key':config.provider.config.key,'anthropic-version':'2023-06-01'}:{Authorization:`Bearer ${config.provider.config.key}`},signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)throw new Error(`Provider models HTTP ${response.status}`);const data=await response.json() as {data?:{id:string}[]};console.log('Provider models:',data.data?.map(m=>m.id).join(', '));if(!data.data?.some(m=>m.id===config.provider!.name))throw new Error('Configured model is not advertised by this provider');}
+  if(options.api){
+    if(!config.provider)throw new Error('LLM_API_KEY not configured');
+    if(config.provider instanceof CodexSubscriptionProvider){await config.provider.checkLogin();console.log('Codex ChatGPT login: passed');return;}
+    if(config.provider instanceof FlashProvider){const anthropic=config.provider.config.protocol==='anthropic';const response=await fetch(config.provider.config.baseURL.replace(/\/$/,'')+'/models',{headers:anthropic?{'x-api-key':config.provider.config.key,'anthropic-version':'2023-06-01'}:{Authorization:`Bearer ${config.provider.config.key}`},signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)throw new Error(`Provider models HTTP ${response.status}`);const data=await response.json() as {data?:{id:string}[]};console.log('Provider models:',data.data?.map(m=>m.id).join(', '));if(!data.data?.some(m=>m.id===config.provider!.name))throw new Error('Configured model is not advertised by this provider');}
+  }
 });
 program.command('ui').option('--port <n>','Loopback web UI port','4318').option('--headed','Show Chromium alongside preview').action(async options=>{
   const {startServer}=await import('../server/index.js');await startServer({port:z.coerce.number().int().min(0).max(65535).parse(options.port),headed:!!options.headed});

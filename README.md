@@ -121,8 +121,9 @@ DeepSeek Flash is the live-validated default. Other providers have not been live
 | xAI Grok | `LLM_PROVIDER=openai-compatible`, `LLM_BASE_URL=https://api.x.ai/v1`, `LLM_MODEL=<model>` |
 | OpenRouter or another compatible endpoint | `LLM_PROVIDER=openai-compatible`, set its base URL and model |
 | Anthropic API | `LLM_PROVIDER=anthropic`, `LLM_MODEL=<model>`, `LLM_RESPONSE_FORMAT=json_object`; base URL defaults to `https://api.anthropic.com/v1` |
+| [ChatGPT plan via Codex CLI](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan) | Install Codex CLI, sign in with `codex login`, set `LLM_PROVIDER=codex-subscription`; `LLM_MODEL` is optional |
 
-Set `LLM_API_KEY` to the key for that service. Anthropic uses JSON output plus local schema validation because its structured-output schema rules do not accept this app’s dynamic extraction fields. OpenAI API billing is [separate from a ChatGPT subscription](https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform); Claude API usage is separate from a Claude Pro/Max plan.
+Set `LLM_API_KEY` to the key for API services. Codex subscription mode uses the account logged into Codex CLI and does not need an API key. Its local code, shell, file/image, browser, search, app, MCP, plugin and memory tools are disabled while it plans; browser actions still run in FreeComputerUse. Codex token totals are estimates; usage limits come from the signed-in ChatGPT plan. Anthropic uses JSON output plus local schema validation because its structured-output schema rules do not accept this app’s dynamic extraction fields. OpenAI API billing is [separate from a ChatGPT subscription](https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform); Claude API usage is separate from a Claude Pro/Max plan.
 
 | Setting | Default |
 | --- | --- |
