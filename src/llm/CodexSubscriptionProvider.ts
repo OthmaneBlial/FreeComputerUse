@@ -9,6 +9,7 @@ import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMPro
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
 import { parseCliVersion,safeCliEnvironment } from './cliEnvironment.js';
+import { normalizeProviderOutput,providerOutputSchema } from './structuredOutput.js';
 
 const execFile=promisify(execFileCallback);
 export interface CodexSubscriptionConfig {command?:string;model?:string;timeoutMs?:number}
@@ -23,53 +24,6 @@ function codexEnvironment(){
   const env=safeCliEnvironment();
   for(const key of ['OPENAI_BASE_URL','OPENAI_ORG_ID','OPENAI_PROJECT_ID','CODEX_MODEL_PROVIDER'])delete env[key];
   return env;
-}
-
-function codexOutputSchema(schema:z.ZodTypeAny){
-  const visit=(value:unknown,parentKey?:string):unknown=>{
-    if(Array.isArray(value))return value.map(item=>visit(item));
-    if(!value||typeof value!=='object')return value;
-    const source=value as Record<string,unknown>;
-    if(parentKey==='fields'&&source.type==='object'&&source.additionalProperties&&typeof source.additionalProperties==='object'){
-      const item=visit(source.additionalProperties) as Record<string,unknown>;
-      const properties={key:{type:'string',minLength:1,maxLength:2000},...item.properties as Record<string,unknown>};
-      return {type:'array',minItems:1,maxItems:20,items:{type:'object',properties,required:Object.keys(properties),additionalProperties:false}};
-    }
-    const required=new Set(Array.isArray(source.required)?source.required.filter((key):key is string=>typeof key==='string'):[]);
-    const output=Object.fromEntries(Object.entries(source).filter(([key])=>key!=='default').map(([key,nested])=>[key==='oneOf'?'anyOf':key,visit(nested,key)]));
-    if(source.properties&&typeof source.properties==='object'&&!Array.isArray(source.properties)){
-      const properties=Object.fromEntries(Object.entries(source.properties).map(([key,nested])=>[
-        key,required.has(key)?visit(nested,key):{anyOf:[visit(nested,key),{type:'null'}]},
-      ]));
-      output.properties=properties;
-      output.required=Object.keys(properties);
-    }
-    return output;
-  };
-  return visit(z.toJSONSchema(schema,{unrepresentable:'any',reused:'ref'}));
-}
-
-function normalizeCodexOutput(value:unknown):unknown{
-  if(Array.isArray(value))return value.map(normalizeCodexOutput);
-  if(!value||typeof value!=='object')return value;
-  const source=value as Record<string,unknown>,isRecordsAction=source.type==='extract'&&source.format==='records';
-  const outputEntries:Array<[string,unknown]>=[];
-  for(const [key,nested] of Object.entries(source)){
-    if(nested===null)continue;
-    if(key==='fields'&&isRecordsAction&&Array.isArray(nested)){
-      const fieldEntries:Array<[string,unknown]>=[],names=new Set<string>();
-      for(const field of nested){
-        if(!field||typeof field!=='object'||Array.isArray(field))break;
-        const {key:fieldName,...selection}=field as Record<string,unknown>;
-        if(typeof fieldName!=='string'||names.has(fieldName))break;
-        names.add(fieldName);fieldEntries.push([fieldName,normalizeCodexOutput(selection)]);
-      }
-      if(nested.length&&fieldEntries.length===nested.length){outputEntries.push([key,Object.fromEntries(fieldEntries)]);continue;}
-    }
-    outputEntries.push([key,normalizeCodexOutput(nested)]);
-  }
-  // ponytail: null means omitted for current action schemas; use schema-aware normalization if explicit nullable fields are added.
-  return Object.fromEntries(outputEntries);
 }
 
 export class CodexSubscriptionProvider implements LLMProvider {
@@ -114,7 +68,7 @@ export class CodexSubscriptionProvider implements LLMProvider {
       usage={input:inputBound,output:outputBound,estimated:true};this.budget.record(usage,reservation.id);
       if(outputBound>reservation.maxOutput)throw new Error('Codex response exceeded the estimated output-token budget');
       let value:unknown;try{value=JSON.parse(output);}catch{throw new Error('Codex returned invalid JSON');}
-      const checked=schema.safeParse(normalizeCodexOutput(value));
+      const checked=schema.safeParse(normalizeProviderOutput(value));
       if(!checked.success){validationFailure=true;throw new Error('Codex response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});return checked.data;
     }catch(error){
@@ -129,7 +83,7 @@ export class CodexSubscriptionProvider implements LLMProvider {
     const directory=await mkdtemp(join(tmpdir(),'fcu-codex-'));
     try{
       const schemaPath=join(directory,'output-schema.json');
-      await writeFile(schemaPath,JSON.stringify(codexOutputSchema(schema)),{mode:0o600});
+      await writeFile(schemaPath,JSON.stringify(providerOutputSchema(schema)),{mode:0o600});
       const args=['exec','--ephemeral','--skip-git-repo-check','--ignore-user-config','--ignore-rules','--strict-config','--sandbox','read-only'];
       for(const feature of disabledFeatures)args.push('--disable',feature);
       args.push('--config','web_search="disabled"','--config','mcp_servers={}');

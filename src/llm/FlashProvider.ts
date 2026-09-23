@@ -3,7 +3,8 @@ import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
-export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';timeoutMs?:number}
+import { normalizeProviderOutput,providerOutputSchema } from './structuredOutput.js';
+export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';maxOutputTokensParam?:'max_tokens'|'max_completion_tokens';timeoutMs?:number}
 export class FlashProvider implements LLMProvider {
   readonly name:string;
   readonly calls:LLMCall[]=[];
@@ -22,13 +23,13 @@ export class FlashProvider implements LLMProvider {
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
   private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false):Promise<T>{
     const {page,...task}=context as PlanningContext;
-    const system=SYSTEM_POLICY+'\n'+format;
+    const system=SYSTEM_POLICY+'\n'+format+(this.config.format==='json_schema'?'\nJSON schema output requires every property. Use null for unused optional values. Encode records fields as [{key,css,attribute}].':'');
     const messages=[{role:'system',content:system},
       {role:'user',content:JSON.stringify({operation,...task})+'\n'+untrusted(page??'')}];
-    const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:z.toJSONSchema(schema,{unrepresentable:'any',reused:'ref'}),strict:false}}:{type:'json_object'};
+    const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:providerOutputSchema(schema),strict:false}}:{type:'json_object'};
     const makeBody=(max_tokens:number):Record<string,unknown>=>this.config.protocol==='anthropic'?{
       model:this.config.model,system,messages:[{role:'user',content:messages[1]!.content}],max_tokens,
-    }:{model:this.config.model,messages,response_format,max_tokens,...(new URL(this.config.baseURL).hostname==='api.deepseek.com'?{temperature:0,thinking:{type:'disabled'}}:{})};
+    }:{model:this.config.model,messages,response_format,[this.config.maxOutputTokensParam??'max_tokens']:max_tokens,...(new URL(this.config.baseURL).hostname==='api.deepseek.com'?{temperature:0,thinking:{type:'disabled'}}:{})};
     // UTF-8 byte count is a deliberately conservative token admission bound.
     const bound=()=>Buffer.byteLength(JSON.stringify(makeBody(1800)))+256;
     const available=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
@@ -57,7 +58,7 @@ export class FlashProvider implements LLMProvider {
       if(choice?.finish_reason==='length'||data.stop_reason==='max_tokens')throw new Error('LLM JSON was truncated by the output limit');
       if(!content)throw new Error('LLM returned empty JSON');
       let value:unknown;try{value=JSON.parse(content);}catch{throw new Error('LLM returned invalid JSON');}
-      const checked=schema.safeParse(value);
+      const checked=schema.safeParse(this.config.format==='json_schema'?normalizeProviderOutput(value):value);
       if(!checked.success){validationFailure=true;throw new Error('LLM response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});
       return checked.data;

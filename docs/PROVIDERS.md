@@ -35,11 +35,16 @@ Set the endpoint for the service you chose:
 | OpenRouter | `https://openrouter.ai/api/v1` | Set `LLM_MODEL` to an available `provider/model` slug. |
 
 The application appends `/chat/completions` and sends a bearer key, chat
-messages, `max_tokens` and JSON response format. The `json_schema` option is
-available for providers/models that accept it; `json_object` is the broader
-default. Provider compatibility does not guarantee every model accepts every
-parameter or returns the expected response shape. These examples are not live
-certifications; see the [support matrix](SUPPORT_MATRIX.md).
+messages, a completion limit and JSON response format. It uses
+`max_completion_tokens` for `api.openai.com` and `max_tokens` for other
+OpenAI-compatible endpoints. Set `LLM_MAX_OUTPUT_TOKENS_PARAM` to override that
+choice for an endpoint with different requirements. The `json_schema` option
+converts optional fields to required nullable fields, `oneOf` to `anyOf`, and
+record selectors to a bounded list that is restored after the response;
+`json_object` remains the broader default. Provider compatibility does not
+guarantee every model accepts every parameter or returns the expected response
+shape. These examples are not live certifications; see the
+[support matrix](SUPPORT_MATRIX.md).
 
 For Anthropic Messages API, switch to its native route:
 

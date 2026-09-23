@@ -71,13 +71,14 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests contractuels avec réponses et erreurs HTTP simulées ; tout essai live reste une validation distincte, explicitement opt-in, suivie en phase 1.2.
 - **Dépendances / risques :** tarifs, noms de modèles et API changent ; les résultats live doivent porter date, version SDK/protocole et modèle.
 
-#### 1.2 [ ] Vérifier les fournisseurs prioritaires et publier les limites de compatibilité
+#### 1.2 [x] Vérifier les fournisseurs prioritaires et publier les limites de compatibilité
 
 - **Objectif :** permettre un choix honnête parmi les modèles connus sans revendiquer une compatibilité universelle.
 - **Changements :** valider d’abord OpenAI, Anthropic, xAI/Grok, Google/Gemini, DeepSeek, Mistral et OpenRouter selon leur route réellement implémentée ; tester API native ou compatibilité OpenAI, limites JSON et paramètres requis ; ajouter uniquement les adaptateurs manquants justifiés par la matrice.
 - **Fichiers :** `src/llm/`, `.env.example`, `docs/SUPPORT_MATRIX.md`, `docs/PROVIDERS.md`, tests provider.
 - **Acceptation :** une ligne par fournisseur indique route, modèle essayé, date, cas passé/échoué et fonctions absentes ; les exemples de configuration sont copiables et n’utilisent aucune fausse clé ; un échec n’est pas converti en compatibilité positive. Sans accès live, le fournisseur reste explicitement « non vérifié ».
-- **Validation :** tests simulés pour chaque protocole et chaque sélection de fournisseur ; smoke live uniquement avec un compte/clés disponibles localement, tâche sandbox et budget maximal défini. Un manque d’accès live ne bloque pas la validation du contrat local, mais interdit toute revendication de compatibilité live.
+- **Validation exécutée le 23 septembre 2026 :** 10/10 tests contractuels fournisseur passent, dont les paramètres OpenAI, la normalisation JSON Schema, les routes Anthropic et abonnements CLI ; un smoke DeepSeek séparé a produit un plan synthétique en un appel. OpenAI, xAI/Grok, Gemini, Mistral et OpenRouter restent indiqués comme non vérifiés en live dans `docs/SUPPORT_MATRIX.md`.
+- **Limite :** aucun compte ou clé live n’était disponible pour les autres fournisseurs. Leur statut reste « non vérifié » ; aucune compatibilité live n’est revendiquée.
 - **Dépendances / risques :** les essais live nécessitent des comptes/clés disponibles et peuvent engendrer des frais ; ne pas envoyer de données privées ni coller des clés dans le dépôt ou le chat.
 
 #### 1.3 [ ] Durcir et documenter les connexions par abonnement

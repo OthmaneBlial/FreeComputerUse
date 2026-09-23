@@ -8,7 +8,7 @@ does not prove that every service using that label accepts the same request.
 
 | Connection | Implemented route | Automated evidence in this repository | Live evidence and current status |
 | --- | --- | --- | --- |
-| OpenAI-compatible API | `openai-compatible`; bearer key; configurable base URL; `/chat/completions`; JSON object or schema request | Six local HTTP contract cases cover request format, schema validation, usage, context trimming, HTTPS, bounded correction and safe HTTP errors. | One live DeepSeek Flash completion passed on 23 September 2026 using synthetic content: one request, one parsed action, 1,517 input and 73 output tokens. OpenAI, xAI/Grok, Gemini, Mistral and OpenRouter remain individually unverified here. |
+| OpenAI-compatible API | `openai-compatible`; bearer key; configurable base URL; `/chat/completions`; JSON object or schema request | Seven local HTTP/mock contract cases cover request format, schema validation, usage, context trimming, HTTPS, bounded correction, safe HTTP errors and OpenAI's completion-limit parameter. | One live DeepSeek Flash completion passed on 23 September 2026 using synthetic content: one request, one parsed action, 1,517 input and 73 output tokens. OpenAI, xAI/Grok, Gemini, Mistral and OpenRouter remain individually unverified here. |
 | Anthropic API | `anthropic`; `x-api-key`; Messages endpoint; prompted JSON object, locally validated | One local HTTP contract test covers the native request, headers, usage parsing, escaped page content and unsupported JSON-schema rejection. | Not live-tested in the recorded project evidence. Unverified. |
 | ChatGPT subscription | Local Codex CLI; detects semantic CLI version, checks `codex login status`; runs an ephemeral, read-only `codex exec` request with tools disabled | One fake-CLI contract test covers version parsing, output parsing, strict-schema conversion, records-selector restoration, required flags and stripping API/provider environment variables. | One synthetic plan completion passed on 23 September 2026 using Codex CLI `0.156.1` and an authenticated ChatGPT login. One request; local budget estimates 7,022 input / 97 output tokens; model ID and actual provider usage were not reported. No browser action ran. |
 | Claude Pro/Max subscription | Local Claude Code CLI; requires version `2.1.248+`, checks first-party subscription authentication; runs a restricted, non-persistent prompt with tools disabled | One fake-CLI contract test covers version threshold, output parsing, required flags and stripping API/provider environment variables. | Not verified against an authenticated Claude subscription. The local package manifest reports `0.2.69`; its `claude --version` command currently throws a Node `TypeError`, so update the CLI before live verification. |
@@ -19,14 +19,14 @@ These are endpoint examples in the README, not individually verified vendor
 certifications. Check each provider's current model name, JSON support, token
 parameters, endpoint and terms before use.
 
-| Service named in project docs | Route | Project-specific live test |
-| --- | --- | --- |
-| DeepSeek | OpenAI-compatible | One live `deepseek-flash` completion on 23 September 2026 (one request; synthetic content; no browser workflow), in addition to the dated 18 September benchmark. Neither establishes general compatibility or a current guarantee. |
-| OpenAI | OpenAI-compatible | None recorded. |
-| xAI / Grok | OpenAI-compatible | None recorded. |
-| Google Gemini | OpenAI-compatible endpoint | None recorded. |
-| Mistral | OpenAI-compatible | None recorded. |
-| OpenRouter | OpenAI-compatible endpoint | None recorded. |
+| Service named in project docs | Implemented route | Live model/date/result | Still unverified |
+| --- | --- | --- | --- |
+| DeepSeek | OpenAI-compatible | `deepseek-flash`; 23 September 2026; one synthetic plan completed in one request. | Browser task behavior, other model aliases and live `json_schema` behavior. |
+| OpenAI | OpenAI-compatible | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
+| xAI / Grok | OpenAI-compatible | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
+| Google Gemini | OpenAI-compatible endpoint | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
+| Mistral | OpenAI-compatible | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
+| OpenRouter | OpenAI-compatible endpoint | No live model request recorded. | Account/model routing, request acceptance, output/usage shape and browser task behavior. |
 
 ## Browser, runtime and distribution
 
@@ -55,7 +55,7 @@ parameters, endpoint and terms before use.
 - Public-lab build regression test: passed; it ran the build twice and confirmed
   `docs/index.html` stayed byte-for-byte unchanged and `docs/lab/index.html` was
   stable across both runs.
-- Provider contract tests: nine passed against local HTTP/fake-CLI fixtures.
+- Provider contract tests: ten passed against local HTTP/fake-CLI fixtures.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
