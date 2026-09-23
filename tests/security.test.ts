@@ -88,6 +88,22 @@ test('unapproved cross-origin fetches are blocked before receiving a request',as
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>receiver.close(()=>resolve()))]);}
 });
 
+test('unapproved WebSocket origins are blocked before receiving an upgrade',{timeout:15000},async()=>{
+  let upgrades=0;
+  const target=createServer();target.on('upgrade',(_request,socket)=>{upgrades++;socket.destroy();});
+  const source=createServer((_req,res)=>res.end('<h1>Approved origin</h1>'));
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));const targetURL=`ws://127.0.0.1:${(target.address() as {port:number}).port}`;
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));const sourceURL=`http://127.0.0.1:${(source.address() as {port:number}).port}`;
+  const browser=await new Browser({allowedOrigins:[sourceURL]}).launch();
+  try{
+    await browser.navigate(sourceURL);
+    await browser.page.evaluate(url=>{const socket=new WebSocket(url);socket.onerror=()=>{};},`${targetURL}/blocked`);
+    await browser.page.waitForTimeout(100);assert.equal(upgrades,0);
+  }finally{
+    await browser.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
+  }
+});
+
 test('a bare Browser denies navigation and page requests without an explicit origin policy',async()=>{
   let visits=0;
   const server=createServer((_req,res)=>{visits++;res.end('Unexpected request');});
