@@ -73,9 +73,11 @@ security bypass is implemented. Do not automate a site without authorization.
 
 `.env`, `.fcu`, profiles, session cookies, localStorage, downloads and SQLite traces
 are ignored by Git. The local environment/profile/history files use mode 0600;
-state/profile directories use mode 0700 on supported filesystems. This is local
-storage with file permissions, **not encrypted storage**. Browser session data and
-extracted website content can be sensitive; use an OS-protected account/disk.
+state/profile directories use mode 0700 on supported filesystems. Profile JSON
+imports are schema-checked, reject symbolic-link files and replace saved data
+atomically. This is local storage with file permissions, **not encrypted
+storage**. Browser session data and extracted website content can be sensitive;
+use an OS-protected account/disk.
 
 Known profile/file values are redacted from prompts, event logs and traces and
 resolve locally during actions. Secret-looking key strings are also redacted.
