@@ -107,7 +107,7 @@ program.command('config').option('--profile <file>','Import a profile/files JSON
 });
 program.command('doctor').option('--api','Validate provider credentials or subscription login').action(async(options:{api?:boolean})=>{
   const config=runtimeConfig();console.log(`Node ${process.version}; model ${config.provider?.name??'not configured'}; data ${config.dataDir}`);
-  const browser=new Browser();try{await browser.launch();console.log('Chromium launch: passed');}finally{await browser.close();}
+  const browser=new Browser();try{await browser.launch();console.log('Browser launch: passed');}finally{await browser.close();}
   if(options.api){
     if(!config.provider)throw new Error('No model provider configured; set LLM_API_KEY or sign in with a supported CLI subscription');
     if(config.provider instanceof CodexSubscriptionProvider){await config.provider.checkLogin();console.log('Codex ChatGPT login: passed');return;}
