@@ -15,10 +15,10 @@ To avoid a Playwright browser download, set `FCU_BROWSER_CHANNEL=chrome` (or
 `msedge`) when that browser is already installed. This is best-effort: Playwright
 warns that non-bundled browsers may be incompatible with the installed Playwright
 version. On 24 September 2026, the full suite passed serially with system Chrome:
-`FCU_BROWSER_CHANNEL=chrome npm test` (97/97). The package test script pins
+`FCU_BROWSER_CHANNEL=chrome npm test` (98/98). The package test script pins
 concurrency to one. `FCU_BROWSER_CHANNEL=chrome npm run validate` passed lab
-generation, type checks, all tests and package build, then was stopped after
-2 minutes 30 seconds in the full Git-history security scan. The checkout-only
+generation, type checks, 97 tests in that run and package build, then was stopped
+after 2 minutes 30 seconds in the full Git-history security scan. The checkout-only
 scan passed for 245 tracked file versions; `npm audit --omit=dev
 --audit-level=high` separately reported zero vulnerabilities. The history scan
 and full umbrella command remain unverified; see the

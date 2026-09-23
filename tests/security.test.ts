@@ -66,6 +66,16 @@ test('credentialed initial URLs are rejected before agent traces persist them',a
   }finally{await agent.close();store.close();}
 });
 
+test('non-HTTP initial URLs are rejected before agent traces persist them',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra'});
+  try{
+    for(const url of ['file:///etc/passwd','data:text/html,<h1>private</h1>','javascript:alert(1)','ftp://example.test/file']){
+      await assert.rejects(agent.run('Open this page',url),/Only HTTP\(S\) destinations without embedded credentials are supported/,url);
+      assert.equal(agent.active,false,url);assert.equal(store.history().length,0,url);
+    }
+  }finally{await agent.close();store.close();}
+});
+
 test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs to the origin policy',async()=>{
   await assert.rejects(assertNoPrivateDNSResolution('http://localhost:8123'),/private or reserved address/);
   await assert.doesNotReject(assertNoPrivateDNSResolution('http://127.0.0.1:8123'));

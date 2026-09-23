@@ -34,6 +34,7 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
     assert(token);assert(cookie);
     const request=async(body:object)=>fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify(body)});
     const badTarget=await request({goal:'Read the page',url:'https://user:private-token@example.test/'});assert.equal(badTarget.status,400);assert.match((await badTarget.json() as {error:string}).error,/without embedded credentials/);
+    const localFile=await request({goal:'Read a local file',url:'file:///etc/passwd'});assert.equal(localFile.status,400);assert.match((await localFile.json() as {error:string}).error,/Only HTTP\(S\) destinations/);
     const badOrigin=await request({goal:'Read the page',url:'https://example.test/',allowedOrigins:['https://user:private-token@example.test/']});assert.equal(badOrigin.status,400);assert.match((await badOrigin.json() as {error:string}).error,/without embedded credentials/);
     assert.equal(dashboard.getAgent(),undefined);
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
