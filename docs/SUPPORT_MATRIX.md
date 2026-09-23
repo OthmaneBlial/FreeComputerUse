@@ -42,10 +42,11 @@ parameters, endpoint and terms before use.
 
 ## Validation snapshot for this implementation session
 
-- Fresh-export onboarding: `git archive` of commit `1f0725d`, offline `npm ci`,
-  copied `.env.example`, `chmod 600`, `agent doctor`, no-key `ui:smoke`, and
-  `npm run dev -- --port 0` all passed on macOS `26.6` / Node `25.9.0` / system
-  Chrome `154.0.8037.57`. Dashboard returned HTTP `200`; export was removed.
+- Fresh-export onboarding: `git archive` of commit `eca3f17`, offline `npm ci`,
+  copied `.env.example` with Chrome selected, `chmod 600`, `agent doctor`,
+  keyboard-only no-key `ui:smoke`, and `npm run dev -- --port 0` all passed on
+  macOS `26.6` / Node `25.9.0` / system Chrome `154.0.8037.57`. Dashboard
+  returned HTTP `200`; export was removed.
 - `npm run check`: passed on Node `25.9.0`.
 - `npm run build`: passed.
 - Previous recorded `npm run security` pass covered 6,005 tracked file versions.
@@ -107,12 +108,15 @@ parameters, endpoint and terms before use.
   current system resolver returned only IPv4 A records for `ipv4only.arpa`; live
   network-prefix discovery remains unverified.
 - First-run dashboard smoke: `FCU_BROWSER_CHANNEL=chrome npm run ui:smoke` passed
-  on 23 September 2026 with Node `25.9.0`, system Chrome `154.0.8037.57`, a new
-  temporary data directory, and no model provider. The approved public synthetic
-  lab task `Extract the table` completed with one browser action and zero model
-  calls; independent output checks, preview loading, console checks, and 1600/390
-  px overflow checks passed. This verifies the documented no-key sandbox path,
-  not installation from a clean checkout or support on other OS/browser builds.
+  on 23 September 2026 from a clean export of commit `eca3f17` with Node `25.9.0`,
+  macOS `26.6`/Apple Silicon and system Chrome `154.0.8037.57`. Offline `npm ci`,
+  `.env.example` copy, `FCU_BROWSER_CHANNEL=chrome`, `chmod 600`, doctor, UI smoke
+  and CLI server startup all passed without a provider or browser download. The
+  smoke used keyboard input, Enter to start/approve/open the result, and Escape to
+  close it; the approved synthetic task completed with one browser action and
+  zero model calls. Output, preview, console and 1600/390 px overflow checks
+  passed. This verifies one clean-checkout onboarding path, not other OS, Node or
+  browser combinations.
 - Results UI smoke: `FCU_BROWSER_CHANNEL=chrome npm run ui:results` passed on
   23 September 2026 with its authored local planning fixture. The independent
   journey oracle, result facts, fullscreen view, viewer scrolling and browser
@@ -122,7 +126,8 @@ parameters, endpoint and terms before use.
   local 1600x900 demo clip, loaded the brand asset, and reported no browser
   console errors. Horizontal overflow checks passed at 320, 390, 768 and 1440 px
   for the lab pages/workflow library. It refreshed 50 lab and two dashboard PNG
-  captures. Keyboard accessibility and the dashboard at 320/768 remain untested.
+  captures. The primary no-key dashboard path is keyboard-tested separately;
+  broader keyboard/screen-reader checks and dashboard widths 320/768 remain open.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other
