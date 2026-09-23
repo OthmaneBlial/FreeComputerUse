@@ -37,7 +37,7 @@ The model does not run shell commands or arbitrary JavaScript. Browser previews 
 
 ## Quick start
 
-Requires **Node.js 22.13+**, npm and a browser Playwright can launch. If Google Chrome is already installed, set `FCU_BROWSER_CHANNEL=chrome` in `.env` to avoid downloading Playwright Chromium. Playwright works best with its matching browser build; see the [browser compatibility note](https://playwright.dev/docs/api/class-browsertype#browser-type-launch) before relying on a system browser.
+Requires **Node.js 22.13+**, npm and an installed browser. The verified first-run setup is macOS 26.6 (Apple Silicon), Node 25.9.0 and system Chrome 154.0.8037.57. The declared Node minimum and other OS/browser combinations remain unverified. This setup selects installed Chrome and avoids a separate Playwright browser download; see the [support matrix](docs/SUPPORT_MATRIX.md) for the full-suite limitation.
 
 ```bash
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git
@@ -47,11 +47,12 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Set `FCU_BROWSER_CHANNEL=chrome` in `.env` if Chrome is already installed. Playwright-managed Chromium can be installed separately if no supported browser is present.
+Set `FCU_BROWSER_CHANNEL=chrome` in `.env` to use the verified installed-Chrome path without downloading a browser binary.
 
-Set a model API key in `.env`, then run the local workspace:
+For model-planned tasks, configure a provider in `.env`. The browser sandbox task below works without a model key:
 
 ```dotenv
+FCU_BROWSER_CHANNEL=chrome
 LLM_PROVIDER=openai-compatible
 LLM_API_KEY=your-key
 LLM_BASE_URL=https://api.deepseek.com
@@ -59,6 +60,7 @@ LLM_MODEL=deepseek-flash
 ```
 
 ```bash
+npm run agent -- doctor
 npm run dev
 ```
 
