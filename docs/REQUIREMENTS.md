@@ -1,5 +1,9 @@
 # MVP requirement audit
 
+Provider and runtime claims are scoped by the dated [support matrix](SUPPORT_MATRIX.md).
+Historical benchmark evidence, repository test coverage and current live
+provider checks are separate evidence categories.
+
 This audit maps the original numbered brief to implemented behavior and explicitly
 planned work. Source files alone are not considered evidence: the repository has
 Chromium integration tests, real Flash runs and result-checked benchmark traces.
@@ -18,7 +22,7 @@ Chromium integration tests, real Flash runs and result-checked benchmark traces.
 | 42–48: modules, validation/security/injection, goal tracking, loops/hashes | Separate replaceable modules, fixed browser API, escaped untrusted content, preserved original goal, trusted criteria, max steps/repairs/repeated states/navigation checks |
 | 49–60: KPIs, benchmark suite, zero-call reuse, local intelligence, compact structured context | Metrics/reports; six local plus fourteen public scenarios; result oracles and provider-free compatible repeats; semantic workflows, local similarity/form mapping, JSON outputs, bounded completed-action summary |
 | 61–63: demo, README and diagrams | Real multi-page synthetic application plus contact/demo, broader free sandbox cases, runnable README and architecture diagram, actual UI screenshots |
-| 64–65: naming and developer experience | Existing workspace name retained; GitHub repo created; npm install/config/dev, source and built CLI, browser install documented |
+| 64–65: naming and developer experience | Existing workspace name retained; GitHub repo created; local npm install/config/dev, source and built CLI, browser install documented; public npm package not verified |
 | 66–68: real tests, local website, failures | Chromium unit/integration/UI checks with local lab; missing/replaced/duplicate controls, delayed content, validation, frame/tab changes, approval rejection, schema/budget failures and repair |
 | 69–70: incremental phases and working MVP | Incremental main commits pushed. Actual API tasks open/observe/compress/plan/execute/verify/repair, print metrics and store traces |
 | 71–74: deterministic-first philosophy and compiler-like vision | Local strategies and workflow matching precede provider calls. Arbitrary-site permanent workflow transfer remains a longer-term goal |

@@ -42,7 +42,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 0 — Fixer le contrat produit et rétablir une validation sûre (P0)
 
-#### 0.1 [ ] Définir la matrice des capacités et les limites annoncées
+#### 0.1 [x] Définir la matrice des capacités et les limites annoncées
 
 - **Objectif :** remplacer les formulations générales par une promesse testable.
 - **Changements :** définir les tâches supportées, navigateurs, OS/versions Node, fournisseurs API, fournisseurs compatibles OpenAI, abonnements CLI, fonctions de workflow et limites connues. Distinguer intégration présente, test simulé, essai live et compatibilité non vérifiée.
@@ -66,7 +66,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 - **Objectif :** rendre le choix du fournisseur prévisible et simplifier les erreurs.
 - **Changements :** vérifier configuration, authentification, modèle, format structuré, délais d’expiration, erreurs de quota, reprise contrôlée et coût estimé. Garder une validation de sortie commune et ne jamais inclure les clés dans les journaux.
-- **Fichiers :** `src/providers/*`, `.env.example`, `src/cli/*`, `tests/provider.test.ts`, nouveau guide `docs/PROVIDERS.md`.
+- **Fichiers :** `src/llm/*`, `.env.example`, `src/cli/*`, `tests/provider.test.ts`, `docs/PROVIDERS.md`.
 - **Acceptation :** chaque adaptateur a des tests de contrat hors réseau ; une configuration invalide échoue avant d’ouvrir le navigateur ; les erreurs indiquent une correction concrète et n’exposent pas la clé.
 - **Validation :** tests contractuels avec réponses simulées, erreurs HTTP simulées, puis essai live distinct et explicitement opt-in pour chaque fournisseur retenu.
 - **Dépendances / risques :** tarifs, noms de modèles et API changent ; les résultats live doivent porter date, version SDK/protocole et modèle.
@@ -75,7 +75,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 - **Objectif :** permettre un choix honnête parmi les modèles connus sans revendiquer une compatibilité universelle.
 - **Changements :** valider d’abord OpenAI, Anthropic, xAI/Grok, Google/Gemini, DeepSeek, Mistral et OpenRouter selon leur route réellement implémentée ; tester API native ou compatibilité OpenAI, limites JSON et paramètres requis ; ajouter uniquement les adaptateurs manquants justifiés par la matrice.
-- **Fichiers :** `src/providers/`, `.env.example`, `docs/SUPPORT_MATRIX.md`, `docs/PROVIDERS.md`, tests provider.
+- **Fichiers :** `src/llm/`, `.env.example`, `docs/SUPPORT_MATRIX.md`, `docs/PROVIDERS.md`, tests provider.
 - **Acceptation :** une ligne par fournisseur indique route, modèle essayé, date, cas passé/échoué et fonctions absentes ; les exemples de configuration sont copiables et n’utilisent aucune fausse clé ; un échec n’est pas converti en compatibilité positive.
 - **Validation :** tests simulés pour tous ; smoke live d’au moins un modèle prioritaire par route annoncée, avec tâche sandbox et budget maximal défini.
 - **Dépendances / risques :** nécessite les comptes/clés disponibles et peut engendrer des frais ; ne pas envoyer de données privées pendant les essais.
@@ -84,17 +84,17 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 - **Objectif :** rendre les voies Codex/ChatGPT et Claude Code compréhensibles malgré leur dépendance à des outils et versions externes.
 - **Changements :** vérifier les commandes installées, la détection de versions, le flux d’authentification pris en charge, les permissions, les messages d’expiration et la désactivation propre ; documenter les différences avec les API key. Ajouter des adaptateurs uniquement à partir des interfaces CLI réellement prises en charge.
-- **Fichiers :** `src/providers/*Subscription*`, `src/cli/*`, `README.md`, `docs/PROVIDERS.md`, tests fournisseur.
+- **Fichiers :** `src/llm/*Subscription*`, `src/cli/*`, `README.md`, `docs/PROVIDERS.md`, tests fournisseur.
 - **Acceptation :** chaque abonnement dispose d’un test d’intégration reproductible ou reste explicitement non vérifié ; aucun contournement de limites d’abonnement ; une absence de CLI ou une version incompatible donne une marche à suivre sans faire échouer toute l’app.
 - **Validation :** faux exécutable CLI pour les tests d’erreur et de format ; smoke manuel sur les versions minimales et actuelles documentées, sans consigner les jetons d’authentification.
 - **Dépendances / risques :** les interfaces CLI et conditions d’utilisation peuvent changer sans préavis ; dépend d’une veille de compatibilité.
 
-#### 1.4 [ ] Rendre la configuration et le diagnostic fournisseur rapides
+#### 1.4 [ ] Fiabiliser le diagnostic fournisseur déjà présent
 
 - **Objectif :** réduire les erreurs avant la première tâche.
-- **Changements :** fournir une commande de diagnostic (par exemple `agent doctor`) qui vérifie Node, Playwright, navigateur, configuration et présence du CLI choisi sans imprimer les secrets ; expliquer les étapes de connexion API et abonnement.
-- **Fichiers :** `src/cli/*`, `src/providers/*`, `package.json`, `.env.example`, `README.md`, `docs/PROVIDERS.md`.
-- **Acceptation :** diagnostic en lecture seule par défaut, codes de sortie documentés, aucune requête facturée sans action explicite, clés masquées dans toutes les sorties.
+- **Changements :** le CLI contient déjà `agent doctor` et `agent doctor --api`. Vérifier leurs contrôles de Node, navigateur, configuration, endpoint, modèle et connexion CLI ; combler les lacunes sans créer une seconde commande ; expliquer les étapes de connexion API et abonnement.
+- **Fichiers :** `src/cli/*`, `src/llm/*`, `package.json`, `.env.example`, `README.md`, `docs/PROVIDERS.md`.
+- **Acceptation :** diagnostic par défaut sans appel fournisseur ; `--api` clairement signalé comme requête réseau ; codes de sortie documentés, clés masquées dans toutes les sorties et erreurs exploitables.
 - **Validation :** tests CLI avec environnement propre, configuration absente/partielle, faux CLIs et erreur réseau simulée.
 - **Dépendances / risques :** réutiliser les mécanismes de configuration existants ; ne pas construire un assistant complexe si une commande courte suffit.
 

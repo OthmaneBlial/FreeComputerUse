@@ -66,3 +66,8 @@ fixture-provider runs are explicitly distinguished from model performance.
 Public tasks use scraping/automation sandboxes and our browser-only simulation
 lab; no real people, messages, payments or account mutations are involved.
 See `README.md` and `SECURITY.md` for scope, installation and security limitations.
+
+Provider implementation, mock-test coverage, dated live evidence and unverified
+routes are listed separately in the [support matrix](SUPPORT_MATRIX.md). The
+DeepSeek benchmark is a historical single-trial measurement, not proof that all
+OpenAI-compatible endpoints work.

@@ -1,5 +1,10 @@
 # Measured validation
 
+Provider-by-provider implementation, automated-test and live-evidence status is
+tracked in the [support matrix](SUPPORT_MATRIX.md). This report records the
+specific dated trials below; it does not establish general provider or website
+compatibility.
+
 Public suite measured 2026-09-18T16:52:19.246Z using real deepseek-flash, Node v25.9.0, Playwright 1.63.0.
 
 14/14 public tasks passed their independent result checks. 14/14 compatible learned repeats passed with no provider installed and zero model calls. First runs used 30 successful browser actions, 18 model calls and 31,654 total tokens. Configured-price estimate: $0.006109 for those first runs.

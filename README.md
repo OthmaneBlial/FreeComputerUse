@@ -78,7 +78,7 @@ Use a provider API key, or sign in through the official CLI for a supported subs
 | ChatGPT plan | Install Codex CLI, sign in with `codex login`, set `LLM_PROVIDER=codex-subscription` |
 | Claude Pro/Max plan | Install Claude Code 2.1.248+, sign in with `claude auth login` (not Console), set `LLM_PROVIDER=claude-subscription` |
 
-The provider API routes have not all been live-tested here; DeepSeek Flash is the measured default. Subscription modes use the local CLI sign-in, need no API key and respect plan limits. Their local agent tools and MCP servers are disabled while planning. See [.env.example](.env.example) for optional model, CLI path and task-budget settings.
+The provider API routes have not all been live-tested here; DeepSeek Flash is the measured default. Subscription modes use the local CLI sign-in, need no API key and respect plan limits. Their local agent tools and MCP servers are disabled while planning. See the [support matrix](docs/SUPPORT_MATRIX.md) for the route-specific code, test and live-evidence status, and [.env.example](.env.example) for optional model, CLI path and task-budget settings.
 
 ## Control and privacy
 
