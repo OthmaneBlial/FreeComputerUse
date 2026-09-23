@@ -60,7 +60,7 @@ function render(snapshot){
     const old=$('preview').src;if(old.startsWith('blob:'))URL.revokeObjectURL(old);$('preview').removeAttribute('src');$('preview').hidden=true;$('browser-empty').hidden=false;
   }
   acceptPointer(state.pointer);paintPointer();
-  text('model',state.model);text('model-note',state.configured?'Batch planning. Local execution.':'Set LLM_API_KEY to plan new tasks.');
+  text('model',state.model);text('model-note',state.configured?'Batch planning. Local execution.':'Configure a provider in .env to plan new tasks.');
   const status=state.pending?'APPROVAL':paused?'PAUSED':active?'RUNNING':trace?.status?.toUpperCase()||'IDLE';text('status',status);$('status').classList.toggle('active',active);
   $('run').disabled=active||busy;$('run').firstChild.textContent=active?'Task running ':'Run task ';
   $('pause').disabled=!active||paused;$('resume').disabled=!paused||!active;$('stop').disabled=!active;$('edit-open').disabled=!active||!paused;

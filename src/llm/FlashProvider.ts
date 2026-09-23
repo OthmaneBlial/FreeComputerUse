@@ -3,7 +3,7 @@ import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
-export interface ProviderConfig {key:string;model:string;baseURL:string;format?:'json_schema'|'json_object';timeoutMs?:number}
+export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';timeoutMs?:number}
 export class FlashProvider implements LLMProvider {
   readonly name:string;
   readonly calls:LLMCall[]=[];
@@ -14,6 +14,7 @@ export class FlashProvider implements LLMProvider {
     const url=new URL(config.baseURL);
     if(url.username||url.password||url.search||url.hash)throw new Error('LLM endpoint cannot contain credentials, query parameters or fragments');
     if(url.protocol!=='https:'&&!['127.0.0.1','localhost'].includes(url.hostname))throw new Error('LLM endpoint requires HTTPS');
+    if(config.protocol==='anthropic'&&config.format==='json_schema')throw new Error('Anthropic mode requires LLM_RESPONSE_FORMAT=json_object because the action schema uses dynamic record keys');
     this.name=config.model;
   }
   plan(context:PlanningContext):Promise<Plan>{return this.request('PLAN',context,PlanSchema,PLAN_FORMAT);}
@@ -21,11 +22,15 @@ export class FlashProvider implements LLMProvider {
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
   private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false):Promise<T>{
     const {page,...task}=context as PlanningContext;
-    const messages=[{role:'system',content:SYSTEM_POLICY+'\n'+format},
+    const system=SYSTEM_POLICY+'\n'+format;
+    const messages=[{role:'system',content:system},
       {role:'user',content:JSON.stringify({operation,...task})+'\n'+untrusted(page??'')}];
     const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:z.toJSONSchema(schema,{unrepresentable:'any',reused:'ref'}),strict:false}}:{type:'json_object'};
+    const makeBody=(max_tokens:number):Record<string,unknown>=>this.config.protocol==='anthropic'?{
+      model:this.config.model,system,messages:[{role:'user',content:messages[1]!.content}],max_tokens,
+    }:{model:this.config.model,messages,response_format,max_tokens,...(new URL(this.config.baseURL).hostname==='api.deepseek.com'?{temperature:0,thinking:{type:'disabled'}}:{})};
     // UTF-8 byte count is a deliberately conservative token admission bound.
-    const bound=()=>Buffer.byteLength(JSON.stringify({messages,response_format}))+256;
+    const bound=()=>Buffer.byteLength(JSON.stringify(makeBody(1800)))+256;
     const available=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
     // Preserve the goal, policy, repair contract and user criteria. Reduce only
     // optional webpage data when the next conservative reservation will not fit.
@@ -39,20 +44,19 @@ export class FlashProvider implements LLMProvider {
     const controller=new AbortController();this.controllers.add(controller);
     const started=Date.now();let usage:Usage|undefined,validationFailure=false;
     try{
-      const body:Record<string,unknown>={model:this.config.model,messages,response_format,max_tokens,temperature:0};
-      if(new URL(this.config.baseURL).hostname==='api.deepseek.com')body.thinking={type:'disabled'};
-      const response=await fetch(this.config.baseURL.replace(/\/$/,'')+'/chat/completions',{
-        method:'POST',headers:{Authorization:`Bearer ${this.config.key}`,'Content-Type':'application/json'},
-        body:JSON.stringify(body),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(this.config.timeoutMs??60000)]),redirect:'error',
+      const anthropic=this.config.protocol==='anthropic';
+      const response=await fetch(this.config.baseURL.replace(/\/$/,'')+(anthropic?'/messages':'/chat/completions'),{
+        method:'POST',headers:anthropic?{'x-api-key':this.config.key,'anthropic-version':'2023-06-01','Content-Type':'application/json'}:{Authorization:`Bearer ${this.config.key}`,'Content-Type':'application/json'},
+        body:JSON.stringify(makeBody(max_tokens)),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(this.config.timeoutMs??60000)]),redirect:'error',
       });
       if(!response.ok)throw new Error(`LLM request failed with HTTP ${response.status}`);
-      const data=await response.json() as {usage?:{prompt_tokens:number;completion_tokens:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[]};
-      const reported=data.usage?{input:data.usage.prompt_tokens,output:data.usage.completion_tokens,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
+      const data=await response.json() as {usage?:{prompt_tokens?:number;completion_tokens?:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number;input_tokens?:number;output_tokens?:number;cache_read_input_tokens?:number;cache_creation_input_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[];stop_reason?:string;content?:{type:string;text?:string}[]};
+      const reported=data.usage?anthropic?{input:(data.usage.input_tokens??0)+(data.usage.cache_read_input_tokens??0)+(data.usage.cache_creation_input_tokens??0),output:data.usage.output_tokens??0,cacheHit:data.usage.cache_read_input_tokens,cacheMiss:(data.usage.input_tokens??0)+(data.usage.cache_creation_input_tokens??0)}:{input:data.usage.prompt_tokens??0,output:data.usage.completion_tokens??0,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
       this.budget.record(reported,reservation.id);usage=reported;
-      const choice=data.choices?.[0];
-      if(choice?.finish_reason==='length')throw new Error('LLM JSON was truncated by the output limit');
-      if(!choice?.message.content)throw new Error('LLM returned empty JSON');
-      let value:unknown;try{value=JSON.parse(choice.message.content);}catch{throw new Error('LLM returned invalid JSON');}
+      const choice=data.choices?.[0],content=anthropic?data.content?.filter(block=>block.type==='text').map(block=>block.text??'').join(''):choice?.message.content;
+      if(choice?.finish_reason==='length'||data.stop_reason==='max_tokens')throw new Error('LLM JSON was truncated by the output limit');
+      if(!content)throw new Error('LLM returned empty JSON');
+      let value:unknown;try{value=JSON.parse(content);}catch{throw new Error('LLM returned invalid JSON');}
       const checked=schema.safeParse(value);
       if(!checked.success){validationFailure=true;throw new Error('LLM response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
       this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});

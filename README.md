@@ -18,7 +18,7 @@
 
 **Give your browser a goal. Watch the cursor move, click and type. Keep the workflow when it works.**
 
-FreeComputerUse is a local browser agent that uses a small Flash model to plan batches of actions, then executes and verifies them with TypeScript and Playwright. A compatible learned workflow can run again with **zero model calls**.
+FreeComputerUse is a local browser agent that asks a configured language model to plan batches of actions, then executes and verifies them with TypeScript and Playwright. A compatible learned workflow can run again with **zero model calls**.
 
 Research products, find an invoice, extract a dashboard or work through a multi-page task—with website approval, visible execution and the ability to take control.
 
@@ -113,7 +113,16 @@ Check for **INV-2609-04**, **Atlas Studio** and line items totalling **EUR 240**
 <details>
 <summary><strong>Provider configuration and budgets</strong></summary>
 
-DeepSeek Flash is the live-validated default, with thinking mode explicitly disabled. The provider interface supports other OpenAI-compatible endpoints; their behavior has not been validated here.
+DeepSeek Flash is the live-validated default. Other providers have not been live-validated here. Set `LLM_PROVIDER=openai-compatible` for services that implement OpenAI Chat Completions, or `LLM_PROVIDER=anthropic` for Anthropic’s Messages API.
+
+| Service | Settings |
+| --- | --- |
+| OpenAI API | `LLM_PROVIDER=openai-compatible`, `LLM_BASE_URL=https://api.openai.com/v1`, `LLM_MODEL=<model>` |
+| xAI Grok | `LLM_PROVIDER=openai-compatible`, `LLM_BASE_URL=https://api.x.ai/v1`, `LLM_MODEL=<model>` |
+| OpenRouter or another compatible endpoint | `LLM_PROVIDER=openai-compatible`, set its base URL and model |
+| Anthropic API | `LLM_PROVIDER=anthropic`, `LLM_MODEL=<model>`, `LLM_RESPONSE_FORMAT=json_object`; base URL defaults to `https://api.anthropic.com/v1` |
+
+Set `LLM_API_KEY` to the key for that service. Anthropic uses JSON output plus local schema validation because its structured-output schema rules do not accept this app’s dynamic extraction fields. OpenAI API billing is [separate from a ChatGPT subscription](https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform); Claude API usage is separate from a Claude Pro/Max plan.
 
 | Setting | Default |
 | --- | --- |
