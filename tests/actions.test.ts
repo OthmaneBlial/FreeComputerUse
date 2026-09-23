@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp,writeFile,readFile,rm } from 'node:fs/promises';
+import { mkdtemp,mkdir,writeFile,readFile,readdir,rm,symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname,join } from 'node:path';
 import { Browser } from '../src/browser/Browser.js';
@@ -66,6 +66,19 @@ test('download names stay inside the selected folder and support Unicode across 
     const saved=result.data as {path:string;filename:string};
     assert.equal(saved.filename,'résumé 🧾.txt');assert.equal(dirname(saved.path),dir);
     assert.equal(await readFile(saved.path,'utf8'),'receipt');
+  }finally{await browser.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('downloads refuse a symlinked destination folder',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-download-link-')),outside=join(dir,'outside'),downloads=join(dir,'downloads');
+  await mkdir(outside);await symlink(outside,downloads);
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<a href="data:text/plain,receipt" download="receipt.txt">Download</a>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control(),{downloadDir:downloads});
+    const result=await executor.run({type:'download',target:{role:'link',name:'Download'}});
+    assert.equal(result.success,false);assert.match(result.error??'',/real local directory/);
+    assert.deepEqual(await readdir(outside),[]);
   }finally{await browser.close();await rm(dir,{recursive:true,force:true});}
 });
 

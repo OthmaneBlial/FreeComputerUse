@@ -1,4 +1,5 @@
-import { mkdir, stat } from 'node:fs/promises';
+import { chmod, lstat, mkdir, stat } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
 import type { Download, Locator } from 'playwright';
 import { ActionSchema, type Action, type Condition } from './schema.js';
@@ -34,10 +35,13 @@ export class Executor {
   private async storeDownload(download:Download,requestedName?:string){
     const folder=resolve(this.options.downloadDir??'.fcu/downloads');
     await mkdir(folder,{recursive:true,mode:0o700});
+    const info=await lstat(folder);
+    if(!info.isDirectory()||info.isSymbolicLink())throw new Error('Download folder must be a real local directory');
+    await chmod(folder,0o700);
     const filename=[...basename((requestedName??download.suggestedFilename()).replaceAll('\\','/')).normalize('NFC')
       .replace(/[\u0000-\u001f\u007f<>:"|?*]/g,'_').replace(/[. ]+$/g,'')].slice(0,180).join('');
     if(!filename||filename==='.'||filename==='..')throw new Error('Invalid download filename');
-    const path=resolve(folder,`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${filename}`);
+    const path=resolve(folder,`${randomUUID()}-${filename}`);
     await download.saveAs(path);
     if(await download.failure())throw new Error('Browser download failed');
     this.browser.downloads.push({path,filename});
