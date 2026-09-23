@@ -42,7 +42,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 0 — Fixer le contrat produit et rétablir une validation sûre (P0)
 
-#### 0.1 Définir la matrice des capacités et les limites annoncées
+#### 0.1 [ ] Définir la matrice des capacités et les limites annoncées
 
 - **Objectif :** remplacer les formulations générales par une promesse testable.
 - **Changements :** définir les tâches supportées, navigateurs, OS/versions Node, fournisseurs API, fournisseurs compatibles OpenAI, abonnements CLI, fonctions de workflow et limites connues. Distinguer intégration présente, test simulé, essai live et compatibilité non vérifiée.
@@ -51,7 +51,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** revue manuelle des affirmations README/site et comparaison avec les modules et rapports existants.
 - **Dépendances / risques :** dépend d’essais fournisseurs des phases 1 et 4 ; certaines lignes resteront « non vérifiées » au départ.
 
-#### 0.2 Réparer la source de vérité de GitHub Pages
+#### 0.2 [x] Réparer la source de vérité de GitHub Pages
 
 - **Objectif :** faire en sorte que les commandes de validation ne détruisent pas la présentation publique.
 - **Changements :** séparer le point d’entrée vitrine de la génération du laboratoire, ou déplacer la page vitrine vers sa source canonique puis la construire de façon reproductible. Documenter l’arborescence résultante.
@@ -62,7 +62,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 1 — Compatibilité modèles et abonnements réellement vérifiée (P0)
 
-#### 1.1 Établir un contrat commun pour les fournisseurs
+#### 1.1 [ ] Établir un contrat commun pour les fournisseurs
 
 - **Objectif :** rendre le choix du fournisseur prévisible et simplifier les erreurs.
 - **Changements :** vérifier configuration, authentification, modèle, format structuré, délais d’expiration, erreurs de quota, reprise contrôlée et coût estimé. Garder une validation de sortie commune et ne jamais inclure les clés dans les journaux.
@@ -71,7 +71,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests contractuels avec réponses simulées, erreurs HTTP simulées, puis essai live distinct et explicitement opt-in pour chaque fournisseur retenu.
 - **Dépendances / risques :** tarifs, noms de modèles et API changent ; les résultats live doivent porter date, version SDK/protocole et modèle.
 
-#### 1.2 Vérifier les fournisseurs prioritaires et publier les limites de compatibilité
+#### 1.2 [ ] Vérifier les fournisseurs prioritaires et publier les limites de compatibilité
 
 - **Objectif :** permettre un choix honnête parmi les modèles connus sans revendiquer une compatibilité universelle.
 - **Changements :** valider d’abord OpenAI, Anthropic, xAI/Grok, Google/Gemini, DeepSeek, Mistral et OpenRouter selon leur route réellement implémentée ; tester API native ou compatibilité OpenAI, limites JSON et paramètres requis ; ajouter uniquement les adaptateurs manquants justifiés par la matrice.
@@ -80,7 +80,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests simulés pour tous ; smoke live d’au moins un modèle prioritaire par route annoncée, avec tâche sandbox et budget maximal défini.
 - **Dépendances / risques :** nécessite les comptes/clés disponibles et peut engendrer des frais ; ne pas envoyer de données privées pendant les essais.
 
-#### 1.3 Durcir et documenter les connexions par abonnement
+#### 1.3 [ ] Durcir et documenter les connexions par abonnement
 
 - **Objectif :** rendre les voies Codex/ChatGPT et Claude Code compréhensibles malgré leur dépendance à des outils et versions externes.
 - **Changements :** vérifier les commandes installées, la détection de versions, le flux d’authentification pris en charge, les permissions, les messages d’expiration et la désactivation propre ; documenter les différences avec les API key. Ajouter des adaptateurs uniquement à partir des interfaces CLI réellement prises en charge.
@@ -89,7 +89,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** faux exécutable CLI pour les tests d’erreur et de format ; smoke manuel sur les versions minimales et actuelles documentées, sans consigner les jetons d’authentification.
 - **Dépendances / risques :** les interfaces CLI et conditions d’utilisation peuvent changer sans préavis ; dépend d’une veille de compatibilité.
 
-#### 1.4 Rendre la configuration et le diagnostic fournisseur rapides
+#### 1.4 [ ] Rendre la configuration et le diagnostic fournisseur rapides
 
 - **Objectif :** réduire les erreurs avant la première tâche.
 - **Changements :** fournir une commande de diagnostic (par exemple `agent doctor`) qui vérifie Node, Playwright, navigateur, configuration et présence du CLI choisi sans imprimer les secrets ; expliquer les étapes de connexion API et abonnement.
@@ -100,7 +100,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 2 — Sécurité, confidentialité et reprise fiable (P0)
 
-#### 2.1 Définir les menaces et garder l’humain dans la boucle
+#### 2.1 [ ] Définir les menaces et garder l’humain dans la boucle
 
 - **Objectif :** expliciter ce que l’agent peut voir et modifier et où l’approbation reste obligatoire.
 - **Changements :** créer un modèle de menace couvrant prompt injection, pages malveillantes, redirections, DNS rebinding, requêtes locales, WebSocket, téléchargements, formulaires sensibles, contrôles trompeurs, profils persistants et CLI de fournisseur. Documenter l’adversaire visé et les limites de détection heuristique.
@@ -109,7 +109,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** revue de sécurité guidée par scénarios et tests négatifs ajoutés pour toute limite révélée.
 - **Dépendances / risques :** audit de conception nécessaire avant d’élargir les intégrations ; l’approbation utilisateur ne neutralise pas une compromission locale de la machine.
 
-#### 2.2 Renforcer les frontières d’URL, de fichiers et d’actions
+#### 2.2 [ ] Renforcer les frontières d’URL, de fichiers et d’actions
 
 - **Objectif :** empêcher qu’une page ou une configuration fasse sortir le navigateur et les écritures de leurs limites attendues.
 - **Changements :** tester résolution DNS et redirections vers réseaux privés, variations IPv6, navigation inter-origines, requêtes WebSocket, chemins de téléchargement, liens symboliques, noms Unicode, profils et paramètres importés. Préserver les permissions par origine et l’arrêt explicite.
@@ -118,7 +118,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests unitaires négatifs et tests Playwright locaux sur fixtures dédiées ; vérifier aussi les cas autorisés pour éviter les faux blocages.
 - **Dépendances / risques :** les protections réseau varient selon OS et navigateur ; toute exception localhost doit rester limitée au mode de test documenté.
 
-#### 2.3 Garantir le traitement local des secrets et données de session
+#### 2.3 [ ] Garantir le traitement local des secrets et données de session
 
 - **Objectif :** rendre la conservation des profils, clés, journaux et traces maîtrisable.
 - **Changements :** auditer permissions fichiers, masquage de secrets, durée/rétention des traces, nettoyage, export/import sûr et comportement de sauvegarde ; préciser que les fichiers locaux ne sont pas chiffrés si aucun chiffrement n’est livré. Ne pas ajouter de synchronisation cloud implicite.
@@ -129,7 +129,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 3 — Onboarding et expérience d’usage (P0)
 
-#### 3.1 Réussir un premier lancement sur une installation vierge
+#### 3.1 [ ] Réussir un premier lancement sur une installation vierge
 
 - **Objectif :** obtenir un premier résultat utile en quelques étapes compréhensibles.
 - **Changements :** resserrer le quick start autour d’une seule installation supportée, du choix fournisseur, de l’ouverture de l’interface et d’une première tâche sandbox. Garder la voie sans clé limitée au workflow déterministe du laboratoire.
@@ -138,7 +138,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** répétition manuelle sur profil utilisateur vierge pour les OS annoncés ; conserver les commandes et erreurs rencontrées comme procédure de reproduction.
 - **Dépendances / risques :** dépend de la matrice OS/Node et du diagnostic de phase 1.
 
-#### 3.2 Clarifier permissions, exécution et résultats dans l’interface
+#### 3.2 [ ] Clarifier permissions, exécution et résultats dans l’interface
 
 - **Objectif :** aider à comprendre ce que l’agent s’apprête à faire, ce qu’il a fait et si l’objectif est réellement atteint.
 - **Changements :** rendre visibles domaine approuvé, intention, action en attente, pause/annulation, reprise, vérifications et réparations ; présenter un échec de vérification comme un échec même si le navigateur a terminé sans exception.
@@ -147,7 +147,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests UI et smoke manuel de parcours avec refus, approbation, timeout et résultat incorrect.
 - **Dépendances / risques :** utiliser les événements/résultats existants au lieu de créer une seconde machine d’état.
 
-#### 3.3 Vérifier accessibilité et rendu multi-écran
+#### 3.3 [ ] Vérifier accessibilité et rendu multi-écran
 
 - **Objectif :** rendre le CLI, l’interface et le site utilisables sur clavier et écrans courants.
 - **Changements :** vérifier focus, labels, contrastes, tailles/scroll sur mobile et desktop, ainsi que les erreurs console du site et les captures actuelles du README.
@@ -158,7 +158,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 4 — Robustesse du code et validation reproductible (P0)
 
-#### 4.1 Stabiliser les tests et les critères indépendants
+#### 4.1 [ ] Stabiliser les tests et les critères indépendants
 
 - **Objectif :** vérifier la justesse des effets, pas seulement l’absence d’exception.
 - **Changements :** compléter les tests pour interruption, délais, réponses mal formées, retry, navigateur fermé, stockage interrompu, actions multi-étapes et workflow devenu incompatible. Garder des oracles indépendants sur les états/fichiers/données.
@@ -167,7 +167,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** `npm run check`, `npm test`, puis `npm run validate` après correction de la génération Pages ; rapporter précisément les échecs au lieu de les masquer.
 - **Dépendances / risques :** les tests navigateurs peuvent être sensibles à la version Playwright ; épingler/enregistrer versions et diagnostiquer les flakiness.
 
-#### 4.2 Documenter et vérifier la plateforme réellement supportée
+#### 4.2 [ ] Documenter et vérifier la plateforme réellement supportée
 
 - **Objectif :** éviter que Node, Playwright ou SQLite natif échoue après installation selon la machine.
 - **Changements :** choisir les versions Node et OS à supporter, puis vérifier installation des navigateurs, lancement headed/headless, stockage SQLite, permissions et arrêt propre sur chaque cible.
@@ -176,7 +176,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** exécution locale manuelle des smoke tests sur chaque OS retenu ; consigner OS, Node, navigateur et résultat.
 - **Dépendances / risques :** environnement Mac actuellement utilisé ne prouve pas les parcours Windows/Linux ; aucun workflow GitHub Actions ne doit être réintroduit pendant cette tâche selon `docs/LOCAL_VALIDATION.md`.
 
-#### 4.3 Garder la validation compatible avec la contrainte CI actuelle
+#### 4.3 [ ] Garder la validation compatible avec la contrainte CI actuelle
 
 - **Objectif :** disposer d’une porte de qualité reproductible sans contredire la décision présente sur GitHub Actions.
 - **Changements :** documenter l’ordre et la durée des contrôles locaux, les prérequis navigateur, les validations facturables opt-in, les critères bloquants et la génération d’artefacts de preuve. Toute proposition future de CI doit rester en attente d’une décision explicite du propriétaire.
@@ -187,16 +187,16 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 5 — Documentation, présentation et contributions (P1)
 
-#### 5.1 Refaire le README autour d’une preuve rapide et d’une installation claire
+#### 5.1 [ ] Refaire le README autour d’une preuve rapide et d’une installation claire
 
 - **Objectif :** faire comprendre en moins d’une minute le besoin résolu et le premier parcours.
 - **Changements :** présenter proposition de valeur, GIF/vidéo réelle courte, installation, premier run, permissions locales, voies API/abonnement testées, limites, support, troubleshooting, benchmarks datés, lien site, sécurité et contribution.
 - **Fichiers :** `README.md`, `assets/readme/*`, `docs/index.html`, `docs/SUPPORT_MATRIX.md`, `docs/PROVIDERS.md`.
 - **Acceptation :** les commandes du README fonctionnent depuis un checkout propre ; liens et captures valides ; bénéfices chiffrés accompagnés de protocole, échantillon et date ; aucune intégration non vérifiée présentée comme prête.
 - **Validation :** exécuter toutes les commandes d’installation/documentation sur environnement vierge et vérifier les liens locaux/externes.
-- **Dépendances / risques :** la vraie vidéo n’arrive qu’en phase 7 ; jusque-là utiliser uniquement les captures/vidéos existantes dont le parcours montré a été confirmé.
+- **Dépendances / risques :** la vraie vidéo n’arrive qu’en phase 8 ; jusque-là utiliser uniquement les captures/vidéos existantes dont le parcours montré a été confirmé.
 
-#### 5.2 Fournir les fichiers attendus d’un projet open source maintenable
+#### 5.2 [ ] Fournir les fichiers attendus d’un projet open source maintenable
 
 - **Objectif :** rendre les contributions et retours plus faciles à traiter.
 - **Changements :** ajouter `CONTRIBUTING.md`, guide de développement, modèle de bug avec infos anonymisées, demandes de fonctionnalité, consignes de sécurité et historique `CHANGELOG.md`. Définir les attentes de revue et une politique de support de versions.
@@ -205,7 +205,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** suivre le guide comme nouveau contributeur et vérifier les liens / commandes.
 - **Dépendances / risques :** ne pas créer de workflows d’automatisation GitHub tant que la contrainte de phase 4 reste active.
 
-#### 5.3 Consolider la présentation publique et la découverte
+#### 5.3 [ ] Consolider la présentation publique et la découverte
 
 - **Objectif :** assurer une identité et des métadonnées cohérentes dans GitHub et Pages.
 - **Changements :** harmoniser nom, logo, tagline, description, topics, image sociale, favicon, titre et métadonnées SEO ; relier repository, site, guide et release ; ajouter FAQ et cas d’usage concrets issus des scénarios vérifiés.
@@ -216,7 +216,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 6 — Packaging et première release publique (P1)
 
-#### 6.1 Publier d’abord un paquet npm reproductible
+#### 6.1 [ ] Publier d’abord un paquet npm reproductible
 
 - **Objectif :** offrir une voie d’installation courte qui inclut réellement CLI, bibliothèque et UI.
 - **Changements :** vérifier fichiers empaquetés, scripts compilés, permissions de l’exécutable, dépendances runtime, UI copiée, licence, versions et note de version ; définir la publication npm et les contrôles post-publication.
@@ -225,7 +225,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** construire depuis checkout propre, inspecter l’archive, installer le tarball hors du dépôt et exécuter smoke CLI/UI ; vérifier ensuite la version publique et son intégrité.
 - **Dépendances / risques :** ne pas publier de clé, fixtures sensibles, caches, rapports utilisateur ni fichiers incomplets ; publication npm est une action externe distincte.
 
-#### 6.2 Produire des téléchargements installables et décider du format binaire
+#### 6.2 [ ] Produire des téléchargements installables et décider du format binaire
 
 - **Objectif :** fournir un téléchargement direct sans annoncer un exécutable autonome qui ne fonctionne pas.
 - **Changements :** tester la faisabilité d’exécutables autonomes face à Node `node:sqlite`, Playwright et à l’installation du navigateur ; choisir une première matrice réaliste. Fournir pour les cibles retenues des archives versionnées, avec installateur/bootstrap navigateur si nécessaire, checksums et instructions ; limiter les OS aux cibles effectivement éprouvées.
@@ -234,7 +234,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** checksum SHA-256, inspection du contenu, test d’installation/exécution depuis un répertoire sans Node seulement pour les builds réellement autonomes, puis test sur chaque OS annoncé.
 - **Dépendances / risques :** packaging peut révéler des incompatibilités runtime et faire grossir les fichiers avec les navigateurs. Commencer par un spike et réduire la matrice au lieu de publier des builds non vérifiés.
 
-#### 6.3 Créer une release versionnée et contrôlable
+#### 6.3 [ ] Créer une release versionnée et contrôlable
 
 - **Objectif :** rendre l’état publié identifiable et reproductible.
 - **Changements :** préparer version, tag, notes, sources, paquet npm et archives validées ; consigner versions Node/Playwright/modèles utilisés dans les preuves ; documenter rollback et support des issues.
@@ -245,7 +245,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 7 — Intégration écosystème et croissance mesurable (P2)
 
-#### 7.1 Évaluer une intégration MCP locale
+#### 7.1 [ ] Évaluer une intégration MCP locale
 
 - **Objectif :** rendre les capacités accessibles depuis des clients d’agents courants sans leur transférer implicitement tous les contrôles du navigateur.
 - **Changements :** concevoir un serveur MCP local limité aux opérations utiles (inspecter, lancer une tâche autorisée, suivre/vérifier le résultat) ; conserver l’approbation par site, limites d’actions et arrêt ; documenter configuration client, transport et confidentialité.
@@ -254,7 +254,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** tests de protocole avec client simulé, tests négatifs et essai manuel sur un client réellement supporté.
 - **Dépendances / risques :** attendre la stabilité du contrat providers/permissions ; l’intégration élargit la surface d’attaque et ne doit pas devenir un simple tunnel d’actions arbitraires.
 
-#### 7.2 Fermer la boucle de retours et mesurer l’adoption
+#### 7.2 [ ] Fermer la boucle de retours et mesurer l’adoption
 
 - **Objectif :** transformer les retours initiaux en améliorations prioritaires.
 - **Changements :** publier des exemples vérifiés, annoncer les limites connues, trier issues selon blocages d’installation/provider/sécurité et suivre périodiquement installations, téléchargements, contributeurs et tâches reproduites sans collecter de télémétrie cachée.
@@ -267,7 +267,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 Cette phase ne commence qu’après l’implémentation et la validation des phases 0 à 7, une release effectivement disponible et des parcours annoncés qui fonctionnent depuis les fichiers publiés. Employer la skill **`ffmpeg-video-editor`** pendant la production. Aucune vidéo finale ne doit être tournée ou montée avant cette porte de sortie.
 
-#### 8.1 Préparer et capturer un parcours complet du produit publié
+#### 8.1 [ ] Préparer et capturer un parcours complet du produit publié
 
 - **Objectif :** prouver visuellement le problème résolu, le démarrage et les fonctionnalités principales réellement livrées.
 - **Changements :** démarrer depuis la procédure d’installation publiée, configurer une connexion réellement supportée, lancer une tâche sandbox, montrer l’approbation du site, l’inspection/action, la vérification indépendante et, si validée, la répétition de workflow sans nouvel appel modèle. Capturer l’écran réel et garder les journaux, versions et artefacts de preuve privés nettoyés de tout secret.
@@ -276,7 +276,7 @@ Cette phase ne commence qu’après l’implémentation et la validation des pha
 - **Validation :** rejouer le parcours une fois avant capture ; confirmer que l’enregistrement correspond au run et que clés, cookies, adresses privées et données personnelles ne sont pas visibles.
 - **Dépendances / risques :** disponibilité d’un fournisseur valide et coût prévu ; garder la tâche dans une sandbox et prévoir une capture de reprise si le service externe échoue.
 
-#### 8.2 Monter, exporter et vérifier les versions finales
+#### 8.2 [ ] Monter, exporter et vérifier les versions finales
 
 - **Objectif :** produire une vidéo propre pour README/GitHub et une déclinaison courte pertinente.
 - **Changements :** avec `ffmpeg-video-editor`, faire un montage professionnel au rythme lisible : coupes propres, titres sobres, zooms/cadrages utiles, sous-titres si voix, niveaux audio propres ; exporter un master 16:9 adapté au README/GitHub et, si utile, une version courte verticale ou carrée pour réseaux. Conserver les sources et la commande/projet de montage.

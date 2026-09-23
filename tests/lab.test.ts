@@ -1,7 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {tmpdir} from 'node:os';
 import {Agent} from '../src/agent/Agent.js';
 import {Browser} from '../src/browser/Browser.js';
@@ -10,6 +12,16 @@ import {PlanSchema} from '../src/actions/schema.js';
 import type {LLMProvider} from '../src/llm/LLMProvider.js';
 import {startLab} from '../scripts/lab-server.js';
 import {complexScenarios,planFor} from '../scripts/complex-scenarios.js';
+
+test('building the public lab preserves the landing page and produces a stable lab entry point',{timeout:30000},async()=>{
+  const root=fileURLToPath(new URL('../',import.meta.url)),landing=await readFile(join(root,'docs/index.html'),'utf8');
+  const build=()=>execFileSync(process.execPath,['--import','tsx','scripts/build-lab.ts'],{cwd:root,encoding:'utf8'});
+  build();const first=await readFile(join(root,'docs/lab/index.html'),'utf8');
+  build();const second=await readFile(join(root,'docs/lab/index.html'),'utf8');
+  assert.equal(await readFile(join(root,'docs/index.html'),'utf8'),landing);
+  assert.equal(second,first);
+  assert.match(second,/Northstar/);
+});
 
 test('styled lab contains sourced real tasks and eight complex browser-only workflows',{timeout:120000},async()=>{
   const lab=await startLab(),dir=await mkdtemp(join(tmpdir(),'fcu-lab-'));

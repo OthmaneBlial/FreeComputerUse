@@ -18,5 +18,4 @@ await writeFile('docs/.nojekyll','');
 for(const asset of ['index.html','workspace.html','lab.css','home.js','workspace.js','flows.js','cases.js','examples.js'])await copyFile('lab/'+asset,'docs/lab/'+asset);
 const workspace=await readFile('lab/workspace.html','utf8');
 for(const screen of ['product-details','product-comparison','journey-results','itinerary','invoice-details','close-revenue','close-ledger','close-adjustment','close-policy','close-review','incident-detail','incident-metrics','incident-deployments','incident-runbook','incident-brief'])await writeFile(`docs/lab/${screen}.html`,workspace.replace('<body>',`<body data-screen="${screen}">`));
-await writeFile('docs/index.html',(await readFile('lab/index.html','utf8')).replace('<head>','<head><base href="lab/">'));
-console.log('Built static public lab at docs/lab (no submission backend).');
+console.log('Built static public lab at docs/lab (no submission backend); docs/index.html remains the product landing page.');
