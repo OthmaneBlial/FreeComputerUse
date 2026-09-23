@@ -56,18 +56,19 @@ test('provider errors containing profile values are redacted from events and sav
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
-test('credential query values are redacted before the first trace save and provider prompt',async()=>{
+test('credential query and fragment values are redacted before trace save and provider prompt',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let firstSaved='',prompt='';
   const save=store.save.bind(store);store.save=trace=>{if(!firstSaved)firstSaved=JSON.stringify(trace);save(trace);};
   const provider:LLMProvider={name:'fixture',plan:async context=>{prompt=JSON.stringify(context);throw new Error('Synthetic provider failure');},repair:async()=>{throw new Error('Unexpected repair');}};
   const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
-  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist';
+  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist',fragmentToken='oauth-fragment-token-that-must-not-persist',oauthCode='oauth-code-that-must-not-persist';
   try{
-    const trace=await agent.run('Summarize the page',`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris`);
-    assert.equal(trace.status,'failed');assert(!firstSaved.includes(accessToken));assert(!firstSaved.includes(apiKey));
-    assert.equal((JSON.parse(firstSaved) as {url:string}).url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
-    assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!JSON.stringify(agent.events).includes(accessToken));
-    assert.equal(trace.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
+    const trace=await agent.run('Summarize the page',`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`);
+    assert.equal(trace.status,'failed');assert(!firstSaved.includes(accessToken));assert(!firstSaved.includes(apiKey));assert(!firstSaved.includes(fragmentToken));assert(!firstSaved.includes(oauthCode));
+    assert.equal((JSON.parse(firstSaved) as {url:string}).url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
+    assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!prompt.includes(fragmentToken));assert(!prompt.includes(oauthCode));
+    for(const secret of [accessToken,apiKey,fragmentToken,oauthCode])assert(!JSON.stringify(agent.events).includes(secret));
+    assert.equal(trace.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 

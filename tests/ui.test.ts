@@ -55,19 +55,21 @@ test('dashboard and provider context redact credentials in the active page URL',
     assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
     assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
     assert(!JSON.stringify(initialState).includes(legacySecret));
-    const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist';
-    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris`;
+    const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist',fragmentToken='dashboard-oauth-fragment-that-must-not-persist',oauthCode='dashboard-oauth-code-that-must-not-persist';
+    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`;
     const started=await fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify({goal:'Summarize the page',url,mode:'ultra'})});
     assert.equal(started.status,202);
-    let state:{active:boolean;trace?:{status:string;url:string};state?:{url:string};browserUrl?:string;history?:{id:string;url:string}[]}={active:true};
+    let state:{active:boolean;trace?:{id:string;status:string;url:string};state?:{url:string};browserUrl?:string;history?:{id:string;url:string}[]}={active:true};
     for(let attempt=0;attempt<100&&state.active;attempt++){
       await new Promise(resolve=>setTimeout(resolve,100));
       const response=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}});state=await response.json() as typeof state;
       if(state.trace?.status==='failed'&&!state.active)break;
     }
-    assert.equal(state.trace?.status,'failed');assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));
-    assert.equal(state.trace?.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
+    assert.equal(state.trace?.status,'failed');assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!prompt.includes(fragmentToken));assert(!prompt.includes(oauthCode));
+    assert.equal(state.trace?.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
     assert.equal(state.state?.url,state.trace.url);assert.equal(state.browserUrl,state.trace.url);
+    assert(!JSON.stringify(state.history).includes(fragmentToken));assert(!JSON.stringify(state.history).includes(oauthCode));
+    assert.equal(state.history?.find(run=>run.id===state.trace?.id)?.url,state.trace.url);
   }finally{await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 

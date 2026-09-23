@@ -31,7 +31,7 @@ export class VariableResolver {
       if(escaped!==secret)result=result.split(escaped).join(JSON.stringify(alias).slice(1,-1));
     }
     return result
-      .replace(/([?&])([^=?&#\s"'<>()[\]]+)=([^&#\s"'<>),}\]]*)/g,(match,separator:string,name:string)=>sensitiveQueryParameter(name)?`${separator}${name}=REDACTED`:match)
+      .replace(/([?&#])([^=?&#\s"'<>()[\]]+)=([^&#\s"'<>),}\]]*)/g,(match,separator:string,name:string)=>sensitiveQueryParameter(name)?`${separator}${name}=REDACTED`:match)
       .replace(/\bBearer\s+[A-Za-z0-9._~+/-]{12,}={0,2}/gi,'Bearer [redacted]')
       .replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]');
   }

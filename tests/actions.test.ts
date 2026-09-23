@@ -132,8 +132,8 @@ test('redaction handles overlapping and JSON-escaped profile values',()=>{
 });
 
 test('redaction masks credential query values and bearer tokens but keeps ordinary query values',()=>{
-  const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris',authorization:'Bearer abcdefghijklmnop'});
+  const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris#access_token=fragment-secret&code=oauth-secret&state=keep',authorization:'Bearer abcdefghijklmnop'});
   const result=resolver.redact(input);
-  assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('abcdefghijklmnop'));
-  assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris',authorization:'Bearer [redacted]'});
+  assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('fragment-secret'));assert(!result.includes('oauth-secret'));assert(!result.includes('abcdefghijklmnop'));
+  assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep',authorization:'Bearer [redacted]'});
 });
