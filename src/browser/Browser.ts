@@ -181,7 +181,9 @@ export class Browser {
   permits(value: string) {
     try {
       const url = checkedHttpURL(value);
-      return this.options.allowExternal===true || !!this.options.allowedOrigins?.includes(url.origin);
+      return this.options.allowExternal===true || !!this.options.allowedOrigins?.some(origin=>{
+        try{const allowed=checkedHttpURL(origin);return allowed.origin===url.origin&&allowed.pathname==='/'&&!allowed.search&&!allowed.hash;}catch{return false;}
+      });
     } catch { return false; }
   }
   async navigate(value: string) {

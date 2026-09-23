@@ -117,6 +117,13 @@ test('a bare Browser denies navigation and page requests without an explicit ori
   }finally{await browser.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('origin matching canonicalizes IPv6 literals but keeps port and origin boundaries exact',()=>{
+  const browser=new Browser({allowedOrigins:['http://[0:0:0:0:0:0:0:1]:8123']});
+  assert.equal(browser.permits('http://[::1]:8123/path'),true);
+  assert.equal(browser.permits('http://[::1]:8124/path'),false);
+  assert.equal(new Browser({allowedOrigins:['http://[::1]:8123/private']}).permits('http://[::1]:8123/public'),false);
+});
+
 test('a redirected navigation is stopped before an unapproved origin receives it',async()=>{
   let sourceVisits=0,targetVisits=0,targetPrompted=false;
   const target=createServer((_req,res)=>{targetVisits++;res.end('<h1>Unapproved target</h1>');});

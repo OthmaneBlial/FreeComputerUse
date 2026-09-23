@@ -70,6 +70,9 @@ parameters, endpoint and terms before use.
 - Cross-origin WebSocket: focused Chrome `154.0.8037.57` test passed; the
   unapproved fixture server received no upgrade request. Approved WebSocket
   behavior and other browser builds remain unverified.
+- IPv6 allowlist matching: focused test passed; expanded and compressed loopback
+  spellings normalize to one origin, while a different port and path-scoped
+  allowlist are denied.
 - DNS rebinding and other browser builds remain unverified.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
