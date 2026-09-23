@@ -1,11 +1,20 @@
 import { loadEnvFile } from 'node:process';
+import { chmodSync,lstatSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { TokenBudget } from './agent/TokenBudget.js';
 import { FlashProvider } from './llm/FlashProvider.js';
 import { CodexSubscriptionProvider } from './llm/CodexSubscriptionProvider.js';
 import { ClaudeSubscriptionProvider } from './llm/ClaudeSubscriptionProvider.js';
-export function loadEnvironment(){try{loadEnvFile(resolve('.env'));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}}
+export function loadEnvironment(){
+  const path=resolve('.env');
+  try{
+    const info=lstatSync(path);
+    if(!info.isFile())throw new Error('Local .env must be a regular file');
+    if(process.platform!=='win32'&&(info.mode&0o777)!==(info.mode&0o600))chmodSync(path,info.mode&0o600);
+    loadEnvFile(path);
+  }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+}
 const positive=z.coerce.number().int().positive();
 const optionalCap=(name:string)=>process.env[name]?positive.parse(process.env[name]):null;
 export function runtimeConfig(){

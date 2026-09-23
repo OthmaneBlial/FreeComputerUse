@@ -59,6 +59,9 @@ parameters, endpoint and terms before use.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
+- Local environment file: a subprocess test passed on macOS; a permissive `.env`
+  became owner-only before loading, a symlink was rejected without changing its
+  target, and the test key stayed out of standard output/error.
 - Focused security-file run: 26/26 tests passed on system Chrome
   `154.0.8037.57`, including popup redirect denial/approval, simulated DNS
   rebinding blocked before HTTP/TLS-tunnel target receipt, hostname-to-loopback

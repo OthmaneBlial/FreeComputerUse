@@ -83,15 +83,17 @@ The default data directory, its contents, backup and deletion steps are listed
 in [Local data](docs/LOCAL_DATA.md).
 
 `.env`, `.fcu`, profiles, session cookies, localStorage, downloads and SQLite traces
-are ignored by Git. The local environment/profile/history files use mode 0600;
-state/profile directories use mode 0700 on supported filesystems. Profile JSON
-imports are schema-checked, reject symbolic-link files and replace saved data
-atomically. This is local storage with file permissions, **not encrypted
-storage**. Browser session data and extracted website content can be sensitive;
-use an OS-protected account/disk. History, workflows, browser sessions and
-downloads have no automatic expiry; see [retention and deletion steps](docs/LOCAL_DATA.md#retention).
-On macOS, download directories use mode 0700 and saved download files use mode
-0600; Windows and Linux permission behavior remains unverified.
+are ignored by Git. On macOS/Linux, the environment loader rejects a symlinked
+`.env` and removes group/other permission bits before reading it; set mode `0600`
+before editing or running other tools. App-written profile/history files use
+mode `0600`; state/profile directories use mode `0700` on verified filesystems.
+Profile JSON imports are schema-checked, reject symbolic-link files and replace
+saved data atomically. This is local storage with file permissions, **not
+encrypted storage**. Browser session data and extracted website content can be
+sensitive; use an OS-protected account/disk. History, workflows, browser sessions
+and downloads have no automatic expiry; see [retention and deletion steps](docs/LOCAL_DATA.md#retention).
+On macOS, download directories use mode `0700` and saved download files use mode
+`0600`; Windows/Linux data-directory permissions remain unverified.
 
 Known profile/file values are redacted from prompts, event logs and traces and
 resolve locally during actions. Secret-looking key strings are also redacted.

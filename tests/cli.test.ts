@@ -2,9 +2,33 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:http';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {chmod,mkdtemp,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {pathToFileURL} from 'node:url';
+
+test('environment loading restricts local credentials and rejects symbolic links',{timeout:20000},async t=>{
+  if(process.platform==='win32'){t.skip('POSIX .env file modes do not apply on Windows');return;}
+  const directory=await mkdtemp(join(tmpdir(),'fcu-env-security-')),path=join(directory,'.env'),secret='fcu-env-file-test-key';
+  const runLoader=()=>new Promise<{code:number|null;stdout:string;stderr:string}>((resolve,reject)=>{
+    const entry=pathToFileURL(join(process.cwd(),'src/config.ts')).href;
+    const code=`import {loadEnvironment} from ${JSON.stringify(entry)};loadEnvironment();console.log(process.env.LLM_API_KEY?'configured':'missing')`;
+    const env={...process.env};delete env.LLM_API_KEY;
+    const loader=join(process.cwd(),'node_modules/tsx/dist/loader.mjs');
+    const child=spawn(process.execPath,['--import',loader,'--input-type=module','-e',code],{cwd:directory,env,stdio:['ignore','pipe','pipe']});
+    let stdout='',stderr='';child.stdout.setEncoding('utf8').on('data',chunk=>stdout+=chunk);child.stderr.setEncoding('utf8').on('data',chunk=>stderr+=chunk);
+    child.once('error',reject);child.once('close',code=>resolve({code,stdout,stderr}));
+  });
+  try{
+    await writeFile(path,`LLM_API_KEY=${secret}\n`);await chmod(path,0o644);
+    const loaded=await runLoader();assert.equal(loaded.code,0,loaded.stderr);assert.equal(loaded.stdout.trim(),'configured');
+    assert.equal((await stat(path)).mode&0o777,0o600);assert(!loaded.stdout.includes(secret));assert(!loaded.stderr.includes(secret));
+    const shared=join(directory,'shared.env');await writeFile(shared,`LLM_API_KEY=${secret}\n`);await chmod(shared,0o644);
+    await rm(path);await symlink(shared,path);
+    const linked=await runLoader();assert.notEqual(linked.code,0);assert.match(linked.stderr,/regular file/);
+    assert.equal((await stat(shared)).mode&0o777,0o644);assert(!linked.stdout.includes(secret));assert(!linked.stderr.includes(secret));
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
 
 test('doctor keeps network checks opt-in and reports safe API failures',{timeout:45000},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-doctor-'));

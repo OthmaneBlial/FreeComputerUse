@@ -9,9 +9,11 @@ from API billing.
 ## API key setup
 
 Copy `.env.example` to `.env`, restrict it to your account (`chmod 600 .env` on
-macOS/Linux), then set `LLM_API_KEY`, `LLM_MODEL` and `LLM_BASE_URL`. Never
-commit `.env` or paste a key into an issue, screenshot or log. Use the model ID
-shown in the provider account or current provider documentation.
+macOS/Linux), then set `LLM_API_KEY`, `LLM_MODEL` and `LLM_BASE_URL`. The local
+environment loader also strips group/other permission bits before reading a
+regular `.env` file on macOS/Linux and rejects symlinks. Never commit `.env` or
+paste a key into an issue, screenshot or log. Use the model ID shown in the
+provider account or current provider documentation.
 
 The default route is OpenAI Chat Completions-compatible:
 
