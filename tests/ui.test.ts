@@ -43,7 +43,7 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
 test('dashboard and provider context redact credentials in the active page URL',{timeout:30000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-url-redaction-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures();let prompt='';
-  const legacySecret='legacy-access-secret-that-must-not-be-shown',legacyURL=`${fixture.url}/demo?access_token=${legacySecret}&search=Paris`;
+  const legacySecret='legacy-access-secret-that-must-not-be-shown',legacyFragment='legacy-fragment-token-that-must-not-be-shown',legacyCode='legacy-oauth-code-that-must-not-be-shown',legacyURL=`${fixture.url}/demo?access_token=${legacySecret}&search=Paris#access_token=${legacyFragment}&code=${legacyCode}&state=keep`;
   const oldStore=new TraceStore(join(dir,'history.sqlite'));
   const oldTrace:Trace={version:1,id:'legacy-redaction',goal:'Open the old trace',url:legacyURL,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
   oldStore.save(oldTrace);oldStore.close();
@@ -52,9 +52,9 @@ test('dashboard and provider context redact credentials in the active page URL',
     const page=await fetch(dashboard.url),html=await page.text(),token=html.match(/<meta name="csrf-token" content="([^"]+)"/)?.[1],cookie=page.headers.get('set-cookie')?.split(';')[0];
     assert(token);assert(cookie);
     const initial=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}}),initialState=await initial.json() as {trace?:{url:string};history?:{id:string;url:string}[]};
-    assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
-    assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
-    assert(!JSON.stringify(initialState).includes(legacySecret));
+    assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
+    assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
+    for(const secret of [legacySecret,legacyFragment,legacyCode])assert(!JSON.stringify(initialState).includes(secret));
     const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist',fragmentToken='dashboard-oauth-fragment-that-must-not-persist',oauthCode='dashboard-oauth-code-that-must-not-persist';
     const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`;
     const started=await fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify({goal:'Summarize the page',url,mode:'ultra'})});

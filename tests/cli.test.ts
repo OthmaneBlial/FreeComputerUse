@@ -31,17 +31,17 @@ test('environment loading restricts local credentials and rejects symbolic links
   }finally{await rm(directory,{recursive:true,force:true});}
 });
 
-test('history CLI redacts credential query values from saved traces',{timeout:15000},async()=>{
+test('history CLI redacts credential query and fragment values from saved traces',{timeout:15000},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-history-redaction-')),store=new TraceStore(join(directory,'history.sqlite'));
-  const secret='legacy-history-access-secret';
-  const trace:Trace={version:1,id:'history-redaction',goal:'Inspect a saved route',url:`https://example.test/?access_token=${secret}&search=Paris`,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
+  const secret='legacy-history-access-secret',fragmentToken='legacy-history-fragment-token',oauthCode='legacy-history-oauth-code';
+  const trace:Trace={version:1,id:'history-redaction',goal:'Inspect a saved route',url:`https://example.test/?access_token=${secret}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
   store.save(trace);store.close();
   try{
     const child=spawn(process.execPath,['--import','tsx','src/cli/index.ts','history'],{cwd:process.cwd(),env:{...process.env,FCU_DATA_DIR:directory},stdio:['ignore','pipe','pipe']});
     let stdout='',stderr='';child.stdout.setEncoding('utf8').on('data',chunk=>stdout+=chunk);child.stderr.setEncoding('utf8').on('data',chunk=>stderr+=chunk);
     const code=await new Promise<number|null>((resolve,reject)=>{child.once('error',reject);child.once('close',resolve);});
-    assert.equal(code,0,stderr);assert(!stdout.includes(secret));
-    const rows=JSON.parse(stdout) as {url:string}[];assert.equal(rows[0]?.url,'https://example.test/?access_token=REDACTED&search=Paris');
+    assert.equal(code,0,stderr);for(const value of [secret,fragmentToken,oauthCode])assert(!stdout.includes(value));
+    const rows=JSON.parse(stdout) as {url:string}[];assert.equal(rows[0]?.url,'https://example.test/?access_token=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep');
   }finally{await rm(directory,{recursive:true,force:true});}
 });
 
