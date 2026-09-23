@@ -100,7 +100,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 2 — Sécurité, confidentialité et reprise fiable (P0)
 
-#### 2.1 [ ] Définir les menaces et garder l’humain dans la boucle
+#### 2.1 [x] Définir les menaces et garder l’humain dans la boucle
 
 - **Objectif :** expliciter ce que l’agent peut voir et modifier et où l’approbation reste obligatoire.
 - **Changements :** créer un modèle de menace couvrant prompt injection, pages malveillantes, redirections, DNS rebinding, requêtes locales, WebSocket, téléchargements, formulaires sensibles, contrôles trompeurs, profils persistants et CLI de fournisseur. Documenter l’adversaire visé et les limites de détection heuristique.

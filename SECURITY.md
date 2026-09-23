@@ -1,5 +1,8 @@
 # Security model
 
+See the [threat model](docs/THREAT_MODEL.md) for assets, trust boundaries,
+verified controls, residual risks and prioritized follow-up work.
+
 Report vulnerabilities privately through GitHub's private vulnerability reporting
 when enabled. Never include credentials or real browser profile data in an issue.
 
@@ -11,10 +14,11 @@ including subsequent pages on the same origin. New origins need another grant.
 Rejecting an initial grant leaves the target website unvisited. Cached workflows
 and replay do not bypass site grants or sensitive-action policy.
 
-Sensitive submissions, purchases, messages, deletion and similar controls are
-gated separately by explicit action flags and local control metadata. Detection
-is conservative and heuristic: an ambiguously named or adversarial control can
-conceal its effect. Use `--confirmation always` when each action needs review.
+With the default `sensitive` policy, explicit submit actions and controls marked
+sensitive are gated separately; label and form heuristics catch some additional
+high-impact actions. Detection cannot identify every ambiguously named or
+adversarial control. Use `--confirmation always` in normal mode when every
+action needs review. `--confirmation never` and Ultra mode skip action prompts.
 
 **Ultra mode is explicit, off by default.** It skips website/action approvals and
 allows external HTTP(S) destinations. It does not add shell access, arbitrary

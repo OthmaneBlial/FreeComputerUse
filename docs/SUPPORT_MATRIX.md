@@ -57,6 +57,8 @@ parameters, endpoint and terms before use.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
+- Focused security suite: nine tests passed with system Chrome
+  `153.0.8010.52`; DNS rebinding and other operating systems remain unverified.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other
