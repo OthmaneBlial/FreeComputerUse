@@ -5,22 +5,66 @@ import { BlockList, isIP, createConnection, type LookupFunction } from 'node:net
 import type { Duplex } from 'node:stream';
 
 type Address={address:string;family:number};
+type Nat64Prefix={length:number;network:bigint};
 export type HostResolver=(hostname:string)=>Promise<Address[]>;
 const systemLookup:HostResolver=hostname=>lookup(hostname,{all:true,order:'verbatim'});
+const nat64Cache=new WeakMap<HostResolver,{expires:number;promise:Promise<Nat64Prefix[]>}>();
 const restrictedIPv4=new BlockList(),restrictedIPv6=new BlockList();
 for(const range of ['0.0.0.0/8','10.0.0.0/8','100.64.0.0/10','127.0.0.0/8','169.254.0.0/16','172.16.0.0/12','192.0.0.0/24','192.0.2.0/24','192.88.99.0/24','192.168.0.0/16','198.18.0.0/15','198.51.100.0/24','203.0.113.0/24','224.0.0.0/4','240.0.0.0/4'])restrictedIPv4.addSubnet(range.split('/')[0]!,Number(range.split('/')[1]),'ipv4');
 for(const range of ['::/96','::ffff:0:0/96','64:ff9b:1::/48','100::/64','100:0:0:1::/64','2001::/23','2001:db8::/32','2002::/16','3fff::/20','5f00::/16','fc00::/7','fe80::/10','fec0::/10','ff00::/8'])restrictedIPv6.addSubnet(range.split('/')[0]!,Number(range.split('/')[1]),'ipv6');
 const nat64WellKnown=new BlockList();nat64WellKnown.addSubnet('64:ff9b::',96,'ipv6');
-function embeddedIPv4(address:string){
+function ipv6Value(address:string):bigint|undefined{
   let value=address.toLowerCase();
   const dotted=value.match(/(\d+\.\d+\.\d+\.\d+)$/);
-  if(dotted){const octets=dotted[1]!.split('.').map(Number);value=value.replace(dotted[1]!,`${((octets[0]!<<8)|octets[1]!).toString(16)}:${((octets[2]!<<8)|octets[3]!).toString(16)}`);}
-  const [leftRaw,rightRaw='']=value.split('::'),left=leftRaw?leftRaw.split(':'):[],right=rightRaw?rightRaw.split(':'):[];
-  const words=value.includes('::')?[...left,...Array(8-left.length-right.length).fill('0'),...right]:value.split(':');
-  const high=parseInt(words[6]!,16),low=parseInt(words[7]!,16);
-  return`${high>>8}.${high&255}.${low>>8}.${low&255}`;
+  if(dotted){const octets=dotted[1]!.split('.').map(Number);if(octets.length!==4||octets.some(part=>part>255))return;value=value.replace(dotted[1]!,`${((octets[0]!<<8)|octets[1]!).toString(16)}:${((octets[2]!<<8)|octets[3]!).toString(16)}`);}
+  const sections=value.split('::');if(sections.length>2)return;
+  const left=sections[0]?sections[0].split(':'):[],right=sections[1]?sections[1].split(':'):[],missing=8-left.length-right.length;
+  if(sections.length===1?missing!==0:missing<1)return;
+  const words=sections.length===1?left:[...left,...Array(missing).fill('0'),...right];
+  if(words.some(word=>!/^[\da-f]{1,4}$/.test(word)))return;
+  return words.reduce((number,word)=>(number<<16n)|BigInt(`0x${word||'0'}`),0n);
 }
-const isRestricted=(address:Address)=>address.family===4?restrictedIPv4.check(address.address,'ipv4'):address.family===6?restrictedIPv6.check(address.address,'ipv6')||(nat64WellKnown.check(address.address,'ipv6')&&restrictedIPv4.check(embeddedIPv4(address.address),'ipv4')):true;
+function embeddedIPv4(value:bigint,length:number){
+  if(length===96)return value&0xffffffffn;
+  const before=Math.min(32,64-length),after=32-before;
+  const high=before?(value>>BigInt(128-length-before))&((1n<<BigInt(before))-1n):0n;
+  const low=after?(value>>BigInt(128-72-after))&((1n<<BigInt(after))-1n):0n;
+  return(high<<BigInt(after))|low;
+}
+function validNat64Layout(value:bigint,length:number){
+  if(length===96)return true;
+  const after=32-Math.min(32,64-length),suffix=128-72-after;
+  return((value>>56n)&0xffn)===0n&&(value&((1n<<BigInt(suffix))-1n))===0n;
+}
+const ipv4Text=(value:bigint)=>[24n,16n,8n,0n].map(shift=>Number((value>>shift)&255n)).join('.');
+function discoverNat64Prefixes(addresses:Address[]):Nat64Prefix[]{
+  const values=addresses.filter(item=>item.family===6).map(item=>ipv6Value(item.address)).filter((value):value is bigint=>value!==undefined),prefixes:Nat64Prefix[]=[];
+  const v4a=0xc00000aan,v4b=0xc00000abn;
+  for(const length of [32,40,48,56,64,96])for(const first of values)for(const second of values){
+    const network=first>>BigInt(128-length);
+    if(network!==second>>BigInt(128-length)||embeddedIPv4(first,length)!==v4a||embeddedIPv4(second,length)!==v4b||!validNat64Layout(first,length)||!validNat64Layout(second,length))continue;
+    if(!prefixes.some(prefix=>prefix.length===length&&prefix.network===network))prefixes.push({length,network});
+  }
+  return prefixes;
+}
+function nat64Prefixes(resolver:HostResolver){
+  const cached=nat64Cache.get(resolver);if(cached&&cached.expires>Date.now())return cached.promise;
+  let timer:NodeJS.Timeout|undefined;
+  const entry:{expires:number;promise:Promise<Nat64Prefix[]>}={expires:Date.now()+10000,promise:Promise.resolve([])};
+  entry.promise=Promise.race([
+    Promise.resolve().then(()=>resolver('ipv4only.arpa')),
+    new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('NAT64 discovery timed out')),1000);}),
+  ]).then(discoverNat64Prefixes).catch(()=>[]).finally(()=>{if(timer)clearTimeout(timer);}).then(prefixes=>{entry.expires=Date.now()+(prefixes.length?30000:10000);return prefixes;});
+  nat64Cache.set(resolver,entry);return entry.promise;
+}
+function isRestricted(address:Address,prefixes:Nat64Prefix[]){
+  if(address.family===4)return restrictedIPv4.check(address.address,'ipv4');
+  if(address.family!==6)return true;
+  if(restrictedIPv6.check(address.address,'ipv6'))return true;
+  const value=ipv6Value(address.address);if(value===undefined)return true;
+  if(nat64WellKnown.check(address.address,'ipv6')&&restrictedIPv4.check(ipv4Text(embeddedIPv4(value,96)),'ipv4'))return true;
+  return prefixes.some(prefix=>value>>BigInt(128-prefix.length)===prefix.network&&restrictedIPv4.check(ipv4Text(embeddedIPv4(value,prefix.length)),'ipv4'));
+}
 function pinnedLookup(addresses:Address[]):LookupFunction{
   return (_hostname:string,options:LookupOptions,callback)=>{
     const available=options.family?addresses.filter(item=>item.family===options.family):addresses;
@@ -38,7 +82,8 @@ export async function resolveAddresses(hostname:string,resolver:HostResolver=sys
       resolver(hostname),
       new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('DNS lookup timed out')),2500);}),
     ]);
-    if(!addresses.length||(!allowPrivate&&addresses.some(isRestricted)))throw new Error('Destination resolves to a private or reserved address');
+    const prefixes=!allowPrivate&&addresses.some(item=>item.family===6)?await nat64Prefixes(resolver):[];
+    if(!addresses.length||(!allowPrivate&&addresses.some(address=>isRestricted(address,prefixes))))throw new Error('Destination resolves to a private or reserved address');
     return addresses;
   }catch{throw new Error('Destination DNS lookup failed or resolved to a private or reserved address');}
   finally{if(timer)clearTimeout(timer);}

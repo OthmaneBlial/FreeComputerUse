@@ -82,6 +82,24 @@ test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs
   await assert.doesNotReject(resolvePublicAddresses('public-nat64.test',async()=>[{address:'64:ff9b::808:808',family:6}]));
 });
 
+test('DNS64 discovery blocks private IPv4 embedded in every RFC 6052 prefix length',async()=>{
+  const cases=[
+    {length:32,pair:['2606:4700:c000:aa::','2606:4700:c000:ab::'],private:'2606:4700:c0a8:1::',public:'2606:4700:808:808::'},
+    {length:40,pair:['2606:4700:abc0:0:aa::','2606:4700:abc0:0:ab::'],private:'2606:4700:abc0:a800:1::',public:'2606:4700:ab08:808:8::'},
+    {length:48,pair:['2606:4700:abcd:c000:0:aa00::','2606:4700:abcd:c000:0:ab00::'],private:'2606:4700:abcd:c0a8:0:100::',public:'2606:4700:abcd:808:8:800::'},
+    {length:56,pair:['2606:4700:abcd:12c0:0:aa::','2606:4700:abcd:12c0:0:ab::'],private:'2606:4700:abcd:12c0:a8:1::',public:'2606:4700:abcd:1208:8:808::'},
+    {length:64,pair:['2606:4700:abcd:1234:c0:0:aa00:0','2606:4700:abcd:1234:c0:0:ab00:0'],private:'2606:4700:abcd:1234:c0:a800:100:0',public:'2606:4700:abcd:1234:8:808:800:0'},
+    {length:96,pair:['2606:4700:abcd:1234:5678:9abc:c000:aa','2606:4700:abcd:1234:5678:9abc:c000:ab'],private:'2606:4700:abcd:1234:5678:9abc:c0a8:1',public:'2606:4700:abcd:1234:5678:9abc:808:808'},
+  ];
+  for(const item of cases){
+    let destination=item.private;
+    const resolver=async(hostname:string)=>hostname==='ipv4only.arpa'?item.pair.map(address=>({address,family:6})): [{address:destination,family:6}];
+    await assert.rejects(resolvePublicAddresses(`private-nat64-${item.length}.test`,resolver),/private or reserved address/,`/${item.length}`);
+    destination=item.public;
+    await assert.doesNotReject(resolvePublicAddresses(`public-nat64-${item.length}.test`,resolver),`/${item.length}`);
+  }
+});
+
 test('connection-time DNS rebinding to loopback is blocked before the target receives a request',{timeout:10000},async()=>{
   let visits=0,resolutions=0;
   const target=createServer((_req,res)=>{visits++;res.end('Private fixture');});

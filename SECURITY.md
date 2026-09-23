@@ -46,9 +46,12 @@ path. User restrictions and final completion criteria still apply.
   redirect is stopped before the target server receives it, then succeeds after
   approval. A loopback-only proxy resolves hostnames and connects to the vetted
   numeric address for HTTP, HTTPS tunnels and WebSockets. In normal mode,
-  private/reserved and IPv4-embedded private NAT64 answers are blocked, including
-  when the hostname is allowlisted. Explicit IP destinations still use exact
-  origin permissions. Ultra mode and the low-level `allowExternal` option bypass
+  private/reserved answers and private IPv4 addresses embedded in the
+  system-resolver's discovered NAT64 prefix are blocked, including when the
+  hostname is allowlisted. Discovery uses `ipv4only.arpa`; if the resolver does
+  not return synthesized AAAA records, network-specific prefixes cannot be
+  checked. Explicit IP destinations still use exact origin permissions. Ultra
+  mode and the low-level `allowExternal` option bypass
   origin and private-address checks. A synthetic public-to-loopback DNS change
   test confirms the proxy rejects the connection before the target receives it;
   system Chrome `154.0.8037.57` also passes approved and denied plain WebSocket
