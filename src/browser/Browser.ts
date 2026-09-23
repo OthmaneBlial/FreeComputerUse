@@ -1,5 +1,7 @@
 import { chromium, type BrowserContext, type LaunchOptions, type Page } from 'playwright';
+import { lookup } from 'node:dns/promises';
 import { mkdir, chmod, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { BlockList, isIP } from 'node:net';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import type {SemanticTarget} from '../actions/schema.js';
@@ -16,10 +18,27 @@ type CDPPending={resolve:(value:unknown)=>void;reject:(error:Error)=>void;timer:
 const browserChannels=['chrome','chrome-beta','chrome-dev','chrome-canary','msedge','msedge-beta','msedge-dev','msedge-canary'];
 const pageTargetFilter:{type?:string;exclude:boolean}[]=[{type:'page',exclude:false},{exclude:true}];
 const nestedTargetFilter:{type?:string;exclude:boolean}[]=[...['iframe','worker','shared_worker','service_worker'].map(type=>({type,exclude:false})),{exclude:true}];
+const restrictedAddresses=new BlockList();
+for(const range of ['0.0.0.0/8','10.0.0.0/8','100.64.0.0/10','127.0.0.0/8','169.254.0.0/16','172.16.0.0/12','192.0.0.0/24','192.0.2.0/24','192.88.99.0/24','192.168.0.0/16','198.18.0.0/15','198.51.100.0/24','203.0.113.0/24','224.0.0.0/4','240.0.0.0/4'])restrictedAddresses.addSubnet(range.split('/')[0]!,Number(range.split('/')[1]),'ipv4');
+for(const range of ['::/128','::1/128','::ffff:0:0/96','64:ff9b:1::/48','100::/64','2001:db8::/32','3fff::/20','fc00::/7','fe80::/10','ff00::/8'])restrictedAddresses.addSubnet(range.split('/')[0]!,Number(range.split('/')[1]),'ipv6');
+function isRestrictedAddress(address:string,family:number){return family===4?restrictedAddresses.check(address,'ipv4'):family===6?restrictedAddresses.check(address,'ipv6'):true;}
 export function checkedHttpURL(value:string,base?:string){
   const url=base?new URL(value,base):new URL(value);
   if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Only HTTP(S) destinations without embedded credentials are supported');
   return url;
+}
+export async function assertNoPrivateDNSResolution(value:string){
+  const url=checkedHttpURL(value),hostname=url.hostname.replace(/^\[|\]$/g,'');
+  if(isIP(hostname))return;
+  let timer:NodeJS.Timeout|undefined;
+  try{
+    const addresses=await Promise.race([
+      lookup(hostname,{all:true,order:'verbatim'}),
+      new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('DNS lookup timed out')),2500);}),
+    ]);
+    if(!addresses.length||addresses.some(item=>isRestrictedAddress(item.address,item.family)))throw new Error('Browser destination resolves to a private or reserved network address');
+  }catch{throw new Error('Browser destination DNS lookup failed or resolved to a private or reserved network address');}
+  finally{if(timer)clearTimeout(timer);}
 }
 function launchOptions(headless:boolean):LaunchOptions{
   const channel=process.env.FCU_BROWSER_CHANNEL;
@@ -43,6 +62,7 @@ export class Browser {
   private closePromise?:Promise<void>;
   readonly interaction:Interaction;
   constructor(readonly options: BrowserOptions = {}) {this.interaction=new Interaction(()=>this.page,options.visualInteraction);}
+  private async checkNetworkDestination(value:string){if(!this.options.allowExternal)await assertNoPrivateDNSResolution(value);}
   async launch() {
     const folder=this.options.profileDir?resolve(this.options.profileDir):await mkdtemp(join(tmpdir(),'free-computer-use-'));
     if(this.options.profileDir){await mkdir(folder,{recursive:true,mode:0o700});await chmod(folder,0o700);}
@@ -56,9 +76,12 @@ export class Browser {
     this.page = this.context.pages()[0] ?? await this.context.newPage();
     this.wire(this.page);
     await this.interaction.initialize(this.page);
-    await this.context.routeWebSocket('**/*',socket=>{
+    await this.context.routeWebSocket('**/*',async socket=>{
       const url=socket.url().replace(/^ws:/,'http:').replace(/^wss:/,'https:');
-      if(this.permits(url))socket.connectToServer();else socket.close({code:1008,reason:'Origin blocked by local browser policy'});
+      try{
+        await this.checkNetworkDestination(url);
+        if(this.permits(url))socket.connectToServer();else socket.close({code:1008,reason:'Origin blocked by local browser policy'});
+      }catch{socket.close({code:1008,reason:'Private network destinations are blocked'});}
     });
     await this.context.route('**/*', async route => {
       const url = route.request().url();
@@ -67,6 +90,7 @@ export class Browser {
           try{await this.options.beforeNavigate(url);}catch{await route.abort('blockedbyclient');return;}
         }
       }
+      try{await this.checkNetworkDestination(url);}catch{await route.abort('blockedbyclient');return;}
       // All initial browser HTTP requests, frames, fetches and form posts.
       if (!this.permits(url)) await route.abort('blockedbyclient');
       else await route.continue();
@@ -154,6 +178,7 @@ export class Browser {
         if(params.resourceType==='Document'&&this.options.beforeNavigate){
           try{await this.options.beforeNavigate(params.request.url);}catch{await fail();return;}
         }
+        try{await this.checkNetworkDestination(params.request.url);}catch{await fail();return;}
         if(!this.permits(params.request.url)){await fail();return;}
       }
       await this.sendCDP('Fetch.continueRequest',{requestId:params.requestId},sessionId);
@@ -189,12 +214,14 @@ export class Browser {
   async navigate(value: string) {
     const url = checkedHttpURL(value,this.page.url());
     await this.options.beforeNavigate?.(url.href);
+    await this.checkNetworkDestination(url.href);
     if (!this.permits(url.href)) throw new Error('Navigation destination is outside the local origin policy');
     await this.page.goto(url.href, { waitUntil: 'domcontentloaded' });
   }
   async openTab(url: string) {
     const destination=checkedHttpURL(url,this.page.url());
     await this.options.beforeNavigate?.(destination.href);
+    await this.checkNetworkDestination(destination.href);
     if (!this.permits(destination.href)) throw new Error('Tab destination is outside the origin policy');
     this.page = await this.context.newPage();
     await this.navigate(destination.href);

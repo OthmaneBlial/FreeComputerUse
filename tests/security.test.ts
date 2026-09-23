@@ -9,7 +9,7 @@ import {goalCriteria} from '../src/agent/goalCriteria.js';
 
 test('normal mode rejects website access before any site request; Ultra mode bypasses the gate',async()=>{
   let visits=0;const server=createServer((_req,res)=>{visits++;res.end('<h1>Free test site</h1><p>Ready</p>');});
-  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address() as {port:number},url=`http://127.0.0.1:${address.port}`;
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address() as {port:number},url=`http://localhost:${address.port}`;
   const store=new TraceStore(':memory:'),plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',format:'text',key:'text'}],completion:[{type:'text_exists',value:'Ready'}],continue:false});
   const normal=new Agent({store,browser:{allowedOrigins:[url]}});normal.control.on('approval',()=>normal.control.reject());
   const ultra=new Agent({store,mode:'ultra'});let gates=0;ultra.control.on('approval',()=>{gates++;});
@@ -33,7 +33,7 @@ test('trusted extraction criteria derive from the original goal',()=>{
 
 import {once} from 'node:events';
 import {Control} from '../src/agent/Control.js';
-import {Browser} from '../src/browser/Browser.js';
+import {Browser,assertNoPrivateDNSResolution} from '../src/browser/Browser.js';
 import {Observer} from '../src/browser/Observer.js';
 import {Executor} from '../src/actions/executor.js';
 import {VariableResolver} from '../src/profile/VariableResolver.js';
@@ -44,6 +44,13 @@ test('credentialed initial URLs are rejected before agent traces persist them',a
     await assert.rejects(agent.run('Open this page','https://user:private-token@example.test/'),/without embedded credentials/);
     assert.equal(agent.active,false);assert.equal(store.history().length,0);
   }finally{await agent.close();store.close();}
+});
+
+test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs to the origin policy',async()=>{
+  await assert.rejects(assertNoPrivateDNSResolution('http://localhost:8123'),/private or reserved network address/);
+  await assert.doesNotReject(assertNoPrivateDNSResolution('http://127.0.0.1:8123'));
+  assert.equal(new Browser({allowedOrigins:['http://127.0.0.1:8123']}).permits('http://127.0.0.1:8123/'),true);
+  assert.equal(new Browser().permits('http://127.0.0.1:8123/'),false);
 });
 
 test('concurrent permissions remain distinct and stopping rejects queued approvals',async()=>{
@@ -86,6 +93,18 @@ test('unapproved cross-origin fetches are blocked before receiving a request',as
     const plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'extraction_created'}],continue:false});
     assert.equal((await agent.run('Read this sandbox',url,plan)).status,'completed');assert.equal(leaked,0);
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>receiver.close(()=>resolve()))]);}
+});
+
+test('an allowlisted hostname resolving to loopback is blocked before its server receives a request',{timeout:15000},async()=>{
+  let visits=0;
+  const target=createServer((_req,res)=>{visits++;res.end('Private fixture');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));const targetURL=`http://localhost:${(target.address() as {port:number}).port}`;
+  const source=createServer((_req,res)=>res.end(`<script>fetch('${targetURL}/internal').catch(()=>{});</script>`));
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));const sourceURL=`http://127.0.0.1:${(source.address() as {port:number}).port}`;
+  const browser=await new Browser({allowedOrigins:[sourceURL,targetURL]}).launch();
+  try{
+    await browser.navigate(sourceURL);await browser.page.waitForTimeout(150);assert.equal(visits,0);
+  }finally{await browser.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);}
 });
 
 test('unapproved WebSocket origins are blocked before receiving an upgrade',{timeout:15000},async()=>{

@@ -44,7 +44,12 @@ path. User restrictions and final completion criteria still apply.
   navigations use the same approval callback, and redirected subresources need
   an approved origin. A local Chrome 154 test confirms an unapproved fast popup
   redirect is stopped before the target server receives it, then succeeds after
-  approval. Other browser builds and DNS rebinding remain unverified. The
+  approval. In normal mode, hostnames resolving to private or reserved ranges
+  are blocked before browser requests, including WebSockets. Explicit IP
+  destinations still use exact origin permissions. Ultra mode and the low-level
+  `allowExternal` option bypass both origin and private-address checks. DNS
+  results are not pinned between lookup and browser connection, so rebinding
+  races and other browser builds remain unverified. The
   DevTools endpoint is available only on loopback while the browser runs; a
   process under the same OS account is outside this boundary. Service workers
   are blocked.

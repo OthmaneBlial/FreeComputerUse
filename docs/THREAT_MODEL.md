@@ -33,7 +33,11 @@ results.
    verified.
    The exported low-level `Browser` denies network requests unless its caller
    provides an allowlist or explicitly sets `allowExternal`; Ultra mode opts into
-   that unrestricted HTTP(S) policy. DNS addresses are not pinned.
+   that unrestricted HTTP(S) policy and skips the private-address check too. In
+   normal mode, hostnames resolving to private or reserved address ranges are
+   blocked before HTTP and WebSocket requests. Explicit IP literals still require
+   an exact allowlisted origin. DNS answers are not pinned between the
+   application's lookup and Chromium's connection.
 3. **Planner to action.** By default, sensitive actions use a separate human
    confirmation path. The executor checks that an approved target remains
    connected and unchanged before the effect. The original goal's completion
@@ -55,7 +59,7 @@ results.
 | Threat | Current controls in this checkout | Evidence | Residual risk and follow-up |
 | --- | --- | --- | --- |
 | A page uses prompt injection to redirect the task, reveal profile data or request an unsafe action. | Page content is marked untrusted; action plans use a fixed schema; profile values are resolved locally; default sensitive-action checks require confirmation; completion checks are independently verified. | Provider boundary tests; `tests/security.test.ts` covers approval, post-approval target replacement and trusted completion criteria. | A model can still misunderstand a task and page content can deceive a person. Avoid Ultra mode; in normal mode use `--confirmation always` for high-impact work. |
-| A page, redirect, frame, fetch or WebSocket reaches an unapproved origin. | Playwright routing checks requests and WebSockets; a loopback-only Chromium DevTools Protocol connection intercepts page-target requests and redirect hops. Normal mode approves document origins; redirected subresources require an approved origin. Unsupported protocols and embedded URL credentials are rejected at the dashboard and agent boundaries before a trace is stored. IPv6 literals are canonicalized for allowlist comparison while preserving exact ports. | `tests/security.test.ts` covers credentialed initial URLs, exact-port IPv6 origin matching, cross-origin fetch, WebSocket denial before server upgrade, frame-grant cancellation, main-page redirect rejection before target receipt, redirect approval, default-deny behavior for a bare `Browser`, and popup redirect denial/approval. The dashboard test confirms credentialed starting URLs and allowlist entries are rejected before an agent is created. Popup and WebSocket cases pass against installed Chrome `154.0.8037.57`. | The popup and WebSocket cases are covered on that Chrome build only. DNS answers are not pinned to an IP, so DNS rebinding to a private address is not proven blocked. HTTP is also permitted. Validate other browser builds and address-resolution boundaries in Phase 2.2 before claiming broad origin containment. |
+| A page, redirect, frame, fetch or WebSocket reaches an unapproved origin. | Playwright routing checks requests and WebSockets; a loopback-only Chromium DevTools Protocol connection intercepts page-target requests and redirect hops. Normal mode approves document origins; redirected subresources require an approved origin. In normal mode, hostnames resolving to private/reserved ranges are rejected before HTTP or WebSocket requests. Ultra/`allowExternal` opts out of both origin and private-address checks. Unsupported protocols and embedded URL credentials are rejected at the dashboard and agent boundaries before a trace is stored. IPv6 literals are canonicalized for allowlist comparison while preserving exact ports. | `tests/security.test.ts` covers credentialed initial URLs, private DNS rejection before target receipt, normal/Ultra separation, exact-port IPv6 origin matching, cross-origin fetch and WebSocket denial before server receipt, frame-grant cancellation, main-page redirect rejection/approval, default-deny behavior for a bare `Browser`, and popup redirect denial/approval. The dashboard test confirms credentialed starting URLs and allowlist entries are rejected before an agent is created. Popup and WebSocket cases pass against installed Chrome `154.0.8037.57`. | DNS answers are checked but not pinned to Chromium's connection, so a lookup/connection rebinding race is not proven blocked. Explicit IP literals in normal mode still rely on exact origin approval. Other browser builds and permitted private-network workflows remain unverified. HTTP is also permitted. |
 | A click or form submission causes a purchase, message, deletion or other irreversible change. | Under the default `sensitive` policy, explicit `sensitive` flags and submit actions are gated; common risky labels and form semantics are heuristically detected; the approved target is fingerprinted; uncertain effects stop automated repair. | `sensitiveReason` and executor tests cover changed targets and approval/rejection behavior. | Text heuristics cannot recognize every deceptive or ambiguous control. Prefer normal mode with `--confirmation always`; visually review the action before approval. |
 | A remote site or another browser origin takes over the local dashboard. | Loopback binding, exact Host and Origin checks, random HttpOnly SameSite cookie, CSRF header, no CORS, restrictive CSP and bounded JSON request bodies. | Local UI tests cover missing session, cross-origin mutation rejection and successful same-origin control. | A process running as the same OS user can inspect or control local state. The dashboard is not a multi-user service; do not expose it through a tunnel or reverse proxy. |
 | A profile path, upload alias or download receipt escapes its allowed directory. | Vault schemas reject prototype keys; upload values must be explicit `files.*` aliases; downloaded paths are checked with `realpath` and a directory boundary before serving. | `tests/actions.test.ts` covers upload alias confinement; `tests/results.test.ts` covers symlinked download rejection. | Files are not encrypted and a user can intentionally choose sensitive files. Profile saves currently overwrite the JSON file directly, so interruption can leave it invalid; make replacement crash-safe in Phase 2.3. Keep profiles and downloads in an OS-protected account. |
@@ -77,12 +81,13 @@ results.
 
 ## Open security work
 
-- Phase 2.2: test DNS resolution changes, private IPv4/IPv6 targets, WebSockets,
-  symlinks and platform-specific path handling; then validate on the packaged
-  Playwright browser. The fast popup redirect has a passing local test on system
-  Chrome `154.0.8037.57`; this does not close the phase or prove other browser
-  builds. Implement only mitigations that close a reproduced boundary without
-  breaking authorized local fixtures.
+- Phase 2.2: test DNS answer changes and close the lookup/connection rebinding
+  gap, test private IPv4/IPv6 targets and permitted private-network workflows,
+  WebSockets, symlinks and platform-specific path handling; then validate on the
+  packaged Playwright browser. The fast popup redirect and a private-DNS block
+  have passing local tests on system Chrome `154.0.8037.57`; these do not close
+  the phase or prove other browser builds. Implement only mitigations that close
+  a reproduced boundary without breaking authorized local fixtures.
 - Phase 2.3: make profile replacement crash-safe, document inspect/export/delete
   steps, verify retention behavior, and keep plaintext storage clearly disclosed.
 - Phase 4.1: extend cancellation, timeout, malformed-state and workflow

@@ -34,7 +34,7 @@ parameters, endpoint and terms before use.
 | --- | --- | --- | --- |
 | Node.js | `package.json` requires Node `>=22.13.0`. | TypeScript checks passed on Node `25.9.0`, macOS `25.6.0`, Apple Silicon on 23 September 2026. | Minimum Node version and other operating systems have not been validated in this run. |
 | Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | Installed Chrome `154.0.8037.57` launched locally and passed the focused security suite. A prior synthetic download test under system Chrome ended in `SIGTRAP`; a later full-suite run stalled on an idle Chrome process and was stopped. | Matching Playwright Chromium is absent. Do not treat system Chrome as a validated substitute; Playwright warns that non-bundled browsers may be incompatible. No browser was downloaded. |
-| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. Closing the active page cancels its run and pending approval. | An earlier 13-test focused security run passed on system Chrome `154.0.8037.57`, including fast popup redirect denial before target receipt and the explicit-approval path. Separate credential-URL and cross-origin-WebSocket regressions also pass; the WebSocket fixture received no unapproved upgrade. | The full suite is not verified. DNS rebinding, approved WebSocket behavior, other browser builds and universal website success also remain unverified. |
+| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. Normal mode blocks hostnames resolving to private/reserved ranges before HTTP/WebSocket requests; explicit IP literals need exact origin approval. Ultra/`allowExternal` opts out of origin and private-address checks. Closing the active page cancels its run and pending approval. | The 18-test focused security suite passed on system Chrome `154.0.8037.57`, including popup redirect denial/approval, private-DNS denial before target receipt, exact IP-origin policy, and normal/Ultra behavior. The separate actions and results suites passed 6/6 and 1/1. | The full suite is not verified. DNS answers are not pinned to Chromium's later connection, so rebinding races remain unverified; approved WebSocket behavior, other browser builds and universal website success also remain unverified. |
 | Vision and canvas | Local screenshots/preview exist. | Screenshot paths are documented as local. | Images are not sent to the model; model vision and visual-only/canvas control are not implemented. |
 | npm package | Package metadata declares a CLI and library entry point; package name is `free-computer-use`. | `npm pack` has not been validated from a clean installation in this run. | No npm publication is verified; registry lookup returned 404 during the 23 September audit. `0.1.0` is manifest metadata, not a published release. |
 | GitHub release / binary | No release tag or GitHub release was present at audit time. | None. | No downloadable release binary or archive is currently offered. |
@@ -59,11 +59,12 @@ parameters, endpoint and terms before use.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
-- Earlier focused security-file run: 13/13 tests passed on system Chrome
-  `154.0.8037.57`; the fast popup redirect test observed zero target requests
-  when denied and one when approved. The run preceded addition of the initial
-  credential-URL regression case; existing popup navigation test also passed
-  standalone.
+- Focused security-file run: 18/18 tests passed on system Chrome
+  `154.0.8037.57`, including popup redirect denial/approval, hostname-to-loopback
+  denial before target receipt, and Ultra access to the explicit local fixture.
+- Focused action and results runs: 6/6 and 1/1 tests passed on system Chrome
+  `154.0.8037.57`; upload/download/navigation, saved-download confinement and
+  result reporting remained functional.
 - Credentialed initial URL: two focused tests passed. The library agent rejects
   credentials before persisting a trace; the dashboard rejects credentials in
   the starting URL or allowed-origin list before creating an agent.
@@ -73,6 +74,10 @@ parameters, endpoint and terms before use.
 - IPv6 allowlist matching: focused test passed; expanded and compressed loopback
   spellings normalize to one origin, while a different port and path-scoped
   allowlist are denied.
+- DNS private-address guard: focused unit and Chrome `154.0.8037.57` integration
+  tests passed. An allowlisted hostname resolving to loopback was blocked before
+  its fixture server received a request. This does not prove rebinding resistance
+  because Chromium's eventual connection is not pinned to the checked DNS result.
 - DNS rebinding and other browser builds remain unverified.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
