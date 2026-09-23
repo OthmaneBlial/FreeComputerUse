@@ -20,9 +20,10 @@ Browser smoke tests and live-provider benchmarks are also run locally and are
 separate opt-in commands because they can spend API tokens.
 
 `FCU_BROWSER_CHANNEL=chrome npm run ui:smoke` is a local no-provider first-run
-smoke. It checks approval before site navigation, a sandbox extraction and
+smoke. It checks visible control names, text contrast (4.5:1 for normal text and 3:1
+for large text), approval before site navigation, a sandbox extraction and
 result, browser console output, and dashboard widths 320, 390, 768 and 1600 px.
-It does not validate a live model provider.
+It does not validate a live model provider or screen-reader behavior.
 
 GitHub Pages is the existing host for the public static lab. Hosting publication
 is separate from the removed CI checks.
