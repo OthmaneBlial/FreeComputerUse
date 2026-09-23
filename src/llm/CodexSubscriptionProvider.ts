@@ -8,6 +8,7 @@ import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
+import { safeCliEnvironment } from './cliEnvironment.js';
 
 const execFile=promisify(execFileCallback);
 export interface CodexSubscriptionConfig {command?:string;model?:string;timeoutMs?:number}
@@ -18,9 +19,8 @@ const disabledFeatures=['agent_message_board','apps','artifact','auth_elicitatio
   'shell_snapshot','shell_snapshot_v2','shell_tool','shell_zsh_fork','skill_mcp_dependency_install','skill_search','sleep_tool',
   'standalone_web_search','tool_call_mcp_elicitation','tool_suggest','unified_exec','unified_exec_tty','view_image','worktrees','workspace_dependencies'];
 
-function safeEnvironment(){
-  const env={...process.env};
-  for(const key of Object.keys(env))if(/(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH)/i.test(key)||key==='NODE_OPTIONS')delete env[key];
+function codexEnvironment(){
+  const env=safeCliEnvironment();
   for(const key of ['OPENAI_BASE_URL','OPENAI_ORG_ID','OPENAI_PROJECT_ID','CODEX_MODEL_PROVIDER'])delete env[key];
   return env;
 }
@@ -33,7 +33,7 @@ export class CodexSubscriptionProvider implements LLMProvider {
   cancel(){for(const controller of this.controllers)controller.abort();}
   async checkLogin(){
     try{
-      const {stdout}=await execFile(this.config.command??'codex',['login','status'],{encoding:'utf8',timeout:15000,cwd:tmpdir(),env:safeEnvironment(),maxBuffer:4096});
+      const {stdout}=await execFile(this.config.command??'codex',['login','status'],{encoding:'utf8',timeout:15000,cwd:tmpdir(),env:codexEnvironment(),maxBuffer:4096});
       if(!/logged in using chatgpt/i.test(String(stdout)))throw new Error();
     }catch{throw new Error('Codex is not signed in with ChatGPT. Run `codex login` and choose ChatGPT.');}
   }
@@ -82,7 +82,7 @@ export class CodexSubscriptionProvider implements LLMProvider {
       args.push('-');
       return await new Promise<string>((resolve,reject)=>{
         if(signal.aborted){reject(new Error('Codex request cancelled'));return;}
-        const child=spawn(this.config.command??'codex',args,{cwd:directory,env:safeEnvironment(),stdio:['pipe','pipe','ignore']});
+        const child=spawn(this.config.command??'codex',args,{cwd:directory,env:codexEnvironment(),stdio:['pipe','pipe','ignore']});
         let output='',failure:Error|undefined,timedOut=false;
         const timer=setTimeout(()=>{timedOut=true;child.kill('SIGTERM');},this.config.timeoutMs??60000);
         const stop=()=>child.kill('SIGTERM');
