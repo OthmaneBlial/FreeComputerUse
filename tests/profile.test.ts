@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {access,chmod,mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
+import {access,chmod,mkdtemp,readdir,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {ProfileStore} from '../src/profile/ProfileStore.js';
@@ -17,6 +17,18 @@ test('profile imports accept only vault fields and invalid imports preserve stor
     assert.deepEqual(JSON.parse(await readFile(store.path,'utf8')),valid);
     if(process.platform!=='win32')assert.equal((await stat(store.path)).mode&0o777,0o600);
   }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('a failed profile replacement preserves the previous saved vault',async t=>{
+  if(process.platform==='win32'||process.getuid?.()===0){t.skip('The filesystem permission failure cannot be simulated on this platform or as root');return;}
+  const dir=await mkdtemp(join(tmpdir(),'fcu-profile-failed-write-')),store=new ProfileStore(join(dir,'profile.json'));
+  const valid={profile:{displayName:'Existing'},files:{}},replacement={profile:{displayName:'Uncommitted'},files:{}};
+  try{
+    await store.save(valid);const previous=await readFile(store.path);
+    await chmod(dir,0o500);
+    await assert.rejects(store.save(replacement),(error:NodeJS.ErrnoException)=>error.code==='EACCES'||error.code==='EPERM');
+    assert.deepEqual(await store.load(),valid);assert.deepEqual(await readFile(store.path),previous);assert.deepEqual(await readdir(dir),['profile.json']);
+  }finally{await chmod(dir,0o700).catch(()=>{});await rm(dir,{recursive:true,force:true});}
 });
 
 test('profile reads and writes reject symbolic links without changing their targets',async()=>{

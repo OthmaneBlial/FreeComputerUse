@@ -79,11 +79,12 @@ parameters, endpoint and terms before use.
   an unapproved WSS origin was blocked before the target received a TCP
   connection. The test ignores its generated local certificate, so public trust
   validation and other browser builds remain unverified.
-- Profile and local-data lifecycle: 3/3 tests passed on macOS. Unknown fields are
+- Profile and local-data lifecycle: 4/4 tests passed on macOS. Unknown fields are
   rejected without replacing the existing vault; symbolic-link reads and writes
   are refused; profile mode is `0600`; data directory/history modes are `0700`/
   `0600`; deleting a stopped data directory and restarting creates a fresh empty
-  history. Forty saved runs remain stored; the history limit only affects
+  history. A forced filesystem write failure leaves the existing profile bytes
+  unchanged. Forty saved runs remain stored; the history limit only affects
   displayed summaries. Retention is manual with no expiry. Windows/Linux
   permissions remain unverified.
 - IPv6 allowlist matching: focused test passed; expanded and compressed loopback
