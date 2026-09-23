@@ -45,6 +45,17 @@ test('observe/plan/execute/verify learns semantic workflow and replays without a
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('provider errors containing profile values are redacted from events and saved traces',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:'),secret='profile-secret-that-must-not-persist';
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error(secret);},repair:async()=>{throw new Error('Unexpected repair');}};
+  const agent=new Agent({store,provider,vault:{profile:{password:secret},files:{}},mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  try{
+    const trace=await agent.run('Read the page',fixture.url);
+    assert.equal(trace.status,'failed');assert.equal(trace.error,'{{profile.password}}');
+    assert(!JSON.stringify(agent.events).includes(secret));assert(!JSON.stringify(store.get(trace.id)).includes(secret));
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
 test('minimal repair changes only the failed action and preserves successful prefix',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
   const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
