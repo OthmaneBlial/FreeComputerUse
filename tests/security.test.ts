@@ -91,9 +91,12 @@ test('an agent navigation action cannot open a local file',async()=>{
 test('a website cannot navigate the browser to a local file',async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-file-navigation-')),marker='synthetic local file secret';
   const filename=join(directory,'secret.txt');
-  const fileURL=pathToFileURL(filename).href,server=createServer((_request,response)=>{
+  const fileURL=pathToFileURL(filename).href,server=createServer((request,response)=>{
+    if(request.url==='/redirect-to-file'){
+      response.writeHead(302,{location:fileURL});response.end();return;
+    }
     response.writeHead(200,{'content-type':'text/html'});
-    response.end(`<button id="read-local-file" onclick="location.href=${JSON.stringify(fileURL)}">Open local file</button>`);
+    response.end(`<button id="read-local-file" onclick="location.href=${JSON.stringify(fileURL)}">Open local file</button><button id="redirect-to-local-file" onclick="location.href='/redirect-to-file'">Redirect to local file</button>`);
   });
   let browser:Browser|undefined;
   try{
@@ -101,10 +104,12 @@ test('a website cannot navigate the browser to a local file',async()=>{
     await new Promise<void>((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',()=>{server.off('error',reject);resolve();});});
     const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;browser=await new Browser({allowedOrigins:[origin]}).launch();
     await browser.navigate(origin);
-    await browser.page.locator('#read-local-file').click();
-    await browser.page.waitForTimeout(250);
-    assert.equal(browser.page.url(),`${origin}/`);
-    assert(!await browser.page.locator('body').innerText().then(text=>text.includes(marker)));
+    for(const button of ['#read-local-file','#redirect-to-local-file']){
+      await browser.page.locator(button).click();
+      await browser.page.waitForTimeout(250);
+      assert(!browser.page.url().startsWith('file:'),button);
+      assert(!await browser.page.locator('body').innerText().then(text=>text.includes(marker)),button);
+    }
   }finally{
     await browser?.close();if(server.listening)await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(directory,{recursive:true,force:true});
   }
