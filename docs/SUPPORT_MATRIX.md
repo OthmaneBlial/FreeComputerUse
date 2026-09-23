@@ -34,7 +34,7 @@ parameters, endpoint and terms before use.
 | --- | --- | --- | --- |
 | Node.js | `package.json` requires Node `>=22.13.0`. | TypeScript checks passed on Node `25.9.0`, macOS `25.6.0`, Apple Silicon on 23 September 2026. | Minimum Node version and other operating systems have not been validated in this run. |
 | Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | Installed Chrome `154.0.8037.57` launched locally and passed the focused security suite. A prior synthetic download test under system Chrome ended in `SIGTRAP`; a later full-suite run stalled on an idle Chrome process and was stopped. | Matching Playwright Chromium is absent. Do not treat system Chrome as a validated substitute; Playwright warns that non-bundled browsers may be incompatible. No browser was downloaded. |
-| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. Chromium DevTools Protocol interception checks redirect hops after a page session attaches. | The focused security suite passed 12/12 on system Chrome `154.0.8037.57`, including main-page redirect denial before target receipt and navigation after explicit approval. | A reproduced fast redirect from a newly opened popup reached its unapproved target before the popup session attached. DNS rebinding, other browser builds and universal website success also remain unverified. |
+| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. Closing the active page cancels its run and pending approval. | All 13 focused security tests passed on system Chrome `154.0.8037.57`, including fast popup redirect denial before target receipt and the explicit-approval path. The existing popup navigation test also passed separately. | The full suite is not verified. DNS rebinding, other browser builds and universal website success also remain unverified. |
 | Vision and canvas | Local screenshots/preview exist. | Screenshot paths are documented as local. | Images are not sent to the model; model vision and visual-only/canvas control are not implemented. |
 | npm package | Package metadata declares a CLI and library entry point; package name is `free-computer-use`. | `npm pack` has not been validated from a clean installation in this run. | No npm publication is verified; registry lookup returned 404 during the 23 September audit. `0.1.0` is manifest metadata, not a published release. |
 | GitHub release / binary | No release tag or GitHub release was present at audit time. | None. | No downloadable release binary or archive is currently offered. |
@@ -59,9 +59,11 @@ parameters, endpoint and terms before use.
 - Provider doctor CLI: one local test passed for offline mode, a successful
   loopback `/models` response, missing API configuration and a simulated HTTP
   503; the configured API key and response body stayed out of CLI output.
-- Focused security suite: twelve tests passed with system Chrome
-  `154.0.8037.57`; main-page redirect denial and explicit-approval cases
-  passed. DNS rebinding and other browser builds remain unverified.
+- Focused security file: 13/13 tests passed on system Chrome
+  `154.0.8037.57`; the fast popup redirect test observed zero target requests
+  when denied and one when approved. Existing popup navigation test also passed
+  standalone.
+- DNS rebinding and other browser builds remain unverified.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other

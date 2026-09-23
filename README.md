@@ -83,7 +83,7 @@ The provider API routes have not all been live-tested here; DeepSeek Flash is th
 
 ## Control and privacy
 
-- Normal mode asks before direct navigation to a new origin; sensitive actions have a separate confirmation gate. A fast cross-origin redirect from a newly opened popup remains a known boundary gap in Phase 2.2. Ultra mode is explicit and off by default.
+- Normal mode asks before direct navigation to a new origin; a local Chrome 154 test also verifies that a fast cross-origin popup redirect is stopped before the target request unless approved. DNS rebinding and other browser builds remain unverified. Sensitive actions have a separate confirmation gate. Ultra mode is explicit and off by default.
 - Browser execution, profiles, history and downloads stay on your machine. Page context needed for a plan goes to the chosen model provider; screenshots are not sent.
 - The planner receives aliases for local profile and file values, not their contents. Local storage is **not encrypted**.
 - Runs record actions, checks, repairs, token estimates and workflow reuse so you can inspect what happened.

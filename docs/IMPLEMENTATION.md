@@ -14,9 +14,14 @@ actions. New page content needs another batch; ordinary clicks do not.
 `Agent` asks permission for each new origin. The exported low-level `Browser`
 blocks network requests by default; library callers must pass `allowedOrigins`
 or explicitly choose `allowExternal`. Chromium DevTools Protocol interception
-checks redirect hops after a page session is installed; redirected document
-navigations use the same approval callback. A newly opened popup's first
-redirect may start before that session attaches; see Phase 2.2 in `ROADMAP.md`.
+attaches to each page target before its first navigation and checks redirect
+hops. Redirected documents use the same approval callback. A synthetic local
+test on Chrome 154 confirms the first fast redirect from a new popup is checked
+before the target server receives it. Other browser builds and DNS rebinding
+remain open in Phase 2.2 of `ROADMAP.md`.
+Closing the active page stops its run and closes the browser context, which also
+cancels a pending site approval. Closing a tab through an action first switches
+the active page to the remaining tab.
 
 Semantic references are stable for each live document and frame. Selector ranking
 prefers role/name, label, placeholder, test ID, ID/name, text, CSS and observed DOM

@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import type { BrowserContext, Page } from 'playwright';
 import { PlanSchema,RepairSchema,type Plan,type Condition } from '../actions/schema.js';
 import { Executor,type ActionResult } from '../actions/executor.js';
 import { Browser,type BrowserOptions } from '../browser/Browser.js';
@@ -31,6 +32,7 @@ export class Agent extends EventEmitter {
   active=false;
   private cache=new Map<string,PageState>();
   private permittedSites=new Set<string>();
+  private watchedContexts=new WeakSet<BrowserContext>();
   constructor(readonly options:AgentOptions){
     super();this.variables=new VariableResolver(options.vault);
     this.browser=new Browser({...options.browser,allowExternal:options.mode==='ultra'||options.browser?.allowExternal,beforeNavigate:url=>this.authorizeSite(url)});
@@ -46,6 +48,16 @@ export class Agent extends EventEmitter {
     this.permittedSites.add(origin);
     const origins=this.browser.options.allowedOrigins??=[];if(!origins.includes(origin))origins.push(origin);
     this.event('PERMISSION',`Website approved: ${origin}`);
+  }
+  private watchLastPageClose() {
+    const context=this.browser.context;
+    if(this.watchedContexts.has(context))return;
+    this.watchedContexts.add(context);
+    const watch=(page:Page)=>page.once('close',()=>{
+      if(!this.active||this.control.stopped||page!==this.browser.page)return;
+      this.control.stop();void this.browser.close().catch(()=>{});
+    });
+    context.pages().forEach(watch);context.on('page',watch);
   }
   event(phase:string,message:string,data?:unknown){
     const event:AgentEvent={phase,message:this.variables.redact(message),time:Date.now(),data:data===undefined?undefined:JSON.parse(this.variables.redact(JSON.stringify(data)))};
@@ -82,6 +94,7 @@ export class Agent extends EventEmitter {
     let revision=this.control.revision,completionReplans=0;
     try{
       if(!this.browser.context)await this.browser.launch();
+      this.watchLastPageClose();
       this.browser.extractions.length=0;this.browser.downloads.length=0;this.browser.formReceipts.length=0;
       if(url)await this.browser.navigate(url);
       initial=await this.observe();trace.url=initial.url;

@@ -39,11 +39,15 @@ path. User restrictions and final completion criteria still apply.
   approval, while the low-level exported `Browser` denies all network requests
   unless the caller supplies `allowedOrigins` or explicitly opts into
   `allowExternal`. Cross-origin resources and WebSockets follow that policy.
-  Chromium's DevTools Protocol request interception checks redirect hops in a
-  page with an installed session; redirected document navigations ask for
-  approval, and redirected subresources need a preapproved origin. A newly
-  opened popup can start its first redirect before Playwright exposes its page
-  session, so that case is not yet contained. Service workers are blocked.
+  A loopback-only Chromium DevTools Protocol connection attaches to each page
+  before its first navigation and checks redirect hops; redirected document
+  navigations use the same approval callback, and redirected subresources need
+  an approved origin. A local Chrome 154 test confirms an unapproved fast popup
+  redirect is stopped before the target server receives it, then succeeds after
+  approval. Other browser builds and DNS rebinding remain unverified. The
+  DevTools endpoint is available only on loopback while the browser runs; a
+  process under the same OS account is outside this boundary. Service workers
+  are blocked.
 - Selector ambiguity is rejected for mutations; collection extraction may select
   several nodes. Browser dialogs are dismissed by default.
 - A failed click/submit with an uncertain outcome requires human review before

@@ -51,6 +51,7 @@ export class Verifier {
     const deadline=Date.now()+timeoutMs;
     let failed:Condition[]=[];
     do{
+      if(this.browser.page.isClosed())return{success:false,failed:conditions};
       failed=[];
       for(const condition of conditions){try{if(!await this.one(condition,since))failed.push(condition);}catch{failed.push(condition);}}
       if(!failed.length)return{success:true,failed};

@@ -5,6 +5,16 @@ import type { PageState } from './types.js';
 export const stateHash = (state: Pick<PageState, 'url'|'title'|'text'|'elements'> & Partial<Pick<PageState,'tables'>>) => createHash('sha256')
   .update(JSON.stringify([state.url, state.title, state.text,state.tables??[], state.elements.map(e => [e.frame,e.role,e.name,e.hasValue,e.checked,e.disabled,e.error])])).digest('hex').slice(0,20);
 
+async function evaluateWhilePageOpen<T>(page:Page,evaluation:Promise<T>):Promise<T>{
+  if(page.isClosed())throw new Error('Browser page closed during DOM inspection');
+  let rejectClosed!:(error:Error)=>void;
+  const closed=new Promise<never>((_,reject)=>{rejectClosed=reject;});
+  const onClose=()=>rejectClosed(new Error('Browser page closed during DOM inspection'));
+  page.once('close',onClose);
+  try{return await Promise.race([evaluation,closed]);}
+  finally{page.off('close',onClose);}
+}
+
 export class DomExtractor {
   async extract(page: Page, region?: string): Promise<PageState> {
     const pieces = [];
@@ -12,7 +22,7 @@ export class DomExtractor {
     for (let index = 0; index < frames.length; index++) {
       const frame = frames[index]!;
       try {
-        const data = await frame.evaluate(({ index, region,documentId }) => {
+        const data = await evaluateWhilePageOpen(page,frame.evaluate(({ index, region,documentId }) => {
           // Array destructuring avoids tsx's named-function helper in browser serialization.
           const [clean] = [(s: string | null | undefined, max = 180) => (s ?? '').replace(/\s+/g,' ').trim().slice(0,max)];
           const [visible] = [(el: Element) => {
@@ -88,10 +98,10 @@ export class DomExtractor {
           const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].filter(visible).slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>clean(cell.textContent))));
           const dialogs = all.filter(el=>included(el)&&visible(el)&&el.matches('dialog,[role=dialog],[role=menu]')).map(el=>clean(el.getAttribute('aria-label') || el.textContent,250));
           return { elements,headings,text:[...new Set(paragraphs)].join('\n').slice(0,8000),tables,dialogs,htmlBytes,truncated:candidates.length>500 };
-        }, { index, region,documentId:randomUUID().slice(0,8) });
+        }, { index, region,documentId:randomUUID().slice(0,8) }));
         pieces.push(data);
       } catch(error) {
-        if(index===0)throw error;
+        if(index===0||page.isClosed())throw error;
         // Detached child frames are reported instead of silently losing the page.
       }
     }

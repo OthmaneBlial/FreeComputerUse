@@ -139,6 +139,42 @@ test('a redirected navigation reaches a second origin after explicit approval',a
   }
 });
 
+test('a fast popup redirect is blocked before an unapproved target receives it',async()=>{
+  let targetVisits=0,targetApprovals=0,approved=false;
+  const target=createServer((_req,res)=>{targetVisits++;res.end('<h1>Popup target</h1>');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://127.0.0.1:${(target.address() as {port:number}).port}`;
+  const source=createServer((req,res)=>{
+    if(req.url==='/jump'){res.writeHead(302,{Location:targetURL+'/private'});res.end();return;}
+    res.end('<a href="/jump" target="_blank">Open popup</a>');
+  });
+  await new Promise<void>(resolve=>source.listen(0,'127.0.0.1',resolve));
+  const sourceURL=`http://127.0.0.1:${(source.address() as {port:number}).port}`;
+  const browser=new Browser({allowedOrigins:[sourceURL],beforeNavigate:async value=>{
+    if(new URL(value).origin!==targetURL)return;
+    targetApprovals++;
+    if(!approved)throw new Error('Origin denied');
+    browser.options.allowedOrigins?.push(targetURL);
+  }});
+  try{
+    await browser.launch();await browser.navigate(sourceURL);
+    const deniedEvent=browser.context.waitForEvent('page');
+    await browser.page.getByRole('link',{name:'Open popup'}).click();
+    const deniedPopup=await deniedEvent;await deniedPopup.waitForTimeout(100);
+    assert.equal(targetApprovals,1);assert.equal(targetVisits,0);
+
+    approved=true;
+    const approvedEvent=browser.context.waitForEvent('page');
+    await browser.context.pages()[0]!.getByRole('link',{name:'Open popup'}).click();
+    const approvedPopup=await approvedEvent;
+    await approvedPopup.waitForURL(`${targetURL}/private`);
+    assert.equal(targetApprovals,2);assert.equal(targetVisits,1);
+  }finally{
+    await browser.close();
+    await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
+  }
+});
+
 test('a prior download cannot satisfy a new task and a repair cannot weaken trusted criteria',async()=>{
   const store=new TraceStore(':memory:');
   const agent=new Agent({store,mode:'ultra',completionCriteria:[{type:'download_created',value:'old.txt'}],provider:{name:'fixture',plan:async()=>{throw new Error('unexpected');},repair:async()=>({actions:[],replace:0,completion:[{type:'extraction_created'}]})}});
@@ -163,9 +199,11 @@ test('closing a page cancels its pending frame grant and cannot make a later req
     // or plan, a fast main-frame observation could fail before that request.
     const plan=PlanSchema.parse({goal:'Read the parent page',steps:['Wait for the child frame'],actions:[{type:'wait',condition:{type:'text_exists',value:'Child'},timeoutMs:30000}],completion:[{type:'text_exists',value:'Parent'}]});
     const running=agent.run('Read the parent page',url,plan);
-    await Promise.race([pendingChild,running.then(()=>{throw new Error('Task ended before requesting the child permission');})]);
+    let timer:NodeJS.Timeout|undefined;
+    try{await Promise.race([pendingChild,running.then(()=>{throw new Error('Task ended before requesting the child permission');}),new Promise<void>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Timed out waiting for the child-origin permission')),5000);})]);}
+    finally{if(timer)clearTimeout(timer);}
     await agent.browser.page.close();const trace=await running;
-    assert(childPrompt);assert.equal(trace.status,'failed');assert.equal(agent.control.pending,undefined);assert.equal(visits,0);
+    assert(childPrompt);assert.equal(trace.status,'stopped');assert.equal(agent.control.pending,undefined);assert.equal(visits,0);
     assert.throws(()=>agent.control.approve(),/No action/);
   }finally{await agent.close();store.close();await Promise.all([new Promise<void>(resolve=>parent.close(()=>resolve())),new Promise<void>(resolve=>child.close(()=>resolve()))]);}
 });
