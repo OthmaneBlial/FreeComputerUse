@@ -61,7 +61,7 @@
       <div class="hero-proof" aria-label="Product principles">
         <div><span>01</span><b>Runs locally</b><small>Playwright drives your browser</small></div>
         <div><span>02</span><b>Works across models</b><small>Choose an API or supported CLI</small></div>
-        <div><span>03</span><b>Asks before visiting</b><small>Approve each new website origin</small></div>
+        <div><span>03</span><b>Asks before direct navigation</b><small>Approve a new origin before it opens</small></div>
       </div>
     </section>
 
@@ -74,7 +74,7 @@
       <div class="how-grid">
         <article><span>01 / OBSERVE</span><h3>Understand the page</h3><p>Read the DOM and accessible controls instead of guessing from screenshots.</p></article>
         <article><span>02 / PLAN</span><h3>Keep each batch small</h3><p>Ask your chosen model for the next bounded set of browser actions.</p></article>
-        <article><span>03 / EXECUTE</span><h3>Act in your browser</h3><p>Playwright runs locally. You approve a site before its origin is opened.</p></article>
+        <article><span>03 / EXECUTE</span><h3>Act in your browser</h3><p>Playwright runs locally. Direct navigation to a new origin asks for approval.</p></article>
         <article><span>04 / VERIFY</span><h3>Check before reuse</h3><p>Review the result, repair failures and replay compatible learned workflows later.</p></article>
       </div>
       <p class="how-note"><span aria-hidden="true">↳</span> Learned repeats can run with zero model calls when the workflow still matches.</p>
@@ -154,7 +154,7 @@
         <div><p class="eyebrow">LOCAL CONTROL, MADE VISIBLE</p><h2 id="control-title">The browser stays yours.</h2><p>Browser execution, profiles, history and downloads stay on your machine. The goal and page context needed to plan a task go to the model provider you chose.</p></div>
         <ul><li>Approve each website origin</li><li>Confirm sensitive actions separately</li><li>Inspect action history, checks and repairs</li><li>Replay compatible workflows without model calls</li></ul>
       </div>
-      <p class="control-footnote">Local storage is not encrypted. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> before using personal or sensitive data.</p>
+      <p class="control-footnote">Local storage is not encrypted. Immediate cross-origin redirects from newly opened popups remain a known limitation. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> before using personal or sensitive data.</p>
     </section>
 
     <section class="start-section page-section" id="start" aria-labelledby="start-title">

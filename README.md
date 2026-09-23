@@ -30,7 +30,7 @@ One goal led through six pages to a verified incident brief: **21 successful act
 
 1. **Observe** the page’s DOM and accessible controls.
 2. **Plan** a bounded batch with the model you choose.
-3. **Execute** browser actions locally with Playwright; approve each new website origin first.
+3. **Execute** browser actions locally with Playwright; direct navigation to a new origin asks for approval.
 4. **Verify** results, repair only what failed, then reuse compatible learned workflows.
 
 The model does not run shell commands or arbitrary JavaScript. Browser previews stay local; the goal and selected page context are sent to your configured model provider.
@@ -83,7 +83,7 @@ The provider API routes have not all been live-tested here; DeepSeek Flash is th
 
 ## Control and privacy
 
-- Website access is approved per origin; sensitive actions have a separate confirmation gate. Ultra mode is explicit and off by default.
+- Normal mode asks before direct navigation to a new origin; sensitive actions have a separate confirmation gate. A fast cross-origin redirect from a newly opened popup remains a known boundary gap in Phase 2.2. Ultra mode is explicit and off by default.
 - Browser execution, profiles, history and downloads stay on your machine. Page context needed for a plan goes to the chosen model provider; screenshots are not sent.
 - The planner receives aliases for local profile and file values, not their contents. Local storage is **not encrypted**.
 - Runs record actions, checks, repairs, token estimates and workflow reuse so you can inspect what happened.
