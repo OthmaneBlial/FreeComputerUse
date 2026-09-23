@@ -31,6 +31,17 @@ test('a failed profile replacement preserves the previous saved vault',async t=>
   }finally{await chmod(dir,0o700).catch(()=>{});await rm(dir,{recursive:true,force:true});}
 });
 
+test('an interrupted temporary profile write leaves the previous saved vault readable',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-profile-interrupted-')),store=new ProfileStore(join(dir,'profile.json'));
+  const valid={profile:{displayName:'Existing'},files:{}};
+  try{
+    await store.save(valid);
+    await writeFile(`${store.path}.11111111-1111-4111-8111-111111111111.tmp`,'{"profile":');
+    assert.deepEqual(await store.load(),valid);
+    assert.deepEqual(JSON.parse(await readFile(store.path,'utf8')),valid);
+  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
 test('profile reads and writes reject symbolic links without changing their targets',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-profile-link-')),outside=await mkdtemp(join(tmpdir(),'fcu-profile-outside-'));
   const path=join(dir,'profile.json'),target=join(outside,'private.json'),value={profile:{displayName:'Existing'},files:{}};
