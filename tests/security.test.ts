@@ -9,6 +9,7 @@ import {connect as connectTLS} from 'node:tls';
 import {chmod,mkdir,mkdtemp,readFile,rm,stat,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {Agent} from '../src/agent/Agent.js';
 import {startFixtures} from '../fixtures/server.js';
 import {TraceStore} from '../src/history/TraceStore.js';
@@ -85,6 +86,28 @@ test('an agent navigation action cannot open a local file',async()=>{
     assert.equal(trace.status,'failed');assert.match(trace.error??'',/Only HTTP\(S\) destinations/);
     assert.equal(agent.browser.page.url(),`${fixture.url}/demo`);
   }finally{await agent.close();store.close();await fixture.close();}
+});
+
+test('a website cannot navigate the browser to a local file',async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'fcu-file-navigation-')),marker='synthetic local file secret';
+  const filename=join(directory,'secret.txt');
+  const fileURL=pathToFileURL(filename).href,server=createServer((_request,response)=>{
+    response.writeHead(200,{'content-type':'text/html'});
+    response.end(`<button id="read-local-file" onclick="location.href=${JSON.stringify(fileURL)}">Open local file</button>`);
+  });
+  let browser:Browser|undefined;
+  try{
+    await writeFile(filename,marker);
+    await new Promise<void>((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',()=>{server.off('error',reject);resolve();});});
+    const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;browser=await new Browser({allowedOrigins:[origin]}).launch();
+    await browser.navigate(origin);
+    await browser.page.locator('#read-local-file').click();
+    await browser.page.waitForTimeout(250);
+    assert.equal(browser.page.url(),`${origin}/`);
+    assert(!await browser.page.locator('body').innerText().then(text=>text.includes(marker)));
+  }finally{
+    await browser?.close();if(server.listening)await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(directory,{recursive:true,force:true});
+  }
 });
 
 test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs to the origin policy',async()=>{
