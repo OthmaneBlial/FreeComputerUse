@@ -1,5 +1,6 @@
 import { chromium, type BrowserContext, type LaunchOptions, type Page } from 'playwright';
-import { mkdir, chmod, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -33,6 +34,24 @@ function launchOptions(headless:boolean):LaunchOptions{
   if(channel&&!browserChannels.includes(channel))throw new Error(`FCU_BROWSER_CHANNEL must be one of: ${browserChannels.join(', ')}`);
   return{headless,...(channel?{channel}:{})};
 }
+async function restrictUnproxiedWebRTC(userDataDir:string){
+  const profileDir=join(userDataDir,'Default'),preferencesPath=join(profileDir,'Preferences');
+  await mkdir(profileDir,{recursive:true,mode:0o700});
+  const directory=await lstat(profileDir);if(!directory.isDirectory()||directory.isSymbolicLink())throw new Error('Browser profile must be a local directory');
+  await chmod(profileDir,0o700);
+  let preferences:Record<string,unknown>={};
+  try{
+    const info=await lstat(preferencesPath);if(!info.isFile()||info.isSymbolicLink())throw new Error('Browser preferences must be a regular file');
+    const value:unknown=JSON.parse(await readFile(preferencesPath,'utf8'));
+    if(typeof value!=='object'||value===null||Array.isArray(value))throw new Error('Browser preferences must be a JSON object');
+    preferences=value as Record<string,unknown>;
+  }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+  const webrtc=preferences.webrtc&&typeof preferences.webrtc==='object'&&!Array.isArray(preferences.webrtc)?preferences.webrtc as Record<string,unknown>:{};
+  preferences.webrtc={...webrtc,ip_handling_policy:'disable_non_proxied_udp'};
+  const temporary=`${preferencesPath}.${randomUUID()}.tmp`;
+  try{await writeFile(temporary,JSON.stringify(preferences),{flag:'wx',mode:0o600});await rename(temporary,preferencesPath);await chmod(preferencesPath,0o600);}
+  finally{await rm(temporary,{force:true});}
+}
 export class Browser {
   context!: BrowserContext;
   page!: Page;
@@ -54,10 +73,11 @@ export class Browser {
   private async checkNetworkDestination(value:string){if(!this.options.allowExternal)await assertNoPrivateDNSResolution(value);}
   async launch() {
     const folder=this.options.profileDir?resolve(this.options.profileDir):await mkdtemp(join(tmpdir(),'free-computer-use-'));
-    if(this.options.profileDir){await mkdir(folder,{recursive:true,mode:0o700});await chmod(folder,0o700);}
+    if(this.options.profileDir){await mkdir(folder,{recursive:true,mode:0o700});const info=await lstat(folder);if(!info.isDirectory()||info.isSymbolicLink())throw new Error('Browser profile must be a local directory');await chmod(folder,0o700);}
     else this.temporaryProfileDir=folder;
     this.networkProxy=new NetworkGuardProxy({allowPrivate:this.options.allowExternal===true,permits:url=>this.permits(url)});
     try{
+      await restrictUnproxiedWebRTC(folder);
       const proxy=await this.networkProxy.start();
       this.context=await chromium.launchPersistentContext(folder,{...launchOptions(this.options.headless??true),proxy:{server:proxy,bypass:'<-loopback>'},acceptDownloads:true,serviceWorkers:'block',args:['--disable-quic','--remote-debugging-port=0','--remote-debugging-address=127.0.0.1']});
       this.context.setDefaultTimeout(this.options.timeoutMs ?? 4000);

@@ -2,10 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {createSocket} from 'node:dgram';
 import {createServer,request as httpRequest} from 'node:http';
 import {createServer as createHTTPSServer} from 'node:https';
 import {connect as connectTLS} from 'node:tls';
-import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import {mkdir,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Agent} from '../src/agent/Agent.js';
@@ -135,6 +136,34 @@ test('the proxy rejects a cleartext non-HTTP CONNECT protocol before dialing the
     });
     assert.equal(connections,0);
   }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
+test('Chrome does not send WebRTC STUN packets outside the configured proxy',{timeout:15000},async()=>{
+  const stun=createSocket('udp4');let packets=0;stun.on('message',()=>packets++);
+  await new Promise<void>(resolve=>stun.bind(0,'127.0.0.1',resolve));
+  const stunPort=(stun.address() as {port:number}).port,site=createServer((_req,res)=>res.end('<h1>Guarded browser</h1>'));
+  await new Promise<void>(resolve=>site.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${(site.address() as {port:number}).port}`,profile=await mkdtemp(join(tmpdir(),'fcu-webrtc-profile-'));
+  await mkdir(join(profile,'Default'));await writeFile(join(profile,'Default','Preferences'),JSON.stringify({profile:{default_content_setting_values:{notifications:2}},webrtc:{ip_handling_policy:'default'}}));
+  const browser=new Browser({profileDir:profile,allowedOrigins:[url]});
+  try{
+    await browser.launch();
+    await browser.navigate(url);
+    await browser.page.evaluate(async port=>{
+      const connection=new RTCPeerConnection({iceServers:[{urls:`stun:127.0.0.1:${port}`} ]});connection.createDataChannel('probe');
+      try{
+        await connection.setLocalDescription(await connection.createOffer());
+        await new Promise<void>(resolve=>{
+          if(connection.iceGatheringState==='complete'){resolve();return;}
+          const timer=setTimeout(resolve,4000);
+          connection.addEventListener('icegatheringstatechange',()=>{if(connection.iceGatheringState==='complete'){clearTimeout(timer);resolve();}});
+        });
+      }finally{connection.close();}
+    },stunPort);
+    await browser.page.waitForTimeout(100);assert.equal(packets,0);assert.equal(await browser.page.locator('h1').innerText(),'Guarded browser');
+    const preferences=JSON.parse(await readFile(join(profile,'Default','Preferences'),'utf8')) as {profile:{default_content_setting_values:{notifications:number}};webrtc:{ip_handling_policy:string}};
+    assert.equal(preferences.webrtc.ip_handling_policy,'disable_non_proxied_udp');assert.equal(preferences.profile.default_content_setting_values.notifications,2);
+  }finally{await browser.close();await new Promise<void>(resolve=>site.close(()=>resolve()));await new Promise<void>(resolve=>stun.close(()=>resolve()));await rm(profile,{recursive:true,force:true});}
 });
 
 test('the proxy connects to its single vetted address without resolving the hostname again',{timeout:10000},async()=>{

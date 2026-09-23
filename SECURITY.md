@@ -53,8 +53,11 @@ path. User restrictions and final completion criteria still apply.
   test confirms the proxy rejects the connection before the target receives it;
   system Chrome `154.0.8037.57` also passes approved and denied plain WebSocket
   tests. A separate local test completes a TLS WebSocket handshake and frame
-  through the proxy; Chrome-originated WSS, network-specific NAT64 prefixes,
-  non-HTTP browser traffic and other browser builds remain unverified. The
+  through the proxy; Chromium's persistent profile disables WebRTC UDP the
+  proxy cannot carry. A Chrome 154 local STUN fixture received no packets, but
+  sites requiring direct UDP for voice/video may fail. Chrome-originated WSS,
+  network-specific NAT64 prefixes, other non-HTTP traffic and other browser
+  builds remain unverified. The
   DevTools endpoint is available only on loopback while the browser runs; a
   process under the same OS account is outside this boundary. Service workers
   are blocked.
