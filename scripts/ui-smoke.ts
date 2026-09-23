@@ -1,16 +1,18 @@
-import {mkdir} from 'node:fs/promises';
-import {resolve} from 'node:path';
+import {mkdir,mkdtemp,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
 import {Browser} from '../src/browser/Browser.js';
 import {startServer} from '../src/server/index.js';
 import {loadEnvironment} from '../src/config.js';
 const interaction=process.argv.includes('--interaction');
-loadEnvironment();process.env.FCU_DATA_DIR=resolve(interaction?'.fcu/ui-smoke/interaction':'.fcu/ui-smoke');
-const dashboard=await startServer({port:0,quiet:true});const browser=await new Browser().launch();
+if(!interaction){process.env.LLM_PROVIDER='openai-compatible';process.env.LLM_API_KEY='';}
+loadEnvironment();process.env.FCU_DATA_DIR=await mkdtemp(join(tmpdir(),'free-computer-use-ui-smoke-'));
+const dashboard=await startServer({port:0,quiet:true});const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();
 const errors:string[]=[];browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
 try{
   await browser.page.setViewportSize({width:1600,height:1000});await browser.navigate(dashboard.url);
   await browser.page.locator('#start-url').fill(`https://othmaneblial.github.io/FreeComputerUse/lab/${interaction?'catalogue':'reports'}.html`);
-  await browser.page.locator('#goal').fill(interaction?'Type keyboard into Search products, open Trail keyboard, then extract the product name, price and stock availability.':'Extract the revenue dashboard table, including all three months and their revenues.');
+  await browser.page.locator('#goal').fill(interaction?'Type keyboard into Search products, open Trail keyboard, then extract the product name, price and stock availability.':'Extract the table');
   if(interaction){await browser.page.getByRole('button',{name:'Run options'}).click();await browser.page.locator('#use-workflows').uncheck();await browser.page.getByRole('button',{name:'Close run options'}).click();}
   await browser.page.getByRole('button',{name:'Run task',exact:true}).click();
   await browser.page.locator('#approval').waitFor({state:'visible',timeout:20000});
@@ -36,4 +38,4 @@ try{
   }
   if(errors.length)throw new Error('UI console errors: '+JSON.stringify(errors));
   console.log(JSON.stringify({status:dashboard.getAgent()?.trace?.status,model:dashboard.getAgent()?.trace?.metrics.provider,metrics:dashboard.getAgent()?.trace?.metrics,consoleErrors:errors,responsiveWidths:[1600,390],previewLoaded:true,visibleTypingCaptured:capture?.captured}));
-}finally{await browser.close();await dashboard.close();}
+}finally{await browser.close();await dashboard.close();await rm(process.env.FCU_DATA_DIR,{recursive:true,force:true});}

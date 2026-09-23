@@ -102,6 +102,17 @@ parameters, endpoint and terms before use.
   `/56`, `/64` and `/96` reject private embedded IPv4 and allow `8.8.8.8`. The
   current system resolver returned only IPv4 A records for `ipv4only.arpa`; live
   network-prefix discovery remains unverified.
+- First-run dashboard smoke: `FCU_BROWSER_CHANNEL=chrome npm run ui:smoke` passed
+  on 23 September 2026 with Node `25.9.0`, system Chrome `154.0.8037.57`, a new
+  temporary data directory, and no model provider. The approved public synthetic
+  lab task `Extract the table` completed with one browser action and zero model
+  calls; independent output checks, preview loading, console checks, and 1600/390
+  px overflow checks passed. This verifies the documented no-key sandbox path,
+  not installation from a clean checkout or support on other OS/browser builds.
+- Results UI smoke: `FCU_BROWSER_CHANNEL=chrome npm run ui:results` passed on
+  23 September 2026 with its authored local planning fixture. The independent
+  journey oracle, result facts, fullscreen view, viewer scrolling and browser
+  console checks passed. This validates result presentation, not model planning.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other

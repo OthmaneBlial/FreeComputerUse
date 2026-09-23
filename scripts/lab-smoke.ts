@@ -2,8 +2,8 @@ import {mkdir} from 'node:fs/promises';
 import {Browser} from '../src/browser/Browser.js';
 import {startLab} from './lab-server.js';
 import {startServer} from '../src/server/index.js';
-const lab=await startLab(),browser=await new Browser().launch();const errors:string[]=[];
-const dashboard=await startServer({port:0,quiet:true});
+const lab=await startLab(),dashboard=await startServer({port:0,quiet:true});
+const browser=await new Browser({allowedOrigins:[lab.url,dashboard.url]}).launch();const errors:string[]=[];
 browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
 try{
  await mkdir('artifacts/lab',{recursive:true});

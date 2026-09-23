@@ -8,7 +8,7 @@ import {complexScenarios,planFor} from './complex-scenarios.js';
 const dir=await mkdtemp(join(tmpdir(),'fcu-result-smoke-')),old=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
 const scenario=complexScenarios.find(s=>s.id==='travel')!,lab=await startLab();
 const dashboard=await startServer({port:0,quiet:true,provider:{name:'authored UI check · no model',plan:async context=>{await new Promise(resolve=>setTimeout(resolve,2500));return planFor(scenario,context.goal);},repair:async()=>{throw new Error('The authored UI check must not repair');}}});
-const browser=await new Browser().launch(),errors:string[]=[];browser.page.on('pageerror',e=>errors.push(e.message));browser.page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch(),errors:string[]=[];browser.page.on('pageerror',e=>errors.push(e.message));browser.page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
 try{
   await mkdir('artifacts/ui',{recursive:true});await browser.page.setViewportSize({width:1600,height:1000});await browser.navigate(dashboard.url);
   await browser.page.locator('#start-url').fill(lab.url+'workspace.html?view=travel');await browser.page.locator('#goal').fill('Plan an accessible, refundable journey from Paris to Lyon on 2026-10-15 for two adults, under EUR 120. Save and download the itinerary. This is a simulation; do not book.');
