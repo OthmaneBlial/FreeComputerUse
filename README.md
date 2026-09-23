@@ -1,4 +1,4 @@
-# FreeComputerUse
+<h1><img src="assets/brand-mark.svg" alt="" width="40" height="40" align="absmiddle"> FreeComputerUse</h1>
 
 ![FreeComputerUse — a local-first browser agent that plans, acts and verifies with you in control](assets/readme/hero.svg)
 
@@ -16,7 +16,7 @@
   <a href="SECURITY.md">Security</a>
 </p>
 
-**Tell your browser what done looks like. FreeComputerUse handles the steps, while you keep control.**
+**Your browser. Your model. Your call.** Tell it what done looks like, then stay in control of every step.
 
 FreeComputerUse is a local-first AI browser automation agent. A model plans small action batches; TypeScript and Playwright execute and verify them in your browser. Compatible workflows can be learned once and replayed later with **zero model calls**.
 

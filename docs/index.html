@@ -1,7 +1,174 @@
-<!doctype html><html lang="en"><head><base href="lab/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Northstar · Useful tasks for a browser that works</title><meta name="description" content="Useful, researched browser tasks on free real websites and a styled practice workspace for safe multi-step agent validation."><link rel="stylesheet" href="lab.css"><script type="module" src="home.js"></script></head><body>
-<header class="masthead"><a class="logo" href="index.html"><span class="logo-mark">✳</span><span>Northstar<small>BROWSER FIELD GUIDE</small></span></a><nav><a href="#watch">Watch the agent</a><a href="#library">Task library</a><a href="workspace.html?view=products">Practice workspace</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">Source ↗</a></nav></header>
-<main class="container"><section class="hero"><div><span class="kicker">LESS BUSYWORK. MORE GETTING THERE.</span><h1>Give your browser<br><em>a real job.</em></h1><p class="lead">Compare the options. Find the document. Follow the details. Useful tasks from real websites, plus a practice workspace that behaves like an actual product.</p><div class="hero-actions"><a class="primary-link" href="#library">Find your next task <span>↗</span></a><a class="quiet-link" href="workspace.html?view=products">Explore the workspace</a></div><p class="hero-note">Free websites · Clear goals · Results you can check</p></div><div class="hero-window" aria-hidden="true"><div class="window-top"><span>northstar / research workspace</span><b>AGENT AT WORK</b></div><div class="window-content"><span class="kicker">A LITTLE HELP WITH THE DETAILS</span><h3>Find what fits. Compare what matters.</h3><div class="mini-search">Wireless keyboard, under €100 <span>⌕</span></div><div class="mini-results"><div class="mini-row"><div class="mini-art">⌨</div><div><strong>Trail K2 · compact, wireless</strong><small>€69 · 80 hours · in stock</small></div><span class="mini-price">01</span></div><div class="mini-row"><div class="mini-art">⌨</div><div><strong>Summit Air · quiet, rechargeable</strong><small>€89 · 120 hours · in stock</small></div><span class="mini-price">02</span></div></div></div><div class="demo-cursor"><svg width="24" height="30" viewBox="0 0 24 30"><path d="M2 2L2 24L8 18L13 28L18 25L13 16L22 16Z" fill="#3264f6" stroke="white" stroke-width="2"/></svg><span>Comparing options</span></div><div class="floating-note"><strong>Every step has a purpose.</strong>Search → Filter → Compare → Extract</div></div></section>
-<section class="proof-strip"><div><strong>Real work, real websites</strong><small>Official documentation, open data and useful public tools.</small></div><div><strong>Practice the whole journey</strong><small>Filters, dialogs, dependent forms, downloads and saved state.</small></div><div><strong>You approve the website first</strong><small>External tasks are for reading and research. Practice data is synthetic.</small></div></section>
-<section class="case-film" id="watch" aria-labelledby="case-film-title"><div class="case-film-heading"><div><span class="kicker">ONE GOAL. SIX PAGES. A BRIEF YOU CAN CHECK.</span><h2 id="case-film-title">Watch the browser <em>do the work.</em></h2><p>This is one continuous run of FreeComputerUse investigating a synthetic API incident. A Flash model decides the next batch; the local browser moves, filters, reads, types and downloads the brief.</p></div><span class="case-film-number" aria-hidden="true">INC<span>204</span></span></div><div class="case-film-grid"><div class="case-film-player"><div class="case-film-topline"><span><i></i> RECORDED BROWSER RUN</span><span>NORMAL MODE · SITE APPROVAL SHOWN</span></div><video controls playsinline preload="metadata" poster="media/incident-poster.jpg" aria-label="Real FreeComputerUse run investigating synthetic incident INC-204"><source src="media/incident-demo.mp4" type="video/mp4">Your browser does not support embedded video. <a href="media/incident-demo.mp4">Download the recording</a>.</video><div class="case-film-caption"><span>21 successful actions · 10 Flash calls · $0.00650 configured estimate</span><a href="media/incident-demo.mp4">Open video ↗</a></div></div><div class="case-film-notes"><div class="case-film-note"><span>01 / ACCESS</span><strong>Permission first</strong><p>The local app asks before visiting the practice website.</p></div><div class="case-film-note"><span>02 / INVESTIGATE</span><strong>Follow the evidence</strong><p>Alert → timeline → request metrics → deployment comparison → runbook.</p></div><div class="case-film-note"><span>03 / DELIVER</span><strong>Save the brief</strong><p>The agent records the rates, deployment, configuration change and review decision, then downloads the synthetic report.</p></div><a class="case-film-try" href="workspace.html?view=incident">Explore the incident pages <span>↗</span></a></div></div></section>
-<section id="library"><div class="library-heading"><div><span class="kicker">THE FIELD GUIDE</span><h2>A task worth automating.</h2></div><p>Copy a goal and starting page into your local workspace. Source checks and actual agent runs are labelled separately.</p></div><div class="tab-row" role="tablist" aria-label="Example type"><button id="real-tab" role="tab" aria-selected="true" aria-controls="task-list">Real websites</button><button id="practice-tab" role="tab" aria-selected="false" aria-controls="task-list">Practice workflows</button></div><div class="filter-row" aria-label="Task categories"><button aria-pressed="true" data-category="all">All tasks</button><button aria-pressed="false" data-category="developer">For developers</button><button aria-pressed="false" data-category="research">Research &amp; documents</button><button aria-pressed="false" data-category="everyday">Everyday work</button></div><div class="task-grid" id="task-list" role="tabpanel" aria-label="Task examples"></div><details class="card-details"><summary>Focused browser checks from the original lab</summary><p>The original small pages remain available for regression checks, with the same controls and data.</p><div class="legacy-links"><a href="catalogue.html">Catalogue</a><a href="wizard.html">Travel wizard</a><a href="invoices.html">Invoice</a><a href="reports.html">Dashboard</a><a href="settings.html">Preferences</a><a href="dynamic.html">Dynamic controls</a><a href="frame.html">Iframe</a><a href="session-login.html">Session</a><a href="tabs.html">Tabs</a></div></details></section>
-<footer><span>Northstar is the free browser lab for FreeComputerUse.</span><a href="https://github.com/OthmaneBlial/FreeComputerUse">Plan in batches. Execute locally. ↗</a></footer></main><div id="toast" class="toast" role="status" hidden></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101612">
+  <meta name="description" content="FreeComputerUse is a local-first AI browser agent built with Playwright. Bring OpenAI, Claude, Grok, DeepSeek or another model, approve each website and keep control of every browser action.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="FreeComputerUse — Your browser. Your model. Your call.">
+  <meta property="og:description" content="A local-first AI browser agent. Connect an API or supported ChatGPT and Claude subscriptions, approve site access, then watch every action.">
+  <meta property="og:url" content="https://othmaneblial.github.io/FreeComputerUse/">
+  <title>FreeComputerUse — Local-first AI browser automation</title>
+  <link rel="canonical" href="https://othmaneblial.github.io/FreeComputerUse/">
+  <link rel="icon" type="image/svg+xml" href="../assets/brand-mark.svg">
+  <link rel="stylesheet" href="lab/lab.css">
+  <link rel="stylesheet" href="lab/home.css">
+  <script type="module" src="lab/home.js"></script>
+</head>
+<body class="home-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="FreeComputerUse home">
+      <img class="brand-mark" src="../assets/brand-mark.svg" alt="">
+      <span>FreeComputerUse<small>LOCAL BROWSER AGENT</small></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#how">How it works</a>
+      <a href="#models">Models</a>
+      <a href="#library">Task library</a>
+      <a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+    <a class="header-cta" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Get started <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="main">
+    <section class="home-hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> OPEN-SOURCE · PLAYWRIGHT · LOCAL-FIRST</p>
+        <h1 id="hero-title">Your browser.<br>Your model.<br><em>Your call.</em></h1>
+        <p class="hero-lead">Give your browser a goal. FreeComputerUse lets an AI plan the steps while Playwright runs them on your machine, with website access and sensitive actions kept in your hands.</p>
+        <div class="hero-buttons">
+          <a class="button-primary" href="#library">Explore browser tasks <span aria-hidden="true">↓</span></a>
+          <a class="button-quiet" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Read the quick start <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-caption">Bring an API key or sign in with a supported model CLI.</p>
+      </div>
+
+      <div class="run-card" aria-label="Illustration of a local browser automation run">
+        <div class="run-top"><div><i></i><i></i><i></i></div><span>FREECOMPUTERUSE / LOCAL RUN</span><b>ON YOUR MACHINE</b></div>
+        <div class="run-goal"><span>GOAL</span><strong>Compare three options and save the evidence</strong></div>
+        <ol class="run-steps">
+          <li class="step-done"><span class="step-index">01</span><span><b>Observe</b><small>Read page structure and controls</small></span><i>✓</i></li>
+          <li class="step-done"><span class="step-index">02</span><span><b>Plan</b><small>Choose a small, checkable action batch</small></span><i>✓</i></li>
+          <li class="step-current"><span class="step-index">03</span><span><b>Execute</b><small>Use the approved browser tab</small></span><i>•••</i></li>
+          <li><span class="step-index">04</span><span><b>Verify</b><small>Check results before you reuse them</small></span></li>
+        </ol>
+        <div class="run-footer"><span><i></i> SITE ACCESS APPROVED</span><span>MODEL: YOUR CHOICE</span></div>
+        <div class="run-stamp"><span>YOU STAY</span><strong>IN CONTROL</strong></div>
+      </div>
+
+      <div class="hero-proof" aria-label="Product principles">
+        <div><span>01</span><b>Runs locally</b><small>Playwright drives your browser</small></div>
+        <div><span>02</span><b>Works across models</b><small>Choose an API or supported CLI</small></div>
+        <div><span>03</span><b>Asks before visiting</b><small>Approve each new website origin</small></div>
+      </div>
+    </section>
+
+    <section class="how-section page-section" id="how" aria-labelledby="how-title">
+      <div class="section-heading">
+        <p class="eyebrow">A SMALL, CHECKABLE LOOP</p>
+        <h2 id="how-title">You set the goal.<br><em>The agent handles the clicks.</em></h2>
+        <p>The model suggests browser actions. Your local app executes them, checks what changed and shows you the run.</p>
+      </div>
+      <div class="how-grid">
+        <article><span>01 / OBSERVE</span><h3>Understand the page</h3><p>Read the DOM and accessible controls instead of guessing from screenshots.</p></article>
+        <article><span>02 / PLAN</span><h3>Keep each batch small</h3><p>Ask your chosen model for the next bounded set of browser actions.</p></article>
+        <article><span>03 / EXECUTE</span><h3>Act in your browser</h3><p>Playwright runs locally. You approve a site before its origin is opened.</p></article>
+        <article><span>04 / VERIFY</span><h3>Check before reuse</h3><p>Review the result, repair failures and replay compatible learned workflows later.</p></article>
+      </div>
+      <p class="how-note"><span aria-hidden="true">↳</span> Learned repeats can run with zero model calls when the workflow still matches.</p>
+    </section>
+
+    <section class="film-section" id="watch" aria-labelledby="film-title">
+      <div class="film-heading">
+        <div><p class="eyebrow">ONE RECORDED RUN · NOT A GENERAL SUCCESS CLAIM</p><h2 id="film-title">See what the steps<br><em>look like in practice.</em></h2><p>A local browser run investigates a synthetic API incident, checks six pages and saves a report.</p></div>
+        <span class="film-index">RUN<br><b>204</b></span>
+      </div>
+      <div class="film-layout">
+        <div class="video-frame">
+          <div class="video-label"><span><i></i> RECORDED PLAYWRIGHT SESSION</span><span>APPROVAL SHOWN</span></div>
+          <video controls playsinline preload="metadata" poster="lab/media/incident-poster.jpg" aria-label="FreeComputerUse investigating synthetic incident INC-204 in a local browser">
+            <source src="lab/media/incident-demo.mp4" type="video/mp4">
+            Your browser does not support this video. <a href="lab/media/incident-demo.mp4">Open the recording</a>.
+          </video>
+          <div class="video-caption"><span>21 successful actions · 10 model calls · $0.00650 configured estimate</span><a href="lab/media/incident-demo.mp4">Open full recording ↗</a></div>
+        </div>
+        <aside class="film-facts" aria-label="Recording details">
+          <div><span>01 / PERMISSION</span><b>Website access first</b><p>The local app requests approval before opening the practice site.</p></div>
+          <div><span>02 / RESEARCH</span><b>Follow the evidence</b><p>Alert → timeline → metrics → deployment comparison → runbook.</p></div>
+          <div><span>03 / RESULT</span><b>A report you can inspect</b><p>The agent checks its findings and downloads a synthetic incident brief.</p></div>
+          <a href="lab/workspace.html?view=incident">Explore the practice pages <span aria-hidden="true">↗</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <section class="models-section page-section" id="models" aria-labelledby="models-title">
+      <div class="section-heading models-heading">
+        <p class="eyebrow">PICK THE MODEL THAT FITS YOU</p>
+        <h2 id="models-title">One browser agent.<br><em>More than one way to connect.</em></h2>
+        <p>Use provider API keys for flexible model access, or authenticate with a supported local CLI subscription. The available choices depend on your configuration.</p>
+      </div>
+      <div class="provider-grid">
+        <article class="provider-card provider-wide">
+          <div class="provider-label"><span>01</span> API KEY</div>
+          <h3>Connect a model API</h3>
+          <p>Set the provider endpoint, model and key in your local environment.</p>
+          <div class="provider-tags"><span>OpenAI</span><span>Anthropic</span><span>Grok</span><span>DeepSeek</span><span>Gemini</span><span>Mistral</span><span>OpenRouter</span></div>
+          <small>OpenAI-compatible endpoints work through a configurable base URL. Anthropic has its own API mode.</small>
+        </article>
+        <article class="provider-card subscription-card">
+          <div class="provider-label"><span>02</span> SUPPORTED CLI SIGN-IN</div>
+          <h3>Use a subscription</h3>
+          <p>Sign in locally with the provider CLI, then select its subscription mode.</p>
+          <div class="subscription-options"><div><b>ChatGPT plan</b><span>Codex CLI</span></div><div><b>Claude Pro / Max</b><span>Claude Code</span></div></div>
+          <small>CLI sign-in uses that provider’s own plan limits. API billing and subscription usage are separate.</small>
+        </article>
+      </div>
+      <p class="model-note"><span aria-hidden="true">i</span> Provider availability and current setup steps: <a href="https://github.com/OthmaneBlial/FreeComputerUse#pick-your-model">read the model guide</a>. Some provider routes have not been live-tested in this project.</p>
+    </section>
+
+    <section class="library-section page-section" id="library" aria-labelledby="library-title">
+      <div class="library-intro">
+        <div><p class="eyebrow">START WITH A REAL GOAL</p><h2 id="library-title">A task library for<br><em>work worth automating.</em></h2></div>
+        <p>Copy a goal into your local workspace. Browse read-only research tasks or switch to synthetic workflows for practice. Source checks and agent trials are labelled separately.</p>
+      </div>
+      <div class="library-toolbar">
+        <div class="tab-row" role="tablist" aria-label="Example type">
+          <button id="real-tab" role="tab" aria-selected="true" aria-controls="task-list">Real websites</button>
+          <button id="practice-tab" role="tab" aria-selected="false" aria-controls="task-list">Practice workflows</button>
+        </div>
+        <div class="filter-row" aria-label="Task categories">
+          <button aria-pressed="true" data-category="all">All tasks</button>
+          <button aria-pressed="false" data-category="developer">Developer</button>
+          <button aria-pressed="false" data-category="research">Research</button>
+          <button aria-pressed="false" data-category="everyday">Everyday</button>
+        </div>
+      </div>
+      <div class="task-grid" id="task-list" role="tabpanel" aria-label="Task examples"></div>
+      <details class="lab-links"><summary>Explore focused browser checks</summary><p>The original small pages remain available for checking individual interactions.</p><div class="legacy-links"><a href="lab/catalogue.html">Product catalogue</a><a href="lab/wizard.html">Travel wizard</a><a href="lab/invoices.html">Invoice</a><a href="lab/reports.html">Dashboard</a><a href="lab/settings.html">Preferences</a><a href="lab/dynamic.html">Dynamic controls</a><a href="lab/frame.html">Iframe</a><a href="lab/session-login.html">Session</a><a href="lab/tabs.html">Tabs</a></div></details>
+    </section>
+
+    <section class="control-section" aria-labelledby="control-title">
+      <div class="control-inner">
+        <div><p class="eyebrow">LOCAL CONTROL, MADE VISIBLE</p><h2 id="control-title">The browser stays yours.</h2><p>Browser execution, profiles, history and downloads stay on your machine. The goal and page context needed to plan a task go to the model provider you chose.</p></div>
+        <ul><li>Approve each website origin</li><li>Confirm sensitive actions separately</li><li>Inspect action history, checks and repairs</li><li>Replay compatible workflows without model calls</li></ul>
+      </div>
+      <p class="control-footnote">Local storage is not encrypted. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> before using personal or sensitive data.</p>
+    </section>
+
+    <section class="start-section page-section" id="start" aria-labelledby="start-title">
+      <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Bring your own model.<br><em>Keep your browser close.</em></h2><p>Requires Node.js 22.13+, npm and Playwright Chromium. Follow the README for API-key setup or supported CLI sign-in.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
+      <pre class="terminal"><span>01 / TERMINAL</span><code>git clone https://github.com/OthmaneBlial/FreeComputerUse.git
+cd FreeComputerUse
+npm ci
+npx playwright install chromium
+cp .env.example .env
+npm run dev</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
+    </section>
+  </main>
+
+  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
