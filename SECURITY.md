@@ -86,7 +86,8 @@ state/profile directories use mode 0700 on supported filesystems. Profile JSON
 imports are schema-checked, reject symbolic-link files and replace saved data
 atomically. This is local storage with file permissions, **not encrypted
 storage**. Browser session data and extracted website content can be sensitive;
-use an OS-protected account/disk.
+use an OS-protected account/disk. History, workflows, browser sessions and
+downloads have no automatic expiry; see [retention and deletion steps](docs/LOCAL_DATA.md#retention).
 
 Known profile/file values are redacted from prompts, event logs and traces and
 resolve locally during actions. Secret-looking key strings are also redacted.

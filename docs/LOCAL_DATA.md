@@ -26,6 +26,13 @@ npm run agent -- workflows
 Treat full traces, profile values, browser data and downloads as private. Do not
 attach them to an issue or share them without reviewing their contents.
 
+## Retention
+
+There is no automatic expiry or pruning. Run history, learned workflows, browser
+sessions and downloads remain in the data directory until you remove it. The
+CLI/dashboard history limits only limit how many summaries they display; they
+do not delete older traces.
+
 ## Export
 
 Stop FreeComputerUse, then copy the entire data directory to a private backup

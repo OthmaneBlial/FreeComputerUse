@@ -1,9 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
+import {access,mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {ProfileStore} from '../src/profile/ProfileStore.js';
+import {TraceStore,type Trace} from '../src/history/TraceStore.js';
+import {startServer} from '../src/server/index.js';
 
 test('profile imports accept only vault fields and invalid imports preserve stored data',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-profile-')),store=new ProfileStore(join(dir,'profile.json'));
@@ -27,4 +29,20 @@ test('profile reads and writes reject symbolic links without changing their targ
     await assert.rejects(store.save({profile:{displayName:'Changed'},files:{}}),/regular file/);
     assert.deepEqual(JSON.parse(await readFile(target,'utf8')),value);
   }finally{await rm(dir,{recursive:true,force:true});await rm(outside,{recursive:true,force:true});}
+});
+
+test('stopped local data can be deleted and recreated without restoring old runs',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-data-lifecycle-')),history=join(dir,'history.sqlite'),previous=process.env.FCU_DATA_DIR;
+  let dashboard:Awaited<ReturnType<typeof startServer>>|undefined;
+  try{
+    process.env.FCU_DATA_DIR=dir;dashboard=await startServer({port:0,quiet:true});await dashboard.close();dashboard=undefined;
+    const stored=new TraceStore(history),trace:Trace={version:1,id:'before-delete',goal:'Private run',url:'http://example.test/',status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
+    try{for(let index=0;index<40;index++)stored.save({...trace,id:`before-delete-${index}`,startedAt:index});assert.equal(stored.history(1000).length,40);assert.equal(stored.history(12).length,12);}finally{stored.close();}
+    await access(history);await rm(dir,{recursive:true,force:true});await assert.rejects(access(history));
+    dashboard=await startServer({port:0,quiet:true});await dashboard.close();dashboard=undefined;
+    await access(history);const store=new TraceStore(history);try{assert.deepEqual(store.history(),[]);}finally{store.close();}
+  }finally{
+    await dashboard?.close();await rm(dir,{recursive:true,force:true});
+    if(previous===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=previous;
+  }
 });

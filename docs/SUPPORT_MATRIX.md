@@ -76,9 +76,12 @@ parameters, endpoint and terms before use.
   approved local endpoints; the denied fixture received no upgrade. A separate
   local TLS WebSocket handshake and frame passed through the proxy. Chrome WSS
   integration and other browser builds remain unverified.
-- Profile import/storage: 2/2 tests passed. Unknown fields are rejected without
-  replacing the existing vault; symbolic-link reads and writes are refused, and
-  the POSIX profile file mode is verified as `0600`.
+- Profile and local-data lifecycle: 3/3 tests passed on macOS. Unknown fields are
+  rejected without replacing the existing vault; symbolic-link reads and writes
+  are refused; profile mode is `0600`; deleting a stopped data directory and
+  restarting creates a fresh empty history. Forty saved runs remain stored; the
+  history limit only affects displayed summaries. Retention is manual with no
+  expiry. Windows/Linux permissions remain unverified.
 - IPv6 allowlist matching: focused test passed; expanded and compressed loopback
   spellings normalize to one origin, while a different port and path-scoped
   allowlist are denied.
