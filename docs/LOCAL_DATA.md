@@ -90,3 +90,9 @@ Remove-Item -LiteralPath .fcu -Recurse
 To delete data stored at a custom `FCU_DATA_DIR`, substitute its resolved path
 after checking that it is the intended directory. Removing this folder deletes
 profiles, history, workflows, browser cookies/session data and task downloads.
+
+On macOS 26.6 with Node 25.9.0, the `ditto` backup and `rm -r --` deletion
+commands were checked against a disposable directory containing synthetic
+profile/history files. The copied contents matched; after deletion, the app's
+directory initializer recreated an empty data directory. Linux and Windows
+commands have not been run here.
