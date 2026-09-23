@@ -1,4 +1,4 @@
-<h1><img src="assets/brand-mark.svg" alt="" width="40" height="40" align="absmiddle"> FreeComputerUse</h1>
+<h1><img src="docs/brand-mark.svg" alt="" width="40" height="40" align="absmiddle"> FreeComputerUse</h1>
 
 ![FreeComputerUse — a local-first browser agent that plans, acts and verifies with you in control](assets/readme/hero.svg)
 
