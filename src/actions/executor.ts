@@ -34,7 +34,8 @@ export class Executor {
   private async storeDownload(download:Download,requestedName?:string){
     const folder=resolve(this.options.downloadDir??'.fcu/downloads');
     await mkdir(folder,{recursive:true,mode:0o700});
-    const filename=basename(requestedName??download.suggestedFilename());
+    const filename=[...basename((requestedName??download.suggestedFilename()).replaceAll('\\','/')).normalize('NFC')
+      .replace(/[\u0000-\u001f\u007f<>:"|?*]/g,'_').replace(/[. ]+$/g,'')].slice(0,180).join('');
     if(!filename||filename==='.'||filename==='..')throw new Error('Invalid download filename');
     const path=resolve(folder,`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${filename}`);
     await download.saveAs(path);

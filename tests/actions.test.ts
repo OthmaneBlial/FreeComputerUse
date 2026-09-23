@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp,writeFile,readFile,rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname,join } from 'node:path';
 import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
 import { Executor } from '../src/actions/executor.js';
@@ -54,6 +54,19 @@ test('executor fills, selects, verifies, uploads, downloads, navigates and contr
     assert((await executor.run({type:'wait',condition:{type:'element_visible',target:{role:'button',name:'Delayed action'}}})).success);
     assert((await executor.run({type:'click',target:{role:'button',name:'Delayed action'}})).success);
   }finally{await browser.close();await fixture.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('download names stay inside the selected folder and support Unicode across platforms',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<a href="data:text/plain,receipt" download="receipt.txt">Download</a>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control(),{downloadDir:dir});
+    const result=await executor.run({type:'download',target:{role:'link',name:'Download'},filename:'..\\..\\résumé 🧾.txt'});
+    assert.equal(result.success,true,result.error??'Download failed');
+    const saved=result.data as {path:string;filename:string};
+    assert.equal(saved.filename,'résumé 🧾.txt');assert.equal(dirname(saved.path),dir);
+    assert.equal(await readFile(saved.path,'utf8'),'receipt');
+  }finally{await browser.close();await rm(dir,{recursive:true,force:true});}
 });
 
 test('sensitive action waits for a human and rejection never clicks',async()=>{
