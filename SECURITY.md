@@ -96,10 +96,14 @@ On macOS, download directories use mode `0700` and saved download files use mode
 `0600`; Windows/Linux data-directory permissions remain unverified.
 
 Known profile/file values are redacted from prompts, event logs and traces and
-resolve locally during actions. Secret-looking key strings are also redacted.
-Records extraction omits password/payment field values. These filters do not
-identify every possible secret in arbitrary website content. Do not publish local
-traces, browser profiles or screenshots from a real account.
+resolve locally during actions. Common credential query parameters and
+bearer-shaped tokens are redacted before model requests, new trace saves and
+dashboard/CLI history output; the browser still opens the original URL.
+Secret-looking key strings are also redacted. Records extraction omits
+password/payment field values. These filters do not identify every possible
+secret in arbitrary website content. Do not publish local traces, browser
+profiles or screenshots from a real account. Replays that depended on a
+redacted query credential need a fresh starting URL.
 
 ## Dashboard boundary
 

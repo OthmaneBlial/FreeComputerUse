@@ -6,6 +6,7 @@ import {chmod,mkdtemp,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {pathToFileURL} from 'node:url';
+import {TraceStore,type Trace} from '../src/history/TraceStore.js';
 
 test('environment loading restricts local credentials and rejects symbolic links',{timeout:20000},async t=>{
   if(process.platform==='win32'){t.skip('POSIX .env file modes do not apply on Windows');return;}
@@ -27,6 +28,20 @@ test('environment loading restricts local credentials and rejects symbolic links
     await rm(path);await symlink(shared,path);
     const linked=await runLoader();assert.notEqual(linked.code,0);assert.match(linked.stderr,/regular file/);
     assert.equal((await stat(shared)).mode&0o777,0o644);assert(!linked.stdout.includes(secret));assert(!linked.stderr.includes(secret));
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('history CLI redacts credential query values from saved traces',{timeout:15000},async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'fcu-history-redaction-')),store=new TraceStore(join(directory,'history.sqlite'));
+  const secret='legacy-history-access-secret';
+  const trace:Trace={version:1,id:'history-redaction',goal:'Inspect a saved route',url:`https://example.test/?access_token=${secret}&search=Paris`,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
+  store.save(trace);store.close();
+  try{
+    const child=spawn(process.execPath,['--import','tsx','src/cli/index.ts','history'],{cwd:process.cwd(),env:{...process.env,FCU_DATA_DIR:directory},stdio:['ignore','pipe','pipe']});
+    let stdout='',stderr='';child.stdout.setEncoding('utf8').on('data',chunk=>stdout+=chunk);child.stderr.setEncoding('utf8').on('data',chunk=>stderr+=chunk);
+    const code=await new Promise<number|null>((resolve,reject)=>{child.once('error',reject);child.once('close',resolve);});
+    assert.equal(code,0,stderr);assert(!stdout.includes(secret));
+    const rows=JSON.parse(stdout) as {url:string}[];assert.equal(rows[0]?.url,'https://example.test/?access_token=REDACTED&search=Paris');
   }finally{await rm(directory,{recursive:true,force:true});}
 });
 

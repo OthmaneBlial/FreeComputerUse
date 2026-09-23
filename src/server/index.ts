@@ -7,6 +7,7 @@ import { Agent } from '../agent/Agent.js';
 import { checkedHttpURL } from '../browser/Browser.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
+import { VariableResolver } from '../profile/VariableResolver.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
 import { runtimeConfig } from '../config.js';
 import { PlanSchema } from '../actions/schema.js';
@@ -29,6 +30,8 @@ const same=(a:string,b:string)=>{const aa=Buffer.from(a),bb=Buffer.from(b);retur
 export async function startServer(options:{port?:number;headed?:boolean;quiet?:boolean;provider?:LLMProvider}={}){
   const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite')),profiles=new ProfileStore(join(config.dataDir,'profile.json'));
   const secret=randomBytes(32).toString('hex');let agent:Agent|undefined,pending:Promise<unknown>|undefined;
+  const fallbackRedactor=new VariableResolver(),redactLocal=(value:string)=>fallbackRedactor.redact(agent?.variables.redact(value)??value);
+  const redactLocalData=<T>(value:T):T=>JSON.parse(redactLocal(JSON.stringify(value))) as T;
   const previous=store.history(1)[0],savedTrace=previous?store.get(String(previous.id)):undefined;
   const restored=savedTrace?.status==='running'?undefined:savedTrace;
   const listeners=new Set<ServerResponse>();let origin='';
@@ -54,8 +57,8 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='GET'&&path==='/api/state'){
         send(200,{active:agent?.active??false,paused:agent?.control.paused??false,pending:agent?.control.pending,
-          trace:agent?.trace?{...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}:restored,state:agent?.state?{url:agent.state.url,title:agent.state.title,hash:agent.state.hash,warnings:agent.state.warnings,elements:agent.state.elements.length}:undefined,
-          pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?.url(),events:agent?.events??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12),workflows:new WorkflowEngine(store).list()});return;
+          trace:agent?.trace?redactLocalData({...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}):restored?redactLocalData(restored):undefined,state:agent?.state?{url:redactLocal(agent.state.url),title:redactLocal(agent.state.title),hash:agent.state.hash,warnings:agent.state.warnings.map(redactLocal),elements:agent.state.elements.length}:undefined,
+          pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?redactLocal(agent.browser.page.url()):undefined,events:agent?.events.map(event=>redactLocalData(event))??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12).map(row=>redactLocalData(row)),workflows:new WorkflowEngine(store).list()});return;
       }
       if(req.method==='GET'&&path==='/api/events'){
         res.writeHead(200,{'Content-Type':'text/event-stream','Connection':'keep-alive'});res.write(': connected\n\n');listeners.add(res);req.on('close',()=>listeners.delete(res));return;

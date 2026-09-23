@@ -1,4 +1,10 @@
 export type Vault = { profile: Record<string,string>; files: Record<string,string> };
+function sensitiveQueryParameter(value:string){
+  let name=value;try{name=decodeURIComponent(value.replaceAll('+',' '));}catch{}
+  const normalized=name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  return /(?:token|secret|password|passwd|pwd|authorization|auth|session|sessionid|cookie|signature|sig|credential)$/.test(normalized)||
+    /^(?:key|apikey|accesskey|clientkey|privatekey|subscriptionkey|signingkey|code|oauthcode|authorizationcode|codeverifier)$/.test(normalized);
+}
 export class VariableResolver {
   constructor(readonly vault:Vault={profile:{},files:{}}) {}
   resolve(value:string):string {
@@ -24,6 +30,9 @@ export class VariableResolver {
       const escaped=JSON.stringify(secret).slice(1,-1);
       if(escaped!==secret)result=result.split(escaped).join(JSON.stringify(alias).slice(1,-1));
     }
-    return result.replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]');
+    return result
+      .replace(/([?&])([^=?&#\s"'<>()[\]]+)=([^&#\s"'<>),}\]]*)/g,(match,separator:string,name:string)=>sensitiveQueryParameter(name)?`${separator}${name}=REDACTED`:match)
+      .replace(/\bBearer\s+[A-Za-z0-9._~+/-]{12,}={0,2}/gi,'Bearer [redacted]')
+      .replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]');
   }
 }

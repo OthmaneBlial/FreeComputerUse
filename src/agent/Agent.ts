@@ -89,7 +89,7 @@ export class Agent extends EventEmitter {
     this.active=true;const startedAt=Date.now();const callStart=this.providerCalls().length;
     const provider=allowProvider?this.options.provider:undefined;
     const usageStart=this.budget.snapshot();let initial:PageState|undefined,repairs=0,cacheHits=0,planCalls=0;
-    const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:url??this.browser.page?.url()??'',status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
+    const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);
     const repeated=new Map<string,number>(),navigations=new Map<string,number>(),completed:string[]=[];
     let revision=this.control.revision,completionReplans=0;
@@ -98,7 +98,7 @@ export class Agent extends EventEmitter {
       this.watchLastPageClose();
       this.browser.extractions.length=0;this.browser.downloads.length=0;this.browser.formReceipts.length=0;
       if(url)await this.browser.navigate(url);
-      initial=await this.observe();trace.url=initial.url;
+      initial=await this.observe();trace.url=this.variables.redact(initial.url);
       if(initial.warnings.some(w=>w.includes('Human authentication'))){
         this.control.pause();this.event('HUMAN','Take control to complete authentication/security checks, then resume');
         await this.control.checkpoint();initial=await this.observe();revision=this.control.revision;

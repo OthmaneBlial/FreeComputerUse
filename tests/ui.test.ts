@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {Browser} from '../src/browser/Browser.js';
 import {startServer} from '../src/server/index.js';
+import {TraceStore,type Trace} from '../src/history/TraceStore.js';
 import {startFixtures} from '../fixtures/server.js';
 import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 import {PlanSchema} from '../src/actions/schema.js';
@@ -20,6 +21,37 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
     const badOrigin=await request({goal:'Read the page',url:'https://example.test/',allowedOrigins:['https://user:private-token@example.test/']});assert.equal(badOrigin.status,400);assert.match((await badOrigin.json() as {error:string}).error,/without embedded credentials/);
     assert.equal(dashboard.getAgent(),undefined);
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
+});
+
+test('dashboard and provider context redact credentials in the active page URL',{timeout:30000},async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-url-redaction-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
+  const fixture=await startFixtures();let prompt='';
+  const legacySecret='legacy-access-secret-that-must-not-be-shown',legacyURL=`${fixture.url}/demo?access_token=${legacySecret}&search=Paris`;
+  const oldStore=new TraceStore(join(dir,'history.sqlite'));
+  const oldTrace:Trace={version:1,id:'legacy-redaction',goal:'Open the old trace',url:legacyURL,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
+  oldStore.save(oldTrace);oldStore.close();
+  const dashboard=await startServer({port:0,quiet:true,provider:{name:'redaction-fixture',plan:async context=>{prompt=JSON.stringify(context);throw new Error('Synthetic provider failure');},repair:async()=>{throw new Error('Unexpected repair');}}});
+  try{
+    const page=await fetch(dashboard.url),html=await page.text(),token=html.match(/<meta name="csrf-token" content="([^"]+)"/)?.[1],cookie=page.headers.get('set-cookie')?.split(';')[0];
+    assert(token);assert(cookie);
+    const initial=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}}),initialState=await initial.json() as {trace?:{url:string};history?:{id:string;url:string}[]};
+    assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
+    assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris`);
+    assert(!JSON.stringify(initialState).includes(legacySecret));
+    const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist';
+    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris`;
+    const started=await fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify({goal:'Summarize the page',url,mode:'ultra'})});
+    assert.equal(started.status,202);
+    let state:{active:boolean;trace?:{status:string;url:string};state?:{url:string};browserUrl?:string;history?:{id:string;url:string}[]}={active:true};
+    for(let attempt=0;attempt<100&&state.active;attempt++){
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const response=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}});state=await response.json() as typeof state;
+      if(state.trace?.status==='failed'&&!state.active)break;
+    }
+    assert.equal(state.trace?.status,'failed');assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));
+    assert.equal(state.trace?.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
+    assert.equal(state.state?.url,state.trace.url);assert.equal(state.browserUrl,state.trace.url);
+  }finally{await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 
 test('the real cursor is visible before the first model reply and survives document navigation',{timeout:20000},async()=>{

@@ -130,3 +130,10 @@ test('redaction handles overlapping and JSON-escaped profile values',()=>{
   const text=JSON.stringify({message:resolver.vault.profile.message,name:'Alex'});
   const result=JSON.parse(resolver.redact(text));assert.deepEqual(result,{message:'{{profile.message}}',name:'{{profile.firstName}}'});
 });
+
+test('redaction masks credential query values and bearer tokens but keeps ordinary query values',()=>{
+  const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris',authorization:'Bearer abcdefghijklmnop'});
+  const result=resolver.redact(input);
+  assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('abcdefghijklmnop'));
+  assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris',authorization:'Bearer [redacted]'});
+});

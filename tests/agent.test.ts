@@ -56,6 +56,21 @@ test('provider errors containing profile values are redacted from events and sav
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('credential query values are redacted before the first trace save and provider prompt',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');let firstSaved='',prompt='';
+  const save=store.save.bind(store);store.save=trace=>{if(!firstSaved)firstSaved=JSON.stringify(trace);save(trace);};
+  const provider:LLMProvider={name:'fixture',plan:async context=>{prompt=JSON.stringify(context);throw new Error('Synthetic provider failure');},repair:async()=>{throw new Error('Unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist';
+  try{
+    const trace=await agent.run('Summarize the page',`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris`);
+    assert.equal(trace.status,'failed');assert(!firstSaved.includes(accessToken));assert(!firstSaved.includes(apiKey));
+    assert.equal((JSON.parse(firstSaved) as {url:string}).url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
+    assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!JSON.stringify(agent.events).includes(accessToken));
+    assert.equal(trace.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris`);
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
 test('minimal repair changes only the failed action and preserves successful prefix',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
   const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});

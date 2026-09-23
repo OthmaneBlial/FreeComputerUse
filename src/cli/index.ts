@@ -7,6 +7,7 @@ import { readFile,mkdir,writeFile } from 'node:fs/promises';
 import { Agent } from '../agent/Agent.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
+import { VariableResolver } from '../profile/VariableResolver.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
 import { Browser } from '../browser/Browser.js';
 import { Observer } from '../browser/Observer.js';
@@ -68,7 +69,7 @@ async function interactive(url?:string,options:RunOptions={}){
   try{
     await agent.open(start);console.log(`FreeComputerUse · ${agent.options.provider?.name??'local workflows only'}\nCommands: :pause :resume :approve :reject :stop :inspect :quit`);
     while(true){const goal=(await reader.question('> ')).trim();if(!goal)continue;if(goal===':quit')break;
-      if(goal===':inspect'){console.log(agent.observer.compressor.compress(await agent.observe()).text);continue;}
+      if(goal===':inspect'){console.log(agent.variables.redact(agent.observer.compressor.compress(await agent.observe()).text));continue;}
       if(goal.startsWith(':')){console.log('Control commands are available while a task runs, or in the local UI.');continue;}
       // Read input while the run is active so humans can take/return control.
       const handler=(line:string)=>{if(agent.control.pending)return;const control=line.trim();if(control===':pause')agent.control.pause();if(control===':resume')agent.control.resume();if(control===':stop')agent.control.stop();};
@@ -98,7 +99,7 @@ runFlags(program.command('replay <id>').option('--url <url>','Override starting 
   const {agent,store}=await makeAgent(options.url??trace.url,options);connectEvents(agent,!!options.debug);
   try{showTrace(await agent.replay(trace,options.url));}finally{await agent.close();store.close();}
 });
-program.command('history').option('--limit <n>','Maximum rows','30').action(options=>{const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite'));try{console.log(JSON.stringify(store.history(z.coerce.number().int().min(1).max(1000).parse(options.limit)),null,2));}finally{store.close();}});
+program.command('history').option('--limit <n>','Maximum rows','30').action(options=>{const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite'));try{console.log(new VariableResolver().redact(JSON.stringify(store.history(z.coerce.number().int().min(1).max(1000).parse(options.limit)),null,2)));}finally{store.close();}});
 program.command('workflows').option('--show <id>','Show a learned semantic workflow').action(options=>{const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite'));try{const workflows=new WorkflowEngine(store);console.log(JSON.stringify(options.show?workflows.get(options.show)??'Not found':workflows.list(),null,2));}finally{store.close();}});
 program.command('config').option('--profile <file>','Import a profile/files JSON into the local vault').action(async(options:{profile?:string})=>{
   const config=runtimeConfig();const profile=new ProfileStore(join(config.dataDir,'profile.json'));
