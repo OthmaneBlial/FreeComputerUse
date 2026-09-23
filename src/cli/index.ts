@@ -12,6 +12,7 @@ import { Browser } from '../browser/Browser.js';
 import { Observer } from '../browser/Observer.js';
 import { FlashProvider } from '../llm/FlashProvider.js';
 import { CodexSubscriptionProvider } from '../llm/CodexSubscriptionProvider.js';
+import { ClaudeSubscriptionProvider } from '../llm/ClaudeSubscriptionProvider.js';
 import { loadEnvironment,runtimeConfig } from '../config.js';
 import type { ConfirmationPolicy } from '../actions/policy.js';
 import { z } from 'zod';
@@ -108,8 +109,9 @@ program.command('doctor').option('--api','Validate provider credentials or subsc
   const config=runtimeConfig();console.log(`Node ${process.version}; model ${config.provider?.name??'not configured'}; data ${config.dataDir}`);
   const browser=new Browser();try{await browser.launch();console.log('Chromium launch: passed');}finally{await browser.close();}
   if(options.api){
-    if(!config.provider)throw new Error('LLM_API_KEY not configured');
+    if(!config.provider)throw new Error('No model provider configured; set LLM_API_KEY or sign in with a supported CLI subscription');
     if(config.provider instanceof CodexSubscriptionProvider){await config.provider.checkLogin();console.log('Codex ChatGPT login: passed');return;}
+    if(config.provider instanceof ClaudeSubscriptionProvider){await config.provider.checkLogin();console.log('Claude subscription login: passed');return;}
     if(config.provider instanceof FlashProvider){const anthropic=config.provider.config.protocol==='anthropic';const response=await fetch(config.provider.config.baseURL.replace(/\/$/,'')+'/models',{headers:anthropic?{'x-api-key':config.provider.config.key,'anthropic-version':'2023-06-01'}:{Authorization:`Bearer ${config.provider.config.key}`},signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)throw new Error(`Provider models HTTP ${response.status}`);const data=await response.json() as {data?:{id:string}[]};console.log('Provider models:',data.data?.map(m=>m.id).join(', '));if(!data.data?.some(m=>m.id===config.provider!.name))throw new Error('Configured model is not advertised by this provider');}
   }
 });
