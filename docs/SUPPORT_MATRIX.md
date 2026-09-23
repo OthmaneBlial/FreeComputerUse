@@ -54,6 +54,9 @@ parameters, endpoint and terms before use.
   `docs/index.html` stayed byte-for-byte unchanged and `docs/lab/index.html` was
   stable across both runs.
 - Provider contract tests: eight passed against local HTTP/fake-CLI fixtures.
+- Provider doctor CLI: one local test passed for offline mode, a successful
+  loopback `/models` response, missing API configuration and a simulated HTTP
+  503; the configured API key and response body stayed out of CLI output.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other

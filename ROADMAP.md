@@ -89,7 +89,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** faux exécutable CLI pour les tests d’erreur et de format ; smoke manuel sur les versions minimales et actuelles documentées, sans consigner les jetons d’authentification.
 - **Dépendances / risques :** les interfaces CLI et conditions d’utilisation peuvent changer sans préavis ; dépend d’une veille de compatibilité.
 
-#### 1.4 [ ] Fiabiliser le diagnostic fournisseur déjà présent
+#### 1.4 [x] Fiabiliser le diagnostic fournisseur déjà présent
 
 - **Objectif :** réduire les erreurs avant la première tâche.
 - **Changements :** le CLI contient déjà `agent doctor` et `agent doctor --api`. Vérifier leurs contrôles de Node, navigateur, configuration, endpoint, modèle et connexion CLI ; combler les lacunes sans créer une seconde commande ; expliquer les étapes de connexion API et abonnement.
