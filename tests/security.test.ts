@@ -70,7 +70,10 @@ test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs
   await assert.doesNotReject(assertNoPrivateDNSResolution('http://127.0.0.1:8123'));
   assert.equal(new Browser({allowedOrigins:['http://127.0.0.1:8123']}).permits('http://127.0.0.1:8123/'),true);
   assert.equal(new Browser().permits('http://127.0.0.1:8123/'),false);
-  await assert.rejects(resolvePublicAddresses('private-nat64.test',async()=>[{address:'64:ff9b::7f00:1',family:6}]),/private or reserved address/);
+  for(const address of ['::1','::ffff:127.0.0.1','::7f00:1','fc00::1','fe80::1','ff02::1','2001:db8::1','64:ff9b::a00:1']){
+    await assert.rejects(resolvePublicAddresses('private-ipv6.test',async()=>[{address,family:6}]),/private or reserved address/,address);
+  }
+  await assert.doesNotReject(resolvePublicAddresses('public-ipv6.test',async()=>[{address:'2606:4700:4700::1111',family:6}]));
   await assert.doesNotReject(resolvePublicAddresses('public-nat64.test',async()=>[{address:'64:ff9b::808:808',family:6}]));
 });
 
