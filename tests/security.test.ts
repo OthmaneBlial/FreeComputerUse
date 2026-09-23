@@ -292,53 +292,45 @@ test('approved WebSocket traffic works through the local network guard proxy',{t
   }finally{await browser.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
-test('a real TLS WebSocket handshake and frame traverse the local proxy',{timeout:20000},async t=>{
+test('Chrome completes a secure WebSocket handshake through the local proxy',{timeout:25000},async t=>{
   try{execFileSync('openssl',['version'],{stdio:'ignore'});}catch{t.skip('OpenSSL is unavailable for a temporary local certificate');return;}
   const dir=await mkdtemp(join(tmpdir(),'fcu-wss-')),keyPath=join(dir,'key.pem'),certPath=join(dir,'cert.pem');
-  let proxy:NetworkGuardProxy|undefined,secure:ReturnType<typeof connectTLS>|undefined,target:ReturnType<typeof createHTTPSServer>|undefined;
+  let browser:Browser|undefined,target:ReturnType<typeof createHTTPSServer>|undefined,deniedTarget:ReturnType<typeof createHTTPSServer>|undefined,upgrades=0,deniedConnections=0;
   try{
-    execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',keyPath,'-out',certPath,'-days','1','-subj','/CN=wss.test','-addext','subjectAltName=DNS:wss.test'],{stdio:'ignore'});
-    const server=createHTTPSServer({key:await readFile(keyPath),cert:await readFile(certPath)});target=server;
+    execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',keyPath,'-out',certPath,'-days','1','-subj','/CN=127.0.0.1','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});
+    const credentials={key:await readFile(keyPath),cert:await readFile(certPath)};
+    const server=createHTTPSServer(credentials,(_request,response)=>response.end('<h1>Local secure WebSocket fixture</h1>'));target=server;
     server.on('upgrade',(request,socket)=>{
+      upgrades++;
       const key=request.headers['sec-websocket-key']??'',accept=createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
       socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
       socket.write(Buffer.from([0x81,0x02,0x6f,0x6b]));
+      socket.once('data',()=>socket.end(Buffer.from([0x88,0x00])));
     });
+    const denied=createHTTPSServer(credentials);deniedTarget=denied;denied.on('connection',()=>deniedConnections++);
     await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+    await new Promise<void>(resolve=>denied.listen(0,'127.0.0.1',resolve));
     const port=(server.address() as {port:number}).port;
-    proxy=new NetworkGuardProxy({allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}],permits:url=>url===`https://wss.test:${port}/`});
-    const address=new URL(await proxy.start());
-    secure=await new Promise<ReturnType<typeof connectTLS>>((resolve,reject)=>{
-      const request=httpRequest({hostname:address.hostname,port:Number(address.port),method:'CONNECT',path:`wss.test:${port}`,agent:false});
-      request.once('connect',(response,socket)=>{
-        if(response.statusCode!==200){socket.destroy();reject(new Error(`WSS tunnel returned ${response.statusCode}`));return;}
-        const tls=connectTLS({socket,servername:'wss.test',rejectUnauthorized:false});
-        tls.once('secureConnect',()=>resolve(tls));tls.once('error',reject);
-      });
-      request.once('error',reject);request.end();
-    });
-    const key='dGhlIHNhbXBsZSBub25jZQ==',expected=createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
-    const payload=await new Promise<string>((resolve,reject)=>{
-      let received=Buffer.alloc(0),headerEnd=-1;
-      const onData=(chunk:Buffer)=>{
-        received=Buffer.concat([received,chunk]);
-        if(headerEnd<0){headerEnd=received.indexOf('\r\n\r\n');if(headerEnd<0)return;
-          const header=received.subarray(0,headerEnd).toString('latin1');
-          if(!header.startsWith('HTTP/1.1 101 ')||!header.toLowerCase().includes(`sec-websocket-accept: ${expected.toLowerCase()}`)){cleanup();reject(new Error('Invalid WSS upgrade response'));return;}
-        }
-        const start=headerEnd+4;if(received.length<start+2)return;
-        const frameLength=received[start+1]!&0x7f;if(received.length<start+2+frameLength)return;
-        cleanup();resolve(received.subarray(start+2,start+2+frameLength).toString());
-      };
-      const onError=(error:Error)=>{cleanup();reject(error);};
-      const cleanup=()=>{secure?.off('data',onData);secure?.off('error',onError);};
-      secure!.on('data',onData);secure!.once('error',onError);
-      secure!.write(`GET /events HTTP/1.1\r\nHost: wss.test:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ${key}\r\n\r\n`);
-    });
-    assert.equal(payload,'ok');
+    const deniedPort=(denied.address() as {port:number}).port;
+    const origin=`https://127.0.0.1:${port}`;
+    browser=await new Browser({allowedOrigins:[origin]}).launch();
+    const cdp=await browser.context.newCDPSession(browser.page);
+    await cdp.send('Security.enable');await cdp.send('Security.setIgnoreCertificateErrors',{ignore:true});
+    await browser.navigate(origin);
+    const message=await browser.page.evaluate(url=>new Promise<string>((resolve,reject)=>{
+      const socket=new WebSocket(url),timer=setTimeout(()=>reject(new Error('Secure WebSocket fixture timed out')),5000);
+      socket.onmessage=event=>{clearTimeout(timer);resolve(String(event.data));socket.close();};
+      socket.onerror=()=>{clearTimeout(timer);reject(new Error('Secure WebSocket connection failed'));};
+    }),`wss://127.0.0.1:${port}/events`);
+    const deniedResult=await browser.page.evaluate(url=>new Promise<string>((resolve,reject)=>{
+      const socket=new WebSocket(url),timer=setTimeout(()=>reject(new Error('Blocked secure WebSocket fixture timed out')),5000);
+      socket.onerror=()=>{clearTimeout(timer);resolve('blocked');};socket.onopen=()=>{clearTimeout(timer);socket.close();resolve('open');};
+    }),`wss://127.0.0.1:${deniedPort}/events`);
+    assert.equal(message,'ok');assert.equal(upgrades,1);assert.equal(deniedResult,'blocked');assert.equal(deniedConnections,0);
   }finally{
-    secure?.destroy();await proxy?.close();
+    await browser?.close();
     if(target?.listening)await new Promise<void>(resolve=>target!.close(()=>resolve()));
+    if(deniedTarget?.listening)await new Promise<void>(resolve=>deniedTarget!.close(()=>resolve()));
     await rm(dir,{recursive:true,force:true});
   }
 });
