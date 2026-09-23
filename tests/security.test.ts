@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createServer} from 'node:http';
+import {createHash} from 'node:crypto';
+import {createServer,request as httpRequest} from 'node:http';
 import {Agent} from '../src/agent/Agent.js';
 import {TraceStore} from '../src/history/TraceStore.js';
 import {PlanSchema} from '../src/actions/schema.js';
@@ -34,9 +35,21 @@ test('trusted extraction criteria derive from the original goal',()=>{
 import {once} from 'node:events';
 import {Control} from '../src/agent/Control.js';
 import {Browser,assertNoPrivateDNSResolution} from '../src/browser/Browser.js';
+import {NetworkGuardProxy,resolvePublicAddresses} from '../src/browser/NetworkGuardProxy.js';
 import {Observer} from '../src/browser/Observer.js';
 import {Executor} from '../src/actions/executor.js';
 import {VariableResolver} from '../src/profile/VariableResolver.js';
+
+function requestThroughProxy(proxyURL:string,destination:string){
+  const proxy=new URL(proxyURL),url=new URL(destination);
+  return new Promise<{status:number;body:string}>((resolve,reject)=>{
+    const request=httpRequest({hostname:proxy.hostname,port:Number(proxy.port),path:url.href,headers:{host:url.host},agent:false},response=>{
+      const chunks:Buffer[]=[];response.on('data',chunk=>chunks.push(Buffer.from(chunk)));
+      response.on('end',()=>resolve({status:response.statusCode??0,body:Buffer.concat(chunks).toString('utf8')}));
+    });
+    request.on('error',reject);request.end();
+  });
+}
 
 test('credentialed initial URLs are rejected before agent traces persist them',async()=>{
   const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra'});
@@ -47,10 +60,60 @@ test('credentialed initial URLs are rejected before agent traces persist them',a
 });
 
 test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs to the origin policy',async()=>{
-  await assert.rejects(assertNoPrivateDNSResolution('http://localhost:8123'),/private or reserved network address/);
+  await assert.rejects(assertNoPrivateDNSResolution('http://localhost:8123'),/private or reserved address/);
   await assert.doesNotReject(assertNoPrivateDNSResolution('http://127.0.0.1:8123'));
   assert.equal(new Browser({allowedOrigins:['http://127.0.0.1:8123']}).permits('http://127.0.0.1:8123/'),true);
   assert.equal(new Browser().permits('http://127.0.0.1:8123/'),false);
+  await assert.rejects(resolvePublicAddresses('private-nat64.test',async()=>[{address:'64:ff9b::7f00:1',family:6}]),/private or reserved address/);
+  await assert.doesNotReject(resolvePublicAddresses('public-nat64.test',async()=>[{address:'64:ff9b::808:808',family:6}]));
+});
+
+test('connection-time DNS rebinding to loopback is blocked before the target receives a request',{timeout:10000},async()=>{
+  let visits=0,resolutions=0;
+  const target=createServer((_req,res)=>{visits++;res.end('Private fixture');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://rebind.test:${(target.address() as {port:number}).port}`;
+  const resolver=async()=>[{address:++resolutions===1?'8.8.8.8':'127.0.0.1',family:4}];
+  const before=await resolvePublicAddresses('rebind.test',resolver);assert.equal(before[0]!.address,'8.8.8.8');
+  const proxy=new NetworkGuardProxy({resolver});
+  try{
+    const proxyURL=await proxy.start(),response=await requestThroughProxy(proxyURL,targetURL);
+    assert.equal(response.status,403,JSON.stringify({response,resolutions,visits}));assert.equal(resolutions,2);assert.equal(visits,0);
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
+test('connection-time DNS rebinding is blocked inside HTTPS and secure WebSocket tunnels',{timeout:10000},async()=>{
+  let connections=0,resolutions=0;
+  const target=createServer();target.on('connection',()=>{connections++;});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const port=(target.address() as {port:number}).port,resolver=async()=>[{address:++resolutions===1?'8.8.8.8':'127.0.0.1',family:4}];
+  assert.equal((await resolvePublicAddresses('rebind.test',resolver))[0]!.address,'8.8.8.8');
+  const proxy=new NetworkGuardProxy({resolver,permits:url=>url===`https://rebind.test:${port}/`});
+  try{
+    const proxyURL=new URL(await proxy.start());
+    await new Promise<void>((resolve,reject)=>{
+      const request=httpRequest({hostname:proxyURL.hostname,port:Number(proxyURL.port),method:'CONNECT',path:`rebind.test:${port}`,agent:false});
+      const timer=setTimeout(()=>reject(new Error('The rebinding tunnel was not closed')),3000);
+      request.once('connect',(response,socket)=>{
+        socket.on('error',()=>{});socket.once('close',()=>{clearTimeout(timer);resolve();});socket.write(Buffer.from([0x16,0x03,0x01,0,0]));
+      });
+      request.once('error',reject);request.end();
+    });
+    assert.equal(resolutions,2);assert.equal(connections,0);
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
+test('the proxy connects to its single vetted address without resolving the hostname again',{timeout:10000},async()=>{
+  let visits=0,resolutions=0;
+  const target=createServer((_req,res)=>{visits++;res.end('Pinned destination');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://pinned.test:${(target.address() as {port:number}).port}`;
+  const resolver=async()=>[{address:++resolutions===1?'127.0.0.1':'127.0.0.2',family:4}];
+  const proxy=new NetworkGuardProxy({allowPrivate:true,resolver});
+  try{
+    const proxyURL=await proxy.start(),response=await requestThroughProxy(proxyURL,targetURL);
+    assert.deepEqual(response,{status:200,body:'Pinned destination'});assert.equal(resolutions,1);assert.equal(visits,1);
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
 test('concurrent permissions remain distinct and stopping rejects queued approvals',async()=>{
@@ -121,6 +184,29 @@ test('unapproved WebSocket origins are blocked before receiving an upgrade',{tim
   }finally{
     await browser.close();await Promise.all([new Promise<void>(resolve=>source.close(()=>resolve())),new Promise<void>(resolve=>target.close(()=>resolve()))]);
   }
+});
+
+test('approved WebSocket traffic works through the local network guard proxy',{timeout:15000},async()=>{
+  let upgrades=0;
+  const target=createServer();
+  target.on('upgrade',(request,socket)=>{
+    upgrades++;
+    const key=request.headers['sec-websocket-key']??'',accept=createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+    socket.write(Buffer.from([0x81,0x02,0x6f,0x6b]));
+    socket.once('data',()=>socket.end(Buffer.from([0x88,0x00])));
+  });
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`ws://127.0.0.1:${(target.address() as {port:number}).port}`,browser=await new Browser({allowedOrigins:[targetURL.replace(/^ws:/,'http:')]}).launch();
+  try{
+    const message=await browser.page.evaluate(url=>new Promise<string>((resolve,reject)=>{
+      const socket=new WebSocket(url),timer=setTimeout(()=>reject(new Error('WebSocket fixture timed out')),5000);
+      let received='';socket.onmessage=event=>{received=String(event.data);socket.close();};
+      socket.onclose=()=>{clearTimeout(timer);resolve(received);};
+      socket.onerror=()=>{clearTimeout(timer);reject(new Error('Approved WebSocket connection failed'));};
+    }),targetURL);
+    assert.equal(message,'ok');assert.equal(upgrades,1);
+  }finally{await browser.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
 test('a bare Browser denies navigation and page requests without an explicit origin policy',async()=>{

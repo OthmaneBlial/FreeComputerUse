@@ -17,8 +17,11 @@ or explicitly choose `allowExternal`. Chromium DevTools Protocol interception
 attaches to each page target before its first navigation and checks redirect
 hops. Redirected documents use the same approval callback. A synthetic local
 test on Chrome 154 confirms the first fast redirect from a new popup is checked
-before the target server receives it. Other browser builds and DNS rebinding
-remain open in Phase 2.2 of `ROADMAP.md`.
+before the target server receives it. Browser HTTP(S) and WebSocket traffic also
+uses a loopback-only proxy, which connects to the vetted address it resolved;
+synthetic DNS-rebinding and WebSocket tests pass on system Chrome 154. Other
+browser builds, network-specific NAT64 and non-HTTP egress remain open in Phase
+2.2 of `ROADMAP.md`.
 Closing the active page stops its run and closes the browser context, which also
 cancels a pending site approval. Closing a tab through an action first switches
 the active page to the remaining tab.

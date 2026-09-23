@@ -44,12 +44,16 @@ path. User restrictions and final completion criteria still apply.
   navigations use the same approval callback, and redirected subresources need
   an approved origin. A local Chrome 154 test confirms an unapproved fast popup
   redirect is stopped before the target server receives it, then succeeds after
-  approval. In normal mode, hostnames resolving to private or reserved ranges
-  are blocked before browser requests, including WebSockets. Explicit IP
-  destinations still use exact origin permissions. Ultra mode and the low-level
-  `allowExternal` option bypass both origin and private-address checks. DNS
-  results are not pinned between lookup and browser connection, so rebinding
-  races and other browser builds remain unverified. The
+  approval. A loopback-only proxy resolves hostnames and connects to the vetted
+  numeric address for HTTP, HTTPS tunnels and WebSockets. In normal mode,
+  private/reserved and IPv4-embedded private NAT64 answers are blocked, including
+  when the hostname is allowlisted. Explicit IP destinations still use exact
+  origin permissions. Ultra mode and the low-level `allowExternal` option bypass
+  origin and private-address checks. A synthetic public-to-loopback DNS change
+  test confirms the proxy rejects the connection before the target receives it;
+  system Chrome `154.0.8037.57` also passes approved and denied plain WebSocket
+  tests. Actual WSS/TLS handshakes, network-specific NAT64 prefixes, non-HTTP
+  browser traffic and other browser builds remain unverified. The
   DevTools endpoint is available only on loopback while the browser runs; a
   process under the same OS account is outside this boundary. Service workers
   are blocked.
