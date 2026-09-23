@@ -89,6 +89,7 @@ The provider API routes have not all been live-tested here; DeepSeek Flash is th
 - Runs record actions, checks, repairs, token estimates and workflow reuse so you can inspect what happened.
 
 Read [the security boundaries](SECURITY.md) before using personal or sensitive data.
+See [where local data is stored and how to inspect, export or delete it](docs/LOCAL_DATA.md).
 
 ## Evidence
 

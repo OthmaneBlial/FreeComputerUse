@@ -71,6 +71,9 @@ security bypass is implemented. Do not automate a site without authorization.
 
 ## Local data
 
+The default data directory, its contents, backup and deletion steps are listed
+in [Local data](docs/LOCAL_DATA.md).
+
 `.env`, `.fcu`, profiles, session cookies, localStorage, downloads and SQLite traces
 are ignored by Git. The local environment/profile/history files use mode 0600;
 state/profile directories use mode 0700 on supported filesystems. Profile JSON
