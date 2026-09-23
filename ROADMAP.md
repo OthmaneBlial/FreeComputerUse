@@ -76,9 +76,9 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Objectif :** permettre un choix honnête parmi les modèles connus sans revendiquer une compatibilité universelle.
 - **Changements :** valider d’abord OpenAI, Anthropic, xAI/Grok, Google/Gemini, DeepSeek, Mistral et OpenRouter selon leur route réellement implémentée ; tester API native ou compatibilité OpenAI, limites JSON et paramètres requis ; ajouter uniquement les adaptateurs manquants justifiés par la matrice.
 - **Fichiers :** `src/llm/`, `.env.example`, `docs/SUPPORT_MATRIX.md`, `docs/PROVIDERS.md`, tests provider.
-- **Acceptation :** une ligne par fournisseur indique route, modèle essayé, date, cas passé/échoué et fonctions absentes ; les exemples de configuration sont copiables et n’utilisent aucune fausse clé ; un échec n’est pas converti en compatibilité positive.
-- **Validation :** tests simulés pour tous ; smoke live d’au moins un modèle prioritaire par route annoncée, avec tâche sandbox et budget maximal défini.
-- **Dépendances / risques :** nécessite les comptes/clés disponibles et peut engendrer des frais ; ne pas envoyer de données privées pendant les essais.
+- **Acceptation :** une ligne par fournisseur indique route, modèle essayé, date, cas passé/échoué et fonctions absentes ; les exemples de configuration sont copiables et n’utilisent aucune fausse clé ; un échec n’est pas converti en compatibilité positive. Sans accès live, le fournisseur reste explicitement « non vérifié ».
+- **Validation :** tests simulés pour chaque protocole et chaque sélection de fournisseur ; smoke live uniquement avec un compte/clés disponibles localement, tâche sandbox et budget maximal défini. Un manque d’accès live ne bloque pas la validation du contrat local, mais interdit toute revendication de compatibilité live.
+- **Dépendances / risques :** les essais live nécessitent des comptes/clés disponibles et peuvent engendrer des frais ; ne pas envoyer de données privées ni coller des clés dans le dépôt ou le chat.
 
 #### 1.3 [ ] Durcir et documenter les connexions par abonnement
 

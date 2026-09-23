@@ -10,7 +10,7 @@ does not prove that every service using that label accepts the same request.
 | --- | --- | --- | --- |
 | OpenAI-compatible API | `openai-compatible`; bearer key; configurable base URL; `/chat/completions`; JSON object or schema request | Six local HTTP contract cases cover request format, schema validation, usage, context trimming, HTTPS, bounded correction and safe HTTP errors. | One live DeepSeek Flash completion passed on 23 September 2026 using synthetic content: one request, one parsed action, 1,517 input and 73 output tokens. OpenAI, xAI/Grok, Gemini, Mistral and OpenRouter remain individually unverified here. |
 | Anthropic API | `anthropic`; `x-api-key`; Messages endpoint; prompted JSON object, locally validated | One local HTTP contract test covers the native request, headers, usage parsing, escaped page content and unsupported JSON-schema rejection. | Not live-tested in the recorded project evidence. Unverified. |
-| ChatGPT subscription | Local Codex CLI; detects semantic CLI version, checks `codex login status`; runs an ephemeral, read-only `codex exec` request with tools disabled | One fake-CLI contract test covers version parsing, output parsing, required flags and stripping API/provider environment variables. | Local `codex --version` reports `codex-cli 0.156.1`; authenticated ChatGPT plan and completion remain unverified. |
+| ChatGPT subscription | Local Codex CLI; detects semantic CLI version, checks `codex login status`; runs an ephemeral, read-only `codex exec` request with tools disabled | One fake-CLI contract test covers version parsing, output parsing, strict-schema conversion, records-selector restoration, required flags and stripping API/provider environment variables. | One synthetic plan completion passed on 23 September 2026 using Codex CLI `0.156.1` and an authenticated ChatGPT login. One request; local budget estimates 7,022 input / 97 output tokens; model ID and actual provider usage were not reported. No browser action ran. |
 | Claude Pro/Max subscription | Local Claude Code CLI; requires version `2.1.248+`, checks first-party subscription authentication; runs a restricted, non-persistent prompt with tools disabled | One fake-CLI contract test covers version threshold, output parsing, required flags and stripping API/provider environment variables. | Not verified against an authenticated Claude subscription. The local package manifest reports `0.2.69`; its `claude --version` command currently throws a Node `TypeError`, so update the CLI before live verification. |
 
 ### OpenAI-compatible configuration examples
@@ -67,13 +67,17 @@ parameters, endpoint and terms before use.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other
-  vendors. ChatGPT and Claude subscription authentication remain unverified.
+  vendors.
 - Full `npm test`: **not verified**. A run was stopped after process inspection
   found the suite idle in `tests/security.test.ts` with a headless Chrome child;
   no full-suite result is claimed. A prior run passed 49/50 and hit a Chrome
   `SIGTRAP` in a synthetic-download case. Matching Playwright Chromium is
   absent; no browser was downloaded.
-- No authenticated subscription request was made in this session.
+- ChatGPT subscription smoke: one synthetic plan completed on 23 September 2026
+  using Codex CLI `0.156.1`; local budget estimates 7,022 input / 97 output
+  tokens. The model ID and actual provider usage were not reported. No browser
+  action ran. Claude subscription remains unverified because its local
+  `claude --version` command fails with a Node `TypeError`.
 
 Update this page only when a specific local test, dated live run, supported
 runtime check, or public release provides new evidence. Keep failures and

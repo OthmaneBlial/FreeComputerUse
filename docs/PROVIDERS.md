@@ -90,9 +90,16 @@ LLM_PROVIDER=codex-subscription
 
 Run `npm run agent -- doctor --api` to check the CLI version and login. Planning
 runs an ephemeral Codex request in a temporary directory, with a read-only
-sandbox, structured output and Codex tools/MCP disabled. The version parser and
-fake-CLI tests do not authenticate against OpenAI or verify that a particular
-Codex release works with a real account.
+sandbox, structured output and Codex tools/MCP disabled. The adapter maps action
+unions and optional fields to Codex's strict output schema, represents record
+selectors as a list for the model, then restores the local action shape before
+Zod validation.
+
+A live smoke passed on 23 September 2026 with Codex CLI `0.156.1` and an existing
+ChatGPT login. One bounded request produced a valid plan for synthetic page
+content. The local budget estimated 7,022 input and 97 output tokens; the CLI
+route did not report a model ID or provider token usage. No browser action ran.
+This verifies one plan completion on the installed CLI/account only.
 
 ### Claude Pro or Max through Claude Code
 

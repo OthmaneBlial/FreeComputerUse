@@ -109,15 +109,17 @@ test('subscription CLI versions are parsed and Claude enforces its documented mi
 test('Codex and Claude subscription adapters enforce their CLI contracts without leaking API credentials',{skip:process.platform==='win32'},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-provider-cli-')),command=join(directory,'fake-provider'),codexLog=join(directory,'codex.json'),claudeLog=join(directory,'claude.json');
   const plan=JSON.stringify({goal:'Read',steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false});
+  const codexPlan=JSON.stringify({goal:'Read',steps:['Extract'],actions:[{type:'extract',target:{role:null,name:null,label:null,placeholder:null,testId:null,id:null,attributeName:null,text:null,css:'.product',frame:null},format:'records',key:'result',match:null,limit:null,fields:[{key:'title',css:'h3 a',attribute:null}],sensitive:null,verify:null,timeoutMs:null}],completion:[{type:'extraction_created',key:null}],continue:false});
   const script=`#!/usr/bin/env node
-import {writeFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 const args=process.argv.slice(2);
 if(args[0]==='--version'){process.stdout.write((process.env.FCU_TEST_CLI_VERSION??'0.156.1')+'\\n');process.exit(0);}
-if(args[0]==='login'){process.stdout.write('Logged in using ChatGPT\\n');process.exit(0);}
+if(args[0]==='login'){process.stderr.write('Logged in using ChatGPT\\n');process.exit(0);}
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',apiKeySource:null}));process.exit(0);}
 let input='';for await(const chunk of process.stdin)input+=chunk;
-const entry={args,hasApiKey:!!(process.env.OPENAI_API_KEY||process.env.ANTHROPIC_API_KEY),hasBaseUrl:!!process.env.OPENAI_BASE_URL,hasOrg:!!process.env.OPENAI_ORG_ID,hasProject:!!process.env.OPENAI_PROJECT_ID,hasCodexProvider:!!process.env.CODEX_MODEL_PROVIDER};
-if(args[0]==='exec'){writeFileSync(${JSON.stringify(codexLog)},JSON.stringify(entry));process.stdout.write(${JSON.stringify(plan)});}
+const schemaIndex=args.indexOf('--output-schema');
+const entry={args,schema:schemaIndex<0?null:JSON.parse(readFileSync(args[schemaIndex+1],'utf8')),hasApiKey:!!(process.env.OPENAI_API_KEY||process.env.ANTHROPIC_API_KEY),hasBaseUrl:!!process.env.OPENAI_BASE_URL,hasOrg:!!process.env.OPENAI_ORG_ID,hasProject:!!process.env.OPENAI_PROJECT_ID,hasCodexProvider:!!process.env.CODEX_MODEL_PROVIDER};
+if(args[0]==='exec'){writeFileSync(${JSON.stringify(codexLog)},JSON.stringify(entry));process.stdout.write(${JSON.stringify(codexPlan)});}
 else if(args[0]==='-p'){writeFileSync(${JSON.stringify(claudeLog)},JSON.stringify(entry));process.stdout.write(JSON.stringify({result:${JSON.stringify(plan)}}));}
 else process.exit(2);
 `;
@@ -129,9 +131,26 @@ else process.exit(2);
     for(const key of envKeys)process.env[key]='fcu-test-secret';
     const context={goal:'Read',page:'Fixture page',aliases:{profile:[],files:[]},completed:[],allowedOrigins:['https://example.test']};
     process.env.FCU_TEST_CLI_VERSION='0.156.1';
-    const codex=new CodexSubscriptionProvider({command},new TokenBudget());assert.equal((await codex.plan(context)).actions.length,1);assert.equal(await codex.checkLogin(),'0.156.1');
-    const codexArgs=JSON.parse(await readFile(codexLog,'utf8')) as {args:string[];hasApiKey:boolean;hasBaseUrl:boolean;hasOrg:boolean;hasProject:boolean;hasCodexProvider:boolean};
+    const codex=new CodexSubscriptionProvider({command},new TokenBudget());const result=await codex.plan(context);assert.equal(result.actions.length,1);assert.equal(await codex.checkLogin(),'0.156.1');
+    const action=result.actions[0]!;assert.equal(action.type,'extract');if(action.type==='extract'){assert.equal(action.format,'records');assert.equal(action.fields?.title?.css,'h3 a');assert.equal(action.fields?.title?.attribute,'text');assert.deepEqual(action.target,{css:'.product'});}
+    const codexArgs=JSON.parse(await readFile(codexLog,'utf8')) as {args:string[];schema:unknown;hasApiKey:boolean;hasBaseUrl:boolean;hasOrg:boolean;hasProject:boolean;hasCodexProvider:boolean};
     assert.equal(codexArgs.hasApiKey,false);assert.equal(codexArgs.hasBaseUrl,false);assert.equal(codexArgs.hasOrg,false);assert.equal(codexArgs.hasProject,false);assert.equal(codexArgs.hasCodexProvider,false);assert(codexArgs.args.includes('--ephemeral'));assert(codexArgs.args.includes('read-only'));assert(codexArgs.args.includes('--output-schema'));
+    assert(!JSON.stringify(codexArgs.schema).includes('"oneOf"'));assert(JSON.stringify(codexArgs.schema).includes('"anyOf"'));
+    let recordFieldsSchema:Record<string,unknown>|undefined;
+    const inspectSchema=(value:unknown):void=>{
+      if(Array.isArray(value)){value.forEach(inspectSchema);return;}
+      if(!value||typeof value!=='object')return;
+      const object=value as Record<string,unknown>,properties=object.properties;
+      if('$ref' in object)assert.deepEqual(Object.keys(object),['$ref']);
+      if(properties&&typeof properties==='object'&&!Array.isArray(properties)){
+        const fields=(properties as Record<string,unknown>).fields;
+        if(fields&&typeof fields==='object')recordFieldsSchema=fields as Record<string,unknown>;
+        assert.equal(object.additionalProperties,false);assert.deepEqual(object.required,Object.keys(properties));
+      }
+      for(const nested of Object.values(object))inspectSchema(nested);
+    };
+    inspectSchema(codexArgs.schema);const fieldsAlternatives=recordFieldsSchema?.anyOf as Record<string,unknown>[];
+    const fieldsArray=fieldsAlternatives?.find(item=>item.type==='array');assert.equal(fieldsArray?.minItems,1);assert.equal(fieldsArray?.maxItems,20);assert.deepEqual(Object.keys((fieldsArray?.items as {properties:object}).properties),['key','css','attribute']);
     process.env.FCU_TEST_CLI_VERSION='2.1.248';
     const claude=new ClaudeSubscriptionProvider({command},new TokenBudget());assert.equal((await claude.plan(context)).actions.length,1);assert.equal(await claude.checkLogin(),'2.1.248');
     const claudeArgs=JSON.parse(await readFile(claudeLog,'utf8')) as {args:string[];hasApiKey:boolean;hasBaseUrl:boolean;hasOrg:boolean;hasProject:boolean;hasCodexProvider:boolean};
