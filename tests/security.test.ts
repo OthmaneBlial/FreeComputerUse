@@ -10,6 +10,7 @@ import {chmod,mkdir,mkdtemp,readFile,rm,stat,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Agent} from '../src/agent/Agent.js';
+import {startFixtures} from '../fixtures/server.js';
 import {TraceStore} from '../src/history/TraceStore.js';
 import {PlanSchema} from '../src/actions/schema.js';
 import {TokenBudget} from '../src/agent/TokenBudget.js';
@@ -74,6 +75,16 @@ test('non-HTTP initial URLs are rejected before agent traces persist them',async
       assert.equal(agent.active,false,url);assert.equal(store.history().length,0,url);
     }
   }finally{await agent.close();store.close();}
+});
+
+test('an agent navigation action cannot open a local file',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  try{
+    const url='file:///etc/passwd',plan=PlanSchema.parse({goal:'Open a local file',steps:['Try the file'],actions:[{type:'navigate',url}],completion:[{type:'url_contains',value:url}],continue:false});
+    const trace=await agent.run('Open a local file',`${fixture.url}/demo`,plan,false);
+    assert.equal(trace.status,'failed');assert.match(trace.error??'',/Only HTTP\(S\) destinations/);
+    assert.equal(agent.browser.page.url(),`${fixture.url}/demo`);
+  }finally{await agent.close();store.close();await fixture.close();}
 });
 
 test('DNS guard rejects a hostname resolving to loopback but leaves explicit IPs to the origin policy',async()=>{
