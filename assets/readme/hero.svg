@@ -1,39 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="390" viewBox="0 0 1200 390" role="img" aria-labelledby="title description">
-  <title id="title">FreeComputerUse — Let AI plan. Let code do the clicks.</title>
-  <desc id="description">A local browser agent. A Flash model plans, Playwright executes, and compatible learned workflows can run again with zero model calls.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title description">
+  <title id="title">FreeComputerUse — a browser agent you can see and control</title>
+  <desc id="description">Choose a model to plan a browser task. Approve the website. Playwright acts locally, verifies the result and can replay a compatible workflow without model calls.</desc>
   <defs>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#34423a" stroke-width="1"/></pattern>
-    <clipPath id="corners"><rect width="1200" height="390" rx="18"/></clipPath>
+    <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="#ffffff09"/></pattern>
+    <linearGradient id="wash" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#18251f"/><stop offset="1" stop-color="#101a24"/></linearGradient>
+    <clipPath id="corners"><rect width="1200" height="430" rx="18"/></clipPath>
   </defs>
   <g clip-path="url(#corners)">
-    <rect width="1200" height="390" fill="#18251f"/>
-    <rect x="756" width="444" height="390" fill="url(#grid)"/>
-    <path d="M756 0V390" stroke="#34423a"/>
-    <g transform="translate(44 34) scale(.75)">
-      <path d="M48 13H23L9 27V45L22 58H43L56 45V33H42V40L37 45H28L23 40V32L28 27H39L48 13Z" fill="#f1f3e8"/>
-      <path d="M34 4L61 17L47 22L42 37L34 4Z" fill="#c4e967"/>
-      <path d="M5 53L10 48L15 53L10 58L5 53Z" fill="#c4e967"/>
+    <rect width="1200" height="430" fill="url(#wash)"/>
+    <rect x="690" width="510" height="430" fill="url(#grid)"/>
+    <path d="M690 0V430" stroke="#ffffff16"/>
+    <g transform="translate(48 39)">
+      <path d="M27 6H12L4 14V27L12 35H25L33 27V18H24V23L21 26H15L12 23V18L15 15H22L27 6Z" fill="#eff4eb"/>
+      <path d="M20 0L38 9L28 12L25 23L20 0Z" fill="#c8f169"/>
     </g>
-    <text x="105" y="67" fill="#f1f3e8" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="28" letter-spacing="-1">FreeComputerUse</text>
-    <text x="47" y="139" fill="#b3c2b5" font-family="monospace" font-size="12" letter-spacing="2">YOUR BROWSER. YOUR MACHINE. YOUR CALL.</text>
-    <text x="43" y="207" fill="#f1f3e8" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="57" letter-spacing="-2.3">Let AI plan.</text>
-    <text x="43" y="271" fill="#c4e967" font-family="Georgia, serif" font-style="italic" font-size="56" letter-spacing="-1.6">Let code do the clicks.</text>
-    <text x="47" y="341" fill="#b3c2b5" font-family="Arial, Helvetica, sans-serif" font-size="17">Real browser actions. Visible control. Reusable workflows.</text>
-    <g font-family="Arial, Helvetica, sans-serif">
-      <path d="M837 88V286H1109" fill="none" stroke="#c4e967" stroke-width="2" stroke-dasharray="5 7"/>
-      <rect x="806" y="61" width="331" height="71" rx="8" fill="#22342a" stroke="#405143"/>
-      <circle cx="838" cy="96" r="13" fill="#c4e967"/><text x="834" y="101" font-size="14" fill="#18251f" font-weight="700">1</text>
-      <text x="866" y="91" fill="#f1f3e8" font-size="19" font-weight="700">Plan a batch</text>
-      <text x="866" y="113" fill="#b3c2b5" font-size="13">Small Flash model · bounded context</text>
-      <rect x="806" y="155" width="331" height="71" rx="8" fill="#22342a" stroke="#405143"/>
-      <circle cx="838" cy="190" r="13" fill="#c4e967"/><text x="834" y="195" font-size="14" fill="#18251f" font-weight="700">2</text>
-      <text x="866" y="185" fill="#f1f3e8" font-size="19" font-weight="700">Execute locally</text>
-      <text x="866" y="207" fill="#b3c2b5" font-size="13">Move · click · type · verify</text>
-      <rect x="806" y="249" width="331" height="92" rx="8" fill="#c4e967"/>
-      <text x="828" y="279" fill="#18251f" font-size="19" font-weight="700">Reuse what worked</text>
-      <text x="828" y="314" fill="#18251f" font-size="30" font-weight="700" letter-spacing="-1">0</text>
-      <text x="855" y="311" fill="#26382b" font-size="14">model calls on compatible repeats</text>
+    <text x="94" y="67" fill="#eff4eb" font-family="Manrope,Arial,sans-serif" font-size="23" font-weight="700" letter-spacing="-.6">FreeComputerUse</text>
+    <text x="48" y="132" fill="#aabbb0" font-family="monospace" font-size="11" letter-spacing="2.5">LOCAL-FIRST BROWSER AUTOMATION</text>
+    <text x="44" y="203" fill="#f5f5ec" font-family="Manrope,Arial,sans-serif" font-size="53" font-weight="700" letter-spacing="-2.3">Give the browser</text>
+    <text x="43" y="262" fill="#c8f169" font-family="Georgia,serif" font-size="54" font-style="italic" letter-spacing="-1.4">the whole task.</text>
+    <text x="48" y="314" fill="#c2cec4" font-family="Manrope,Arial,sans-serif" font-size="16">Choose your model. Approve the site. Watch each action.</text>
+    <g transform="translate(48 354)" font-family="monospace" font-size="10" letter-spacing=".7">
+      <rect width="142" height="32" rx="16" fill="#293d31" stroke="#718d52"/><text x="17" y="21" fill="#def1bc">PLAYWRIGHT · LOCAL</text>
+      <rect x="154" width="155" height="32" rx="16" fill="#202f3f" stroke="#476482"/><text x="171" y="21" fill="#c5dcf5">MODEL-AGNOSTIC</text>
+      <rect x="321" width="171" height="32" rx="16" fill="#293d31" stroke="#718d52"/><text x="338" y="21" fill="#def1bc">REPEAT · ZERO CALLS</text>
     </g>
-    <path d="M1143 317c-2.2-.8-3.8.8-3 3l9.5 24c1 2.5 4.6 2.2 5.3-.4l2.8-9.5 9.5-2.8c2.6-.7 2.9-4.3.4-5.3Z" fill="#1677ff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+    <g transform="translate(738 43)" font-family="Manrope,Arial,sans-serif">
+      <rect width="412" height="340" rx="11" fill="#f4f3e9" stroke="#ffffff33"/>
+      <path d="M0 43H412" stroke="#d9ded2"/>
+      <circle cx="20" cy="22" r="4" fill="#d76250"/><circle cx="35" cy="22" r="4" fill="#d9b857"/><circle cx="50" cy="22" r="4" fill="#75a66b"/>
+      <text x="70" y="26" fill="#5f7167" font-family="monospace" font-size="10">local session / invoices</text>
+      <rect x="269" y="12" width="126" height="21" rx="10" fill="#e2efcf"/><circle cx="281" cy="22" r="3" fill="#518751"/><text x="290" y="26" fill="#416b43" font-family="monospace" font-size="8">SITE APPROVED</text>
+      <text x="21" y="71" fill="#75857a" font-family="monospace" font-size="9" letter-spacing="1.4">TASK / OVERDUE INVOICE</text>
+      <text x="20" y="96" fill="#1c2b25" font-size="18" font-weight="700">Find and verify INV-2609-04</text>
+      <rect x="18" y="115" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
+      <circle cx="42" cy="141" r="12" fill="#253d33"/><text x="38.5" y="145" fill="#d8f28f" font-family="monospace" font-size="10">01</text>
+      <text x="65" y="137" fill="#213229" font-size="12" font-weight="700">Observe the page</text><text x="65" y="154" fill="#75857a" font-family="monospace" font-size="9">DOM + accessible controls</text>
+      <rect x="18" y="178" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
+      <circle cx="42" cy="204" r="12" fill="#253d33"/><text x="38.5" y="208" fill="#d8f28f" font-family="monospace" font-size="10">02</text>
+      <text x="65" y="200" fill="#213229" font-size="12" font-weight="700">Plan a safe batch</text><text x="65" y="217" fill="#75857a" font-family="monospace" font-size="9">OpenAI · Claude · Grok · more</text>
+      <rect x="18" y="241" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
+      <circle cx="42" cy="267" r="12" fill="#253d33"/><text x="38.5" y="271" fill="#d8f28f" font-family="monospace" font-size="10">03</text>
+      <text x="65" y="263" fill="#213229" font-size="12" font-weight="700">Execute and verify</text><text x="65" y="280" fill="#75857a" font-family="monospace" font-size="9">Visible actions · checked result</text>
+      <rect x="18" y="307" width="376" height="20" rx="4" fill="#dff0bb"/><text x="29" y="321" fill="#34553b" font-family="monospace" font-size="9">COMPATIBLE REPEAT</text><text x="366" y="323" text-anchor="end" fill="#34553b" font-size="17" font-weight="700">0 CALLS</text>
+      <path d="M401 267c22-3 22-41 1-44" fill="none" stroke="#c8f169" stroke-width="2"/><path d="M397 220l8 2-4 7" fill="none" stroke="#c8f169" stroke-width="2"/>
+    </g>
+    <path d="M1139 348c-2-.8-3.6.7-2.8 2.7l8.1 20.5c.9 2.2 4 2 4.7-.4l2.4-8.1 8.1-2.4c2.3-.7 2.5-3.8.3-4.7Z" fill="#3264f6" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
   </g>
 </svg>
