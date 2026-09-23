@@ -170,6 +170,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** les chemins critiques disposent de tests déterministes sans clé réseau ; tests live et coûts sont séparés ; échec partiel et flaky ne sont pas comptés comme réussite.
 - **Validation :** `npm run check`, `npm test`, puis `npm run validate` après correction de la génération Pages ; rapporter précisément les échecs au lieu de les masquer.
 - **Dépendances / risques :** les tests navigateurs peuvent être sensibles à la version Playwright ; épingler/enregistrer versions et diagnostiquer les flakiness.
+- **État intermédiaire, 23 septembre 2026 :** `FCU_BROWSER_CHANNEL=chrome npm test` donne 78/79 ; seul le replay multi-workflows du laboratoire échoue. Le diagnostic a confirmé un arrêt natif de Chrome `154.0.8037.57` (`SIGSEGV`, rapport macOS `EXC_BAD_ACCESS`, thread `CrBrowserMain`) lors d’un run puis replay avec le même profil persistant. Un replay Playwright local reproduit aussi ce comportement sans l’agent ; les huit scénarios passent en isolation avec un profil vierge. Ce résultat ne valide pas la réutilisation d’un profil utilisateur. Chromium livré avec Playwright n’est pas présent ici ; garder la tâche ouverte jusqu’à une validation reproductible sur une combinaison navigateur supportée.
 
 #### 4.2 [ ] Documenter et vérifier la plateforme réellement supportée
 
