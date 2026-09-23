@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {FlashProvider} from '../src/llm/FlashProvider.js';
 import {CodexSubscriptionProvider} from '../src/llm/CodexSubscriptionProvider.js';
 import {ClaudeSubscriptionProvider} from '../src/llm/ClaudeSubscriptionProvider.js';
+import {cliVersionAtLeast,parseCliVersion} from '../src/llm/cliEnvironment.js';
 import {TokenBudget} from '../src/agent/TokenBudget.js';
 import {untrusted} from '../src/llm/prompts.js';
 
@@ -94,12 +95,24 @@ test('Anthropic Messages mode sends its native request and parses usage and cont
   }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('subscription CLI versions are parsed and Claude enforces its documented minimum',async()=>{
+  assert.equal(parseCliVersion('codex-cli 0.156.1','Codex CLI'),'0.156.1');
+  assert(cliVersionAtLeast('2.1.248','2.1.248'));assert(!cliVersionAtLeast('2.1.247','2.1.248'));
+  const directory=await mkdtemp(join(tmpdir(),'fcu-old-claude-')),command=join(directory,'fake-claude');
+  try{
+    await writeFile(command,'#!/usr/bin/env node\nif(process.argv[2]==="--version")process.stdout.write("2.1.247\\n");else process.stdout.write(JSON.stringify({loggedIn:true,authMethod:"claude.ai",apiProvider:"firstParty",apiKeySource:null}));\n',{mode:0o700});await chmod(command,0o700);
+    const claude=new ClaudeSubscriptionProvider({command},new TokenBudget());
+    await assert.rejects(claude.checkLogin(),/Claude Code 2\.1\.247 is too old/);
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
+
 test('Codex and Claude subscription adapters enforce their CLI contracts without leaking API credentials',{skip:process.platform==='win32'},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-provider-cli-')),command=join(directory,'fake-provider'),codexLog=join(directory,'codex.json'),claudeLog=join(directory,'claude.json');
   const plan=JSON.stringify({goal:'Read',steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false});
   const script=`#!/usr/bin/env node
 import {writeFileSync} from 'node:fs';
 const args=process.argv.slice(2);
+if(args[0]==='--version'){process.stdout.write((process.env.FCU_TEST_CLI_VERSION??'0.156.1')+'\\n');process.exit(0);}
 if(args[0]==='login'){process.stdout.write('Logged in using ChatGPT\\n');process.exit(0);}
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',apiKeySource:null}));process.exit(0);}
 let input='';for await(const chunk of process.stdin)input+=chunk;
@@ -109,20 +122,24 @@ else if(args[0]==='-p'){writeFileSync(${JSON.stringify(claudeLog)},JSON.stringif
 else process.exit(2);
 `;
   const envKeys=['OPENAI_API_KEY','ANTHROPIC_API_KEY','OPENAI_BASE_URL','OPENAI_ORG_ID','OPENAI_PROJECT_ID','CODEX_MODEL_PROVIDER'];
+  const previousVersion=process.env.FCU_TEST_CLI_VERSION;
   const previous=Object.fromEntries(envKeys.map(key=>[key,process.env[key]]));
   try{
     await writeFile(command,script,{mode:0o700});await chmod(command,0o700);
     for(const key of envKeys)process.env[key]='fcu-test-secret';
     const context={goal:'Read',page:'Fixture page',aliases:{profile:[],files:[]},completed:[],allowedOrigins:['https://example.test']};
-    const codex=new CodexSubscriptionProvider({command},new TokenBudget());assert.equal((await codex.plan(context)).actions.length,1);await codex.checkLogin();
+    process.env.FCU_TEST_CLI_VERSION='0.156.1';
+    const codex=new CodexSubscriptionProvider({command},new TokenBudget());assert.equal((await codex.plan(context)).actions.length,1);assert.equal(await codex.checkLogin(),'0.156.1');
     const codexArgs=JSON.parse(await readFile(codexLog,'utf8')) as {args:string[];hasApiKey:boolean;hasBaseUrl:boolean;hasOrg:boolean;hasProject:boolean;hasCodexProvider:boolean};
     assert.equal(codexArgs.hasApiKey,false);assert.equal(codexArgs.hasBaseUrl,false);assert.equal(codexArgs.hasOrg,false);assert.equal(codexArgs.hasProject,false);assert.equal(codexArgs.hasCodexProvider,false);assert(codexArgs.args.includes('--ephemeral'));assert(codexArgs.args.includes('read-only'));assert(codexArgs.args.includes('--output-schema'));
-    const claude=new ClaudeSubscriptionProvider({command},new TokenBudget());assert.equal((await claude.plan(context)).actions.length,1);await claude.checkLogin();
+    process.env.FCU_TEST_CLI_VERSION='2.1.248';
+    const claude=new ClaudeSubscriptionProvider({command},new TokenBudget());assert.equal((await claude.plan(context)).actions.length,1);assert.equal(await claude.checkLogin(),'2.1.248');
     const claudeArgs=JSON.parse(await readFile(claudeLog,'utf8')) as {args:string[];hasApiKey:boolean;hasBaseUrl:boolean;hasOrg:boolean;hasProject:boolean;hasCodexProvider:boolean};
     assert.equal(claudeArgs.hasApiKey,false);assert.equal(claudeArgs.hasBaseUrl,false);assert.equal(claudeArgs.hasOrg,false);assert.equal(claudeArgs.hasProject,false);assert.equal(claudeArgs.hasCodexProvider,false);assert(claudeArgs.args.includes('--no-session-persistence'));assert(claudeArgs.args.includes('--permission-mode'));assert(claudeArgs.args.includes('dontAsk'));
     assert.deepEqual(codex.calls.map(call=>call.success),[true]);assert.deepEqual(claude.calls.map(call=>call.success),[true]);
   }finally{
     for(const key of envKeys){const value=previous[key];if(value===undefined)delete process.env[key];else process.env[key]=value;}
+    if(previousVersion===undefined)delete process.env.FCU_TEST_CLI_VERSION;else process.env.FCU_TEST_CLI_VERSION=previousVersion;
     await rm(directory,{recursive:true,force:true});
   }
 });

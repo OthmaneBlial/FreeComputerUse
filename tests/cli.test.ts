@@ -20,7 +20,7 @@ test('doctor keeps network checks opt-in and reports safe API failures',{timeout
   const runDoctor=(api=false,overrides:NodeJS.ProcessEnv={})=>new Promise<{code:number|null;stdout:string;stderr:string}>((resolve,reject)=>{
     const child=spawn(process.execPath,['--import','tsx','src/cli/index.ts','doctor',...(api?['--api']:[])],{
       cwd:process.cwd(),
-      env:{...process.env,FCU_BROWSER_CHANNEL:'chrome',FCU_DATA_DIR:directory,LLM_PROVIDER:'openai-compatible',LLM_API_KEY:'test-only-key',LLM_MODEL:'fixture-model',LLM_BASE_URL:`http://127.0.0.1:${address.port}/v1`,...overrides},
+      env:{...process.env,FCU_DATA_DIR:directory,LLM_PROVIDER:'openai-compatible',LLM_API_KEY:'test-only-key',LLM_MODEL:'fixture-model',LLM_BASE_URL:`http://127.0.0.1:${address.port}/v1`,...overrides},
       stdio:['ignore','pipe','pipe'],
     });
     let stdout='',stderr='';

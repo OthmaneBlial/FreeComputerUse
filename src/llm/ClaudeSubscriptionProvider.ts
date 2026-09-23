@@ -8,7 +8,7 @@ import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
-import { safeCliEnvironment } from './cliEnvironment.js';
+import { cliVersionAtLeast,parseCliVersion,safeCliEnvironment } from './cliEnvironment.js';
 
 const execFile=promisify(execFileCallback);
 export interface ClaudeSubscriptionConfig {command?:string;model?:string;timeoutMs?:number}
@@ -25,14 +25,25 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
   readonly name:string;
   readonly calls:LLMCall[]=[];
   private controllers=new Set<AbortController>();
+  private cliVersion?:string;
   constructor(readonly config:ClaudeSubscriptionConfig,readonly budget:TokenBudget){this.name=config.model??'Claude subscription';}
   cancel(){for(const controller of this.controllers)controller.abort();}
   async checkLogin(){
+    let version=this.cliVersion;
+    if(!version){
+      try{
+        const {stdout}=await execFile(this.config.command??'claude',['--version'],{encoding:'utf8',timeout:15000,cwd:tmpdir(),env:claudeEnvironment(),maxBuffer:4096});
+        version=parseCliVersion(String(stdout),'Claude Code');
+      }catch{throw new Error('Claude Code CLI could not report its version. Install or update to 2.1.248 or newer, then verify `claude --version`.');}
+      if(!cliVersionAtLeast(version,'2.1.248'))throw new Error(`Claude Code ${version} is too old. Install version 2.1.248 or newer.`);
+      this.cliVersion=version;
+    }
     try{
       const {stdout}=await execFile(this.config.command??'claude',['auth','status'],{encoding:'utf8',timeout:15000,cwd:tmpdir(),env:claudeEnvironment(),maxBuffer:4096});
       const auth=JSON.parse(String(stdout)) as {loggedIn?:boolean;authMethod?:string;apiProvider?:string;apiKeySource?:string|null};
       if(!auth.loggedIn||!['claude.ai','oauth_token'].includes(auth.authMethod??'')||auth.apiProvider!=='firstParty'||auth.apiKeySource&&auth.apiKeySource!=='/login managed key')throw new Error();
     }catch{throw new Error('Claude Code is not signed in with a Claude subscription. Run `claude auth login` without `--console`.');}
+    return version;
   }
   plan(context:PlanningContext):Promise<Plan>{return this.request('PLAN',context,PlanSchema,PLAN_FORMAT);}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}

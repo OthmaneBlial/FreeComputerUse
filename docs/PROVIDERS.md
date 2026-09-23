@@ -63,12 +63,14 @@ npm run agent -- doctor
 npm run agent -- doctor --api
 ```
 
-`doctor` launches the configured Playwright browser and reports the runtime.
-`doctor --api` additionally makes a network request: API modes request `/models`
-and look for the configured model; subscription modes check CLI authentication.
-It does not make a model completion. An endpoint whose model-list response is
-not compatible with this check can still require a separate provider-specific
-smoke test; no vendor request is included in local tests.
+`doctor` launches the configured Playwright browser and reports the runtime; it
+makes no provider request. Success exits with status 0. A failed check prints a
+short corrective error and exits nonzero. `doctor --api` additionally makes a
+network request: API modes request `/models` and look for the configured model;
+subscription modes check CLI authentication. It does not make a model
+completion. An endpoint whose model-list response is not compatible with this
+check can still require a separate provider-specific smoke test. Local CLI tests
+use only a loopback server and fake provider responses.
 
 ## Existing ChatGPT or Claude subscriptions
 
@@ -86,16 +88,18 @@ LLM_PROVIDER=codex-subscription
 # CODEX_CLI_PATH=/absolute/path/to/codex
 ```
 
-Run `npm run agent -- doctor --api` to check the login. Planning runs an
-ephemeral Codex request in a temporary directory, with a read-only sandbox,
-structured output and Codex tools/MCP disabled. CLI compatibility can change;
-the fake-CLI tests in this repository do not authenticate against OpenAI.
+Run `npm run agent -- doctor --api` to check the CLI version and login. Planning
+runs an ephemeral Codex request in a temporary directory, with a read-only
+sandbox, structured output and Codex tools/MCP disabled. The version parser and
+fake-CLI tests do not authenticate against OpenAI or verify that a particular
+Codex release works with a real account.
 
 ### Claude Pro or Max through Claude Code
 
 Install [Claude Code](https://docs.anthropic.com/en/docs/claude-code/getting-started)
 and authenticate with `claude auth login` using the Claude account, not Console
-API credentials. Configure:
+API credentials. The [CLI reference](https://code.claude.com/docs/en/cli-usage)
+documents `claude --version` and `claude auth status`. Configure:
 
 ```dotenv
 LLM_PROVIDER=claude-subscription
@@ -103,11 +107,12 @@ LLM_PROVIDER=claude-subscription
 # CLAUDE_CLI_PATH=/absolute/path/to/claude
 ```
 
-The current project configuration documents Claude Code `2.1.248+`; verify the
-minimum against the installed CLI before a release. `doctor --api` checks
-first-party authentication. Planning uses print mode, disables local tools and
-MCP, avoids session persistence, and limits the request to one turn. The
-fake-CLI tests do not authenticate against Anthropic.
+The project requires Claude Code `2.1.248+`; `doctor --api` checks and reports
+the CLI version before checking first-party authentication. If the CLI cannot
+start or report a version, update it before troubleshooting account login.
+Planning uses print mode, disables local tools and MCP, avoids session
+persistence, and limits the request to one turn. The fake-CLI tests do not
+authenticate against Anthropic.
 
 ## Current evidence
 
