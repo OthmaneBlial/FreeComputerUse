@@ -14,7 +14,7 @@ import { Observer } from '../browser/Observer.js';
 import { FlashProvider } from '../llm/FlashProvider.js';
 import { CodexSubscriptionProvider } from '../llm/CodexSubscriptionProvider.js';
 import { ClaudeSubscriptionProvider } from '../llm/ClaudeSubscriptionProvider.js';
-import { loadEnvironment,runtimeConfig } from '../config.js';
+import { ensureDataDirectory,loadEnvironment,runtimeConfig } from '../config.js';
 import type { ConfirmationPolicy } from '../actions/policy.js';
 import { z } from 'zod';
 
@@ -23,7 +23,7 @@ const policySchema=z.enum(['sensitive','always','never']);
 interface RunOptions {headed?:boolean;debug?:boolean;profile?:string;allowOrigin?:string[];allowExternal?:boolean;confirmation?:string;workflows?:boolean;maxSteps?:string;maxRepairs?:string;ephemeral?:boolean;expectText?:string;expectUrl?:string;ultra?:boolean}
 function runFlags(command:Command){return command.option('--headed','Show Chromium').option('--debug','Log all observe/plan/execute/verify/repair events').option('--profile <file>','Use a local profile JSON file').option('--allow-origin <url>','Allow another exact origin',(value:string,old:string[])=>[...old,new URL(value).origin],[]).option('--allow-external','Allow browser requests outside the origin allowlist').option('--confirmation <policy>','sensitive | always | never','sensitive').option('--no-workflows','Skip learned workflow lookup').option('--max-steps <n>','Maximum browser actions','120').option('--max-repairs <n>','Maximum model repairs','3').option('--ephemeral','Do not reuse saved browser cookies/session').option('--expect-text <text>','Trusted final text criterion the model cannot weaken').option('--expect-url <part>','Trusted final URL substring the model cannot weaken').option('--ultra','Explicit Ultra mode: skip website and sensitive-action approvals');}
 async function makeAgent(url:string,options:RunOptions){
-  const config=runtimeConfig();const store=new TraceStore(join(config.dataDir,'history.sqlite'));
+  const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));
   try{
     const vault=await new ProfileStore(options.profile?resolve(options.profile):join(config.dataDir,'profile.json')).load();
     const agent=new Agent({store,provider:config.provider,budget:config.budget,vault,useWorkflows:options.workflows,
@@ -95,14 +95,14 @@ program.command('inspect <url>').option('--region <region>','Form id, tag or acc
   finally{await agent.close();store.close();}
 });
 runFlags(program.command('replay <id>').option('--url <url>','Override starting URL')).action(async(id:string,options:RunOptions&{url?:string})=>{
-  const config=runtimeConfig(),lookup=new TraceStore(join(config.dataDir,'history.sqlite'));const trace=lookup.get(id);lookup.close();if(!trace)throw new Error('Run not found');
+  const config=runtimeConfig();ensureDataDirectory(config.dataDir);const lookup=new TraceStore(join(config.dataDir,'history.sqlite'));const trace=lookup.get(id);lookup.close();if(!trace)throw new Error('Run not found');
   const {agent,store}=await makeAgent(options.url??trace.url,options);connectEvents(agent,!!options.debug);
   try{showTrace(await agent.replay(trace,options.url));}finally{await agent.close();store.close();}
 });
-program.command('history').option('--limit <n>','Maximum rows','30').action(options=>{const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite'));try{console.log(new VariableResolver().redact(JSON.stringify(store.history(z.coerce.number().int().min(1).max(1000).parse(options.limit)),null,2)));}finally{store.close();}});
-program.command('workflows').option('--show <id>','Show a learned semantic workflow').action(options=>{const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite'));try{const workflows=new WorkflowEngine(store);console.log(JSON.stringify(options.show?workflows.get(options.show)??'Not found':workflows.list(),null,2));}finally{store.close();}});
+program.command('history').option('--limit <n>','Maximum rows','30').action(options=>{const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));try{console.log(new VariableResolver().redact(JSON.stringify(store.history(z.coerce.number().int().min(1).max(1000).parse(options.limit)),null,2)));}finally{store.close();}});
+program.command('workflows').option('--show <id>','Show a learned semantic workflow').action(options=>{const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));try{const workflows=new WorkflowEngine(store);console.log(JSON.stringify(options.show?workflows.get(options.show)??'Not found':workflows.list(),null,2));}finally{store.close();}});
 program.command('config').option('--profile <file>','Import a profile/files JSON into the local vault').action(async(options:{profile?:string})=>{
-  const config=runtimeConfig();const profile=new ProfileStore(join(config.dataDir,'profile.json'));
+  const config=runtimeConfig();ensureDataDirectory(config.dataDir);const profile=new ProfileStore(join(config.dataDir,'profile.json'));
   if(options.profile){await profile.save(JSON.parse(await readFile(resolve(options.profile),'utf8')));console.log('Local profile imported (mode 0600).');}
   const vault=await profile.load();console.log(JSON.stringify({dataDir:config.dataDir,model:config.provider?.name??'not configured',apiKeyConfigured:!!process.env.LLM_API_KEY,budget:config.budget.limits,profileAliases:Object.keys(vault.profile),fileAliases:Object.keys(vault.files)},null,2));
 });

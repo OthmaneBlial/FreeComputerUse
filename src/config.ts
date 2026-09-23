@@ -1,6 +1,7 @@
 import { loadEnvFile } from 'node:process';
-import { chmodSync,lstatSync } from 'node:fs';
+import { chmodSync,lstatSync,mkdirSync,realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { homedir,tmpdir } from 'node:os';
 import { z } from 'zod';
 import { TokenBudget } from './agent/TokenBudget.js';
 import { FlashProvider } from './llm/FlashProvider.js';
@@ -14,6 +15,19 @@ export function loadEnvironment(){
     if(process.platform!=='win32'&&(info.mode&0o777)!==(info.mode&0o600))chmodSync(path,info.mode&0o600);
     loadEnvFile(path);
   }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+}
+export function ensureDataDirectory(path:string){
+  const canonical=(value:string)=>{try{return realpathSync(value);}catch{return resolve(value);}};
+  const requested=canonical(path),sharedRoots=[resolve('/'),resolve(homedir()),resolve(tmpdir()),resolve('/tmp'),resolve('/var/tmp'),resolve(process.cwd())].map(canonical);
+  if(sharedRoots.includes(requested))throw new Error('Choose a dedicated FCU data directory, not a shared system or workspace directory');
+  try{
+    const info=lstatSync(path);
+    if(!info.isDirectory()||info.isSymbolicLink())throw new Error('FCU data path must be a real local directory');
+  }catch(error){
+    if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;
+    mkdirSync(path,{recursive:true,mode:0o700});
+  }
+  if(process.platform!=='win32')chmodSync(path,0o700);
 }
 const positive=z.coerce.number().int().positive();
 const optionalCap=(name:string)=>process.env[name]?positive.parse(process.env[name]):null;

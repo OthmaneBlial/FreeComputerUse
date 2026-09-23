@@ -87,6 +87,11 @@ are ignored by Git. On macOS/Linux, the environment loader rejects a symlinked
 `.env` and removes group/other permission bits before reading it; set mode `0600`
 before editing or running other tools. App-written profile/history files use
 mode `0600`; state/profile directories use mode `0700` on verified filesystems.
+The configured app data directory must be a dedicated real directory, not a
+shared system/workspace root. Direct `TraceStore` use requires a private parent
+directory and refuses shared parents rather than changing their permissions;
+SQLite files are created owner-only and symbolic-link database paths are
+rejected.
 Profile JSON imports are schema-checked, reject symbolic-link files and replace
 saved data atomically. This is local storage with file permissions, **not
 encrypted storage**. Browser session data and extracted website content can be

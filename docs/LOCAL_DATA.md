@@ -4,6 +4,10 @@ FreeComputerUse stores run history, learned workflows, the local profile, browse
 session data and downloaded files in its data directory. By default this is
 `.fcu` under the directory from which the CLI starts. `FCU_DATA_DIR` overrides
 that path; relative overrides are also resolved from the starting directory.
+Choose a dedicated directory. The app rejects a symlink or shared system/workspace
+root at this configured path and restricts it to owner access on POSIX systems.
+Direct library use of `TraceStore` requires a private parent directory (mode
+`0700`); it refuses a shared parent without changing that directory's permissions.
 
 The project-root `.env` file is separate. It can contain provider credentials
 and is not included when you copy `.fcu`.

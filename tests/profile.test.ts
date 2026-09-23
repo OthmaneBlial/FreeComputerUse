@@ -1,9 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {access,chmod,mkdtemp,readdir,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
+import {access,chmod,mkdir,mkdtemp,readdir,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {ProfileStore} from '../src/profile/ProfileStore.js';
+import {ensureDataDirectory} from '../src/config.js';
 import {TraceStore,type Trace} from '../src/history/TraceStore.js';
 import {startServer} from '../src/server/index.js';
 
@@ -70,4 +71,38 @@ test('stopped local data can be deleted and recreated without restoring old runs
     await dashboard?.close();await rm(dir,{recursive:true,force:true});
     if(previous===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=previous;
   }
+});
+
+test('trace storage rejects a shared parent without changing its permissions',async t=>{
+  if(process.platform==='win32'){t.skip('POSIX file modes do not apply on Windows');return;}
+  const dir=await mkdtemp(join(tmpdir(),'fcu-trace-parent-')),path=join(dir,'history.sqlite');
+  try{
+    await chmod(dir,0o755);assert.throws(()=>new TraceStore(path),/private/);
+    assert.equal((await stat(dir)).mode&0o777,0o755);await assert.rejects(access(path));
+    await chmod(dir,0o700);const store=new TraceStore(path);store.close();
+    assert.equal((await stat(path)).mode&0o777,0o600);
+  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('trace storage refuses a symbolic-link database without changing its target',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-trace-link-')),target=join(dir,'private.sqlite'),path=join(dir,'history.sqlite');
+  try{
+    await writeFile(target,'private data');await symlink(target,path);
+    assert.throws(()=>new TraceStore(path),/regular local file/);assert.equal(await readFile(target,'utf8'),'private data');
+  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('application data directory refuses a symbolic link without tightening its target',async t=>{
+  if(process.platform==='win32'){t.skip('POSIX symbolic-link permissions are covered on macOS/Linux');return;}
+  const dir=await mkdtemp(join(tmpdir(),'fcu-data-link-')),target=join(dir,'shared'),path=join(dir,'data');
+  try{
+    await mkdir(target,{mode:0o755});await chmod(target,0o755);await symlink(target,path);
+    assert.throws(()=>ensureDataDirectory(path),/real local directory/);assert.equal((await stat(target)).mode&0o777,0o755);
+  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('application data directory refuses shared system roots without changing them',async()=>{
+  const path=tmpdir(),before=(await stat(path)).mode&0o777;
+  assert.throws(()=>ensureDataDirectory(path),/dedicated FCU data directory/);
+  assert.equal((await stat(path)).mode&0o777,before);
 });

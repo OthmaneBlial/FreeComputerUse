@@ -9,7 +9,7 @@ import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
 import { VariableResolver } from '../profile/VariableResolver.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
-import { runtimeConfig } from '../config.js';
+import { ensureDataDirectory,runtimeConfig } from '../config.js';
 import { PlanSchema } from '../actions/schema.js';
 import type { LLMProvider } from '../llm/LLMProvider.js';
 
@@ -28,7 +28,8 @@ async function body(req:IncomingMessage){
 }
 const same=(a:string,b:string)=>{const aa=Buffer.from(a),bb=Buffer.from(b);return aa.length===bb.length&&timingSafeEqual(aa,bb);};
 export async function startServer(options:{port?:number;headed?:boolean;quiet?:boolean;provider?:LLMProvider}={}){
-  const config=runtimeConfig(),store=new TraceStore(join(config.dataDir,'history.sqlite')),profiles=new ProfileStore(join(config.dataDir,'profile.json'));
+  const config=runtimeConfig();ensureDataDirectory(config.dataDir);
+  const store=new TraceStore(join(config.dataDir,'history.sqlite')),profiles=new ProfileStore(join(config.dataDir,'profile.json'));
   const secret=randomBytes(32).toString('hex');let agent:Agent|undefined,pending:Promise<unknown>|undefined;
   const fallbackRedactor=new VariableResolver(),redactLocal=(value:string)=>fallbackRedactor.redact(agent?.variables.redact(value)??value);
   const redactLocalData=<T>(value:T):T=>JSON.parse(redactLocal(JSON.stringify(value))) as T;
