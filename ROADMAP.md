@@ -81,13 +81,14 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Limite :** aucun compte ou clé live n’était disponible pour les autres fournisseurs. Leur statut reste « non vérifié » ; aucune compatibilité live n’est revendiquée.
 - **Dépendances / risques :** les essais live nécessitent des comptes/clés disponibles et peuvent engendrer des frais ; ne pas envoyer de données privées ni coller des clés dans le dépôt ou le chat.
 
-#### 1.3 [ ] Durcir et documenter les connexions par abonnement
+#### 1.3 [x] Durcir et documenter les connexions par abonnement
 
 - **Objectif :** rendre les voies Codex/ChatGPT et Claude Code compréhensibles malgré leur dépendance à des outils et versions externes.
 - **Changements :** vérifier les commandes installées, la détection de versions, le flux d’authentification pris en charge, les permissions, les messages d’expiration et la désactivation propre ; documenter les différences avec les API key. Ajouter des adaptateurs uniquement à partir des interfaces CLI réellement prises en charge.
 - **Fichiers :** `src/llm/*Subscription*`, `src/cli/*`, `README.md`, `docs/PROVIDERS.md`, tests fournisseur.
 - **Acceptation :** chaque abonnement dispose d’un test d’intégration reproductible ou reste explicitement non vérifié ; aucun contournement de limites d’abonnement ; une absence de CLI ou une version incompatible donne une marche à suivre sans faire échouer toute l’app.
 - **Validation :** faux exécutable CLI pour les tests d’erreur et de format ; smoke manuel sur les versions minimales et actuelles documentées, sans consigner les jetons d’authentification.
+- **Validation exécutée le 23 septembre 2026 :** 11/11 tests fournisseur passent. Les tests CLI couvrent version minimale Claude, appels restreints, isolation des variables API, absence de commande et compte non connecté. Le smoke Codex CLI `0.156.1`/ChatGPT passe sur un plan synthétique. Claude reste non vérifié en live : le binaire local échoue à `claude --version` avec une erreur Node, consignée dans `docs/SUPPORT_MATRIX.md`.
 - **Dépendances / risques :** les interfaces CLI et conditions d’utilisation peuvent changer sans préavis ; dépend d’une veille de compatibilité.
 
 #### 1.4 [x] Fiabiliser le diagnostic fournisseur déjà présent

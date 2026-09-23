@@ -127,6 +127,17 @@ test('subscription CLI versions are parsed and Claude enforces its documented mi
   }finally{await rm(directory,{recursive:true,force:true});}
 });
 
+test('subscription diagnostics give recovery steps for missing CLIs and unsigned accounts',async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'fcu-provider-login-')),command=join(directory,'fake-provider'),missing=join(directory,'missing-provider');
+  try{
+    await assert.rejects(new ClaudeSubscriptionProvider({command:missing},new TokenBudget()).checkLogin(),/Install or update to 2\.1\.248 or newer/);
+    await assert.rejects(new CodexSubscriptionProvider({command:missing},new TokenBudget()).checkLogin(),/Install or update it, then verify `codex --version`/);
+    await writeFile(command,'#!/usr/bin/env node\nif(process.argv[2]==="--version")process.stdout.write("2.1.248\\n");else if(process.argv[2]==="auth")process.stdout.write(JSON.stringify({loggedIn:false}));else process.stderr.write("Not logged in\\n");\n',{mode:0o700});await chmod(command,0o700);
+    await assert.rejects(new ClaudeSubscriptionProvider({command},new TokenBudget()).checkLogin(),/Run `claude auth login` without `--console`/);
+    await assert.rejects(new CodexSubscriptionProvider({command},new TokenBudget()).checkLogin(),/Run `codex login` and choose ChatGPT/);
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
+
 test('Codex and Claude subscription adapters enforce their CLI contracts without leaking API credentials',{skip:process.platform==='win32'},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-provider-cli-')),command=join(directory,'fake-provider'),codexLog=join(directory,'codex.json'),claudeLog=join(directory,'claude.json');
   const plan=JSON.stringify({goal:'Read',steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false});
