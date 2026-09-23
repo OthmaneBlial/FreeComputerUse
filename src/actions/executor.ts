@@ -44,6 +44,7 @@ export class Executor {
     const path=resolve(folder,`${randomUUID()}-${filename}`);
     await download.saveAs(path);
     if(await download.failure())throw new Error('Browser download failed');
+    await chmod(path,0o600);
     this.browser.downloads.push({path,filename});
     return {path,filename};
   }

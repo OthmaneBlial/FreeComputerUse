@@ -68,7 +68,8 @@ parameters, endpoint and terms before use.
   preserved. This verifies the local STUN scenario only.
 - Focused action and results runs: 8/8 and 1/1 tests passed on system Chrome
   `154.0.8037.57`; upload/download/navigation, saved-download confinement and
-  result reporting remained functional.
+  result reporting remained functional. Download directory/file modes `0700`/
+  `0600` were verified on macOS.
 - Credentialed initial URL: two focused tests passed. The library agent rejects
   credentials before persisting a trace; the dashboard rejects credentials in
   the starting URL or allowed-origin list before creating an agent.
@@ -78,10 +79,11 @@ parameters, endpoint and terms before use.
   integration and other browser builds remain unverified.
 - Profile and local-data lifecycle: 3/3 tests passed on macOS. Unknown fields are
   rejected without replacing the existing vault; symbolic-link reads and writes
-  are refused; profile mode is `0600`; deleting a stopped data directory and
-  restarting creates a fresh empty history. Forty saved runs remain stored; the
-  history limit only affects displayed summaries. Retention is manual with no
-  expiry. Windows/Linux permissions remain unverified.
+  are refused; profile mode is `0600`; data directory/history modes are `0700`/
+  `0600`; deleting a stopped data directory and restarting creates a fresh empty
+  history. Forty saved runs remain stored; the history limit only affects
+  displayed summaries. Retention is manual with no expiry. Windows/Linux
+  permissions remain unverified.
 - IPv6 allowlist matching: focused test passed; expanded and compressed loopback
   spellings normalize to one origin, while a different port and path-scoped
   allowlist are denied.

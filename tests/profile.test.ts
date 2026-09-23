@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {access,mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
+import {access,chmod,mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {ProfileStore} from '../src/profile/ProfileStore.js';
@@ -35,7 +35,9 @@ test('stopped local data can be deleted and recreated without restoring old runs
   const dir=await mkdtemp(join(tmpdir(),'fcu-data-lifecycle-')),history=join(dir,'history.sqlite'),previous=process.env.FCU_DATA_DIR;
   let dashboard:Awaited<ReturnType<typeof startServer>>|undefined;
   try{
+    await chmod(dir,0o755);
     process.env.FCU_DATA_DIR=dir;dashboard=await startServer({port:0,quiet:true});await dashboard.close();dashboard=undefined;
+    if(process.platform!=='win32'){assert.equal((await stat(dir)).mode&0o777,0o700);assert.equal((await stat(history)).mode&0o777,0o600);}
     const stored=new TraceStore(history),trace:Trace={version:1,id:'before-delete',goal:'Private run',url:'http://example.test/',status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     try{for(let index=0;index<40;index++)stored.save({...trace,id:`before-delete-${index}`,startedAt:index});assert.equal(stored.history(1000).length,40);assert.equal(stored.history(12).length,12);}finally{stored.close();}
     await access(history);await rm(dir,{recursive:true,force:true});await assert.rejects(access(history));

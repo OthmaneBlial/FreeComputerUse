@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp,mkdir,writeFile,readFile,readdir,rm,symlink } from 'node:fs/promises';
+import { mkdtemp,mkdir,writeFile,readFile,readdir,rm,stat,symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname,join } from 'node:path';
 import { Browser } from '../src/browser/Browser.js';
@@ -57,15 +57,17 @@ test('executor fills, selects, verifies, uploads, downloads, navigates and contr
 });
 
 test('download names stay inside the selected folder and support Unicode across platforms',async()=>{
-  const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),browser=await new Browser().launch();
+  const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),downloadDir=join(dir,'downloads');await mkdir(downloadDir,{mode:0o755});
+  const browser=await new Browser().launch();
   try{
     await browser.page.setContent('<a href="data:text/plain,receipt" download="receipt.txt">Download</a>');
-    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control(),{downloadDir:dir});
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control(),{downloadDir});
     const result=await executor.run({type:'download',target:{role:'link',name:'Download'},filename:'..\\..\\résumé 🧾.txt'});
     assert.equal(result.success,true,result.error??'Download failed');
     const saved=result.data as {path:string;filename:string};
-    assert.equal(saved.filename,'résumé 🧾.txt');assert.equal(dirname(saved.path),dir);
+    assert.equal(saved.filename,'résumé 🧾.txt');assert.equal(dirname(saved.path),downloadDir);
     assert.equal(await readFile(saved.path,'utf8'),'receipt');
+    if(process.platform!=='win32'){assert.equal((await stat(downloadDir)).mode&0o777,0o700);assert.equal((await stat(saved.path)).mode&0o777,0o600);}
   }finally{await browser.close();await rm(dir,{recursive:true,force:true});}
 });
 

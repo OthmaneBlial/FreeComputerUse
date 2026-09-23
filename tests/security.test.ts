@@ -6,7 +6,7 @@ import {createSocket} from 'node:dgram';
 import {createServer,request as httpRequest} from 'node:http';
 import {createServer as createHTTPSServer} from 'node:https';
 import {connect as connectTLS} from 'node:tls';
-import {mkdir,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
+import {chmod,mkdir,mkdtemp,readFile,rm,stat,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Agent} from '../src/agent/Agent.js';
@@ -163,6 +163,7 @@ test('Chrome does not send WebRTC STUN packets outside the configured proxy',{ti
   await new Promise<void>(resolve=>site.listen(0,'127.0.0.1',resolve));
   const url=`http://127.0.0.1:${(site.address() as {port:number}).port}`,profile=await mkdtemp(join(tmpdir(),'fcu-webrtc-profile-'));
   await mkdir(join(profile,'Default'));await writeFile(join(profile,'Default','Preferences'),JSON.stringify({profile:{default_content_setting_values:{notifications:2}},webrtc:{ip_handling_policy:'default'}}));
+  await chmod(profile,0o755);await chmod(join(profile,'Default'),0o755);
   const browser=new Browser({profileDir:profile,allowedOrigins:[url]});
   try{
     await browser.launch();
@@ -181,6 +182,7 @@ test('Chrome does not send WebRTC STUN packets outside the configured proxy',{ti
     await browser.page.waitForTimeout(100);assert.equal(packets,0);assert.equal(await browser.page.locator('h1').innerText(),'Guarded browser');
     const preferences=JSON.parse(await readFile(join(profile,'Default','Preferences'),'utf8')) as {profile:{default_content_setting_values:{notifications:number}};webrtc:{ip_handling_policy:string}};
     assert.equal(preferences.webrtc.ip_handling_policy,'disable_non_proxied_udp');assert.equal(preferences.profile.default_content_setting_values.notifications,2);
+    if(process.platform!=='win32'){assert.equal((await stat(profile)).mode&0o777,0o700);assert.equal((await stat(join(profile,'Default'))).mode&0o777,0o700);assert.equal((await stat(join(profile,'Default','Preferences'))).mode&0o777,0o600);}
   }finally{await browser.close();await new Promise<void>(resolve=>site.close(()=>resolve()));await new Promise<void>(resolve=>stun.close(()=>resolve()));await rm(profile,{recursive:true,force:true});}
 });
 
