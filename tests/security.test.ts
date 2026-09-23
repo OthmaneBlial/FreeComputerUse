@@ -1,7 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import {createServer,request as httpRequest} from 'node:http';
+import {createServer as createHTTPSServer} from 'node:https';
+import {connect as connectTLS} from 'node:tls';
+import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {Agent} from '../src/agent/Agent.js';
 import {TraceStore} from '../src/history/TraceStore.js';
 import {PlanSchema} from '../src/actions/schema.js';
@@ -207,6 +213,57 @@ test('approved WebSocket traffic works through the local network guard proxy',{t
     }),targetURL);
     assert.equal(message,'ok');assert.equal(upgrades,1);
   }finally{await browser.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
+test('a real TLS WebSocket handshake and frame traverse the local proxy',{timeout:20000},async t=>{
+  try{execFileSync('openssl',['version'],{stdio:'ignore'});}catch{t.skip('OpenSSL is unavailable for a temporary local certificate');return;}
+  const dir=await mkdtemp(join(tmpdir(),'fcu-wss-')),keyPath=join(dir,'key.pem'),certPath=join(dir,'cert.pem');
+  let proxy:NetworkGuardProxy|undefined,secure:ReturnType<typeof connectTLS>|undefined,target:ReturnType<typeof createHTTPSServer>|undefined;
+  try{
+    execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',keyPath,'-out',certPath,'-days','1','-subj','/CN=wss.test','-addext','subjectAltName=DNS:wss.test'],{stdio:'ignore'});
+    const server=createHTTPSServer({key:await readFile(keyPath),cert:await readFile(certPath)});target=server;
+    server.on('upgrade',(request,socket)=>{
+      const key=request.headers['sec-websocket-key']??'',accept=createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+      socket.write(Buffer.from([0x81,0x02,0x6f,0x6b]));
+    });
+    await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const port=(server.address() as {port:number}).port;
+    proxy=new NetworkGuardProxy({allowPrivate:true,resolver:async()=>[{address:'127.0.0.1',family:4}],permits:url=>url===`https://wss.test:${port}/`});
+    const address=new URL(await proxy.start());
+    secure=await new Promise<ReturnType<typeof connectTLS>>((resolve,reject)=>{
+      const request=httpRequest({hostname:address.hostname,port:Number(address.port),method:'CONNECT',path:`wss.test:${port}`,agent:false});
+      request.once('connect',(response,socket)=>{
+        if(response.statusCode!==200){socket.destroy();reject(new Error(`WSS tunnel returned ${response.statusCode}`));return;}
+        const tls=connectTLS({socket,servername:'wss.test',rejectUnauthorized:false});
+        tls.once('secureConnect',()=>resolve(tls));tls.once('error',reject);
+      });
+      request.once('error',reject);request.end();
+    });
+    const key='dGhlIHNhbXBsZSBub25jZQ==',expected=createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+    const payload=await new Promise<string>((resolve,reject)=>{
+      let received=Buffer.alloc(0),headerEnd=-1;
+      const onData=(chunk:Buffer)=>{
+        received=Buffer.concat([received,chunk]);
+        if(headerEnd<0){headerEnd=received.indexOf('\r\n\r\n');if(headerEnd<0)return;
+          const header=received.subarray(0,headerEnd).toString('latin1');
+          if(!header.startsWith('HTTP/1.1 101 ')||!header.toLowerCase().includes(`sec-websocket-accept: ${expected.toLowerCase()}`)){cleanup();reject(new Error('Invalid WSS upgrade response'));return;}
+        }
+        const start=headerEnd+4;if(received.length<start+2)return;
+        const frameLength=received[start+1]!&0x7f;if(received.length<start+2+frameLength)return;
+        cleanup();resolve(received.subarray(start+2,start+2+frameLength).toString());
+      };
+      const onError=(error:Error)=>{cleanup();reject(error);};
+      const cleanup=()=>{secure?.off('data',onData);secure?.off('error',onError);};
+      secure!.on('data',onData);secure!.once('error',onError);
+      secure!.write(`GET /events HTTP/1.1\r\nHost: wss.test:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ${key}\r\n\r\n`);
+    });
+    assert.equal(payload,'ok');
+  }finally{
+    secure?.destroy();await proxy?.close();
+    if(target?.listening)await new Promise<void>(resolve=>target!.close(()=>resolve()));
+    await rm(dir,{recursive:true,force:true});
+  }
 });
 
 test('a bare Browser denies navigation and page requests without an explicit origin policy',async()=>{

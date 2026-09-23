@@ -52,8 +52,9 @@ path. User restrictions and final completion criteria still apply.
   origin and private-address checks. A synthetic public-to-loopback DNS change
   test confirms the proxy rejects the connection before the target receives it;
   system Chrome `154.0.8037.57` also passes approved and denied plain WebSocket
-  tests. Actual WSS/TLS handshakes, network-specific NAT64 prefixes, non-HTTP
-  browser traffic and other browser builds remain unverified. The
+  tests. A separate local test completes a TLS WebSocket handshake and frame
+  through the proxy; Chrome-originated WSS, network-specific NAT64 prefixes,
+  non-HTTP browser traffic and other browser builds remain unverified. The
   DevTools endpoint is available only on loopback while the browser runs; a
   process under the same OS account is outside this boundary. Service workers
   are blocked.
