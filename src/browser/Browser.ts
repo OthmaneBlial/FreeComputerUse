@@ -1,4 +1,4 @@
-import { chromium, type BrowserContext, type Page } from 'playwright';
+import { chromium, type BrowserContext, type LaunchOptions, type Page } from 'playwright';
 import { mkdir, chmod } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type {SemanticTarget} from '../actions/schema.js';
@@ -9,6 +9,12 @@ export interface BrowserOptions {
   allowedOrigins?: string[]; allowExternal?: boolean;
   beforeNavigate?:(url:string)=>Promise<void>;
   visualInteraction?:boolean;
+}
+const browserChannels=['chrome','chrome-beta','chrome-dev','chrome-canary','msedge','msedge-beta','msedge-dev','msedge-canary'];
+function launchOptions(headless:boolean):LaunchOptions{
+  const channel=process.env.FCU_BROWSER_CHANNEL;
+  if(channel&&!browserChannels.includes(channel))throw new Error(`FCU_BROWSER_CHANNEL must be one of: ${browserChannels.join(', ')}`);
+  return{headless,...(channel?{channel}:{})};
 }
 export class Browser {
   context!: BrowserContext;
@@ -25,9 +31,9 @@ export class Browser {
       const folder = resolve(this.options.profileDir);
       await mkdir(folder, { recursive: true, mode: 0o700 });
       await chmod(folder, 0o700);
-      this.context = await chromium.launchPersistentContext(folder, { headless: this.options.headless ?? true, acceptDownloads: true,serviceWorkers:'block' });
+      this.context = await chromium.launchPersistentContext(folder, { ...launchOptions(this.options.headless ?? true), acceptDownloads: true,serviceWorkers:'block' });
     } else {
-      const engine = await chromium.launch({ headless: this.options.headless ?? true });
+      const engine = await chromium.launch(launchOptions(this.options.headless ?? true));
       this.context = await engine.newContext({ acceptDownloads: true,serviceWorkers:'block' });
       this.context.on('close', () => void engine.close());
     }

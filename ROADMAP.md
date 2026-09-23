@@ -132,7 +132,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 #### 3.1 [ ] Réussir un premier lancement sur une installation vierge
 
 - **Objectif :** obtenir un premier résultat utile en quelques étapes compréhensibles.
-- **Changements :** resserrer le quick start autour d’une seule installation supportée, du choix fournisseur, de l’ouverture de l’interface et d’une première tâche sandbox. Garder la voie sans clé limitée au workflow déterministe du laboratoire.
+- **Changements :** resserrer le quick start autour d’une seule installation supportée, du choix fournisseur, de l’ouverture de l’interface et d’une première tâche sandbox. Une option `FCU_BROWSER_CHANNEL` permet de sélectionner un Chrome/Edge déjà installé ; sa compatibilité doit être prouvée pour chaque couple Playwright/navigateur avant d’en faire le chemin recommandé. Garder la voie sans clé limitée au workflow déterministe du laboratoire.
 - **Fichiers :** `README.md`, `src/cli/*`, `src/ui/*`, `.env.example`, `docs/PROVIDERS.md`, `docs/LOCAL_VALIDATION.md`.
 - **Acceptation :** une personne n’ayant pas cloné le dépôt auparavant peut suivre le guide sur machine propre et distinguer le mode sandbox du mode nécessitant un modèle ; aucune étape ne dépend de configuration non documentée.
 - **Validation :** répétition manuelle sur profil utilisateur vierge pour les OS annoncés ; conserver les commandes et erreurs rencontrées comme procédure de reproduction.

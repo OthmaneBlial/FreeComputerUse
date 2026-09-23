@@ -8,7 +8,7 @@ export async function startLab(port=0){
     try{
       const pathname=decodeURIComponent(new URL(req.url??'/','http://127.0.0.1').pathname),file=resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
       if(!file.startsWith(root+sep)){res.writeHead(403);res.end();return;}
-      const content=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.json':'application/json','.csv':'text/csv','.txt':'text/plain','.mp4':'video/mp4','.jpg':'image/jpeg'} as Record<string,string>)[extname(file)]??'application/octet-stream','Cache-Control':'no-store'});res.end(content);
+      const content=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.json':'application/json','.csv':'text/csv','.txt':'text/plain','.mp4':'video/mp4','.jpg':'image/jpeg','.svg':'image/svg+xml'} as Record<string,string>)[extname(file)]??'application/octet-stream','Cache-Control':'no-store'});res.end(content);
     }catch{res.writeHead(404);res.end('Not found');}
   });
   await new Promise<void>(resolve=>server.listen(port,'127.0.0.1',resolve));

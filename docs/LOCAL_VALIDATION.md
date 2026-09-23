@@ -11,6 +11,11 @@ npm run validate
 ```
 
 This rebuilds the static lab under `docs/lab` while preserving the product landing page at `docs/index.html`, checks TypeScript, runs Chromium tests, builds the package, scans tracked files/history for recognizable secrets, and audits production dependencies.
+To avoid a Playwright browser download, set `FCU_BROWSER_CHANNEL=chrome` (or
+`msedge`) when that browser is already installed. This is best-effort: Playwright
+warns that non-bundled browsers may be incompatible with the installed Playwright
+version. This checkout's current system Chrome run is not a passing full-suite
+validation; see the [support matrix](SUPPORT_MATRIX.md).
 Browser smoke tests and live-provider benchmarks are also run locally and are
 separate opt-in commands because they can spend API tokens.
 

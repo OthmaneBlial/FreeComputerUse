@@ -158,13 +158,13 @@
     </section>
 
     <section class="start-section page-section" id="start" aria-labelledby="start-title">
-      <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Bring your own model.<br><em>Keep your browser close.</em></h2><p>Requires Node.js 22.13+, npm and Playwright Chromium. Follow the README for API-key setup or supported CLI sign-in.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
+      <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Bring your own model.<br><em>Keep your browser close.</em></h2><p>Requires Node.js 22.13+, npm and a browser Playwright can launch. An installed Chrome or Edge can be selected as a best-effort option without a Playwright browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
       <pre class="terminal"><span>01 / TERMINAL</span><code>git clone https://github.com/OthmaneBlial/FreeComputerUse.git
 cd FreeComputerUse
 npm ci
-npx playwright install chromium
 cp .env.example .env
-npm run dev</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
+chmod 600 .env
+FCU_BROWSER_CHANNEL=chrome npm run dev</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
     </section>
   </main>
 

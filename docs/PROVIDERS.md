@@ -63,7 +63,7 @@ npm run agent -- doctor
 npm run agent -- doctor --api
 ```
 
-`doctor` launches the configured Playwright Chromium and reports the runtime.
+`doctor` launches the configured Playwright browser and reports the runtime.
 `doctor --api` additionally makes a network request: API modes request `/models`
 and look for the configured model; subscription modes check CLI authentication.
 It does not make a model completion. An endpoint whose model-list response is

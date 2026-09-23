@@ -6,6 +6,12 @@ import { diffPages, similarity } from '../src/browser/PageCompressor.js';
 import { stateHash } from '../src/browser/DomExtractor.js';
 import { ActionSchema, PlanSchema } from '../src/actions/schema.js';
 
+test('rejects unsupported system browser channels before launch',async()=>{
+  const previous=process.env.FCU_BROWSER_CHANNEL;process.env.FCU_BROWSER_CHANNEL='not-a-browser';
+  try{await assert.rejects(new Browser().launch(),/FCU_BROWSER_CHANNEL must be one of/);}
+  finally{if(previous===undefined)delete process.env.FCU_BROWSER_CHANNEL;else process.env.FCU_BROWSER_CHANNEL=previous;}
+});
+
 test('real Chromium extracts visible controls, frames, shadow DOM and stable refs', async () => {
   const browser=await new Browser().launch();
   try {

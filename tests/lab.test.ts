@@ -45,7 +45,7 @@ test('styled lab contains sourced real tasks and eight complex browser-only work
         for(const width of [1440,390]){await agent.browser.page.setViewportSize({width,height:900});assert(await agent.browser.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),scenario.id+' responsive overflow');}
       }finally{await agent.close();}
       const repeated=new Agent(options);repeated.control.on('approval',()=>repeated.control.approve());
-      try{const repeat=await repeated.run(goal,url);assert.equal(repeat.status,'completed',scenario.id+' learned repeat: '+repeat.error);assert.equal(repeat.metrics.llmCalls,0);assert(await scenario.oracle(repeated),scenario.id+' repeat oracle');}
+      try{const repeat=await repeated.run(goal,url);assert.equal(repeat.status,'completed',scenario.id+' learned repeat: '+repeat.error+' '+JSON.stringify(repeated.events.slice(-8)));assert.equal(repeat.metrics.llmCalls,0);assert(await scenario.oracle(repeated),scenario.id+' repeat oracle');}
       finally{await repeated.close();store.close();}
     }
   }finally{await browser.close();await lab.close();await rm(dir,{recursive:true,force:true});}

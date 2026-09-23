@@ -37,16 +37,17 @@ The model does not run shell commands or arbitrary JavaScript. Browser previews 
 
 ## Quick start
 
-Requires **Node.js 22.13+**, npm and Playwright Chromium.
+Requires **Node.js 22.13+**, npm and a browser Playwright can launch. If Google Chrome is already installed, set `FCU_BROWSER_CHANNEL=chrome` in `.env` to avoid downloading Playwright Chromium. Playwright works best with its matching browser build; see the [browser compatibility note](https://playwright.dev/docs/api/class-browsertype#browser-type-launch) before relying on a system browser.
 
 ```bash
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git
 cd FreeComputerUse
 npm ci
-npx playwright install chromium
 cp .env.example .env
 chmod 600 .env
 ```
+
+Set `FCU_BROWSER_CHANNEL=chrome` in `.env` if Chrome is already installed. Playwright-managed Chromium can be installed separately if no supported browser is present.
 
 Set a model API key in `.env`, then run the local workspace:
 
