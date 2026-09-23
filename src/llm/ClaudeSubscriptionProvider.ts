@@ -16,6 +16,7 @@ export interface ClaudeSubscriptionConfig {command?:string;model?:string;timeout
 function claudeEnvironment(){
   const env=safeCliEnvironment();
   for(const key of Object.keys(env))if(/^(?:ANTHROPIC_|CLAUDE_CODE_USE_|AWS_|GOOGLE_|VERTEXAI_|CLOUD_ML_|AZURE_)/i.test(key))delete env[key];
+  for(const key of ['OPENAI_BASE_URL','OPENAI_ORG_ID','OPENAI_PROJECT_ID','CODEX_MODEL_PROVIDER'])delete env[key];
   env.CLAUDE_CODE_SKIP_PROMPT_HISTORY='1';
   return env;
 }

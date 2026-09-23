@@ -8,10 +8,10 @@ does not prove that every service using that label accepts the same request.
 
 | Connection | Implemented route | Automated evidence in this repository | Live evidence and current status |
 | --- | --- | --- | --- |
-| OpenAI-compatible API | `openai-compatible`; bearer key; configurable base URL; `/chat/completions`; JSON object or schema request | Five `tests/provider.test.ts` cases cover a local HTTP stub, schema validation, usage accounting, context trimming, HTTPS rules and bounded correction. They do not contact vendor services. | DeepSeek Flash has a dated, single-trial benchmark in [`BENCHMARKS.md`](BENCHMARKS.md). OpenAI, xAI/Grok, Gemini, Mistral and OpenRouter are configuration examples using this generic route; each vendor/model combination remains individually unverified here. |
-| Anthropic API | `anthropic`; `x-api-key`; Messages endpoint; JSON object mode | The provider shares request validation and budgeting code, but the repository has no Anthropic-specific contract test. | Not live-tested in the recorded project evidence. Unverified. |
-| ChatGPT subscription | Local Codex CLI; checks `codex login status`; runs an ephemeral, read-only `codex exec` request with tools disabled | Provider code is present; the repository has no Codex CLI contract/integration test. | Not verified against an authenticated ChatGPT plan in the recorded project evidence. Requires a compatible Codex CLI and account/plan access. |
-| Claude Pro/Max subscription | Local Claude Code CLI; checks first-party subscription authentication; runs a restricted, non-persistent prompt with tools disabled | Provider code is present; the repository has no Claude Code CLI contract/integration test. | Not verified against an authenticated Claude subscription in the recorded project evidence. `.env.example` documents a minimum CLI version; recheck it before each release. |
+| OpenAI-compatible API | `openai-compatible`; bearer key; configurable base URL; `/chat/completions`; JSON object or schema request | Six local HTTP contract cases cover request format, schema validation, usage, context trimming, HTTPS, bounded correction and safe HTTP errors. No vendor service is contacted. | DeepSeek Flash has a dated, single-trial benchmark in [`BENCHMARKS.md`](BENCHMARKS.md). OpenAI, xAI/Grok, Gemini, Mistral and OpenRouter are configuration examples using this generic route; each vendor/model combination remains individually unverified here. |
+| Anthropic API | `anthropic`; `x-api-key`; Messages endpoint; prompted JSON object, locally validated | One local HTTP contract test covers the native request, headers, usage parsing, escaped page content and unsupported JSON-schema rejection. | Not live-tested in the recorded project evidence. Unverified. |
+| ChatGPT subscription | Local Codex CLI; checks `codex login status`; runs an ephemeral, read-only `codex exec` request with tools disabled | One fake-CLI contract test covers output parsing, required flags and stripping API/provider environment variables. | Not verified against an authenticated ChatGPT plan in the recorded project evidence. Requires a compatible Codex CLI and account/plan access. |
+| Claude Pro/Max subscription | Local Claude Code CLI; checks first-party subscription authentication; runs a restricted, non-persistent prompt with tools disabled | One fake-CLI contract test covers output parsing, required flags and stripping API/provider environment variables. | Not verified against an authenticated Claude subscription in the recorded project evidence. `.env.example` documents a minimum CLI version; recheck it before each release. |
 
 ### OpenAI-compatible configuration examples
 
@@ -46,7 +46,8 @@ parameters, endpoint and terms before use.
 - Public-lab build regression test: passed; it ran the build twice and confirmed
   `docs/index.html` stayed byte-for-byte unchanged and `docs/lab/index.html` was
   stable across both runs.
-- Provider mock tests: five passed when run without browser-dependent tests.
+- Provider contract tests: eight passed against local HTTP/fake-CLI fixtures; no
+  API completion or authenticated subscription request was made.
 - Full `npm test`: **not verified**. The matching Playwright browser is absent;
   tests that start a server before launching Chromium can remain open after the
   launch failure. The current user instruction prohibits downloading a large

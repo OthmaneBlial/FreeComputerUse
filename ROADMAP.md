@@ -62,13 +62,13 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 1 — Compatibilité modèles et abonnements réellement vérifiée (P0)
 
-#### 1.1 [ ] Établir un contrat commun pour les fournisseurs
+#### 1.1 [x] Établir un contrat commun pour les fournisseurs
 
 - **Objectif :** rendre le choix du fournisseur prévisible et simplifier les erreurs.
 - **Changements :** vérifier configuration, authentification, modèle, format structuré, délais d’expiration, erreurs de quota, reprise contrôlée et coût estimé. Garder une validation de sortie commune et ne jamais inclure les clés dans les journaux.
 - **Fichiers :** `src/llm/*`, `.env.example`, `src/cli/*`, `tests/provider.test.ts`, `docs/PROVIDERS.md`.
 - **Acceptation :** chaque adaptateur a des tests de contrat hors réseau ; une configuration invalide échoue avant d’ouvrir le navigateur ; les erreurs indiquent une correction concrète et n’exposent pas la clé.
-- **Validation :** tests contractuels avec réponses simulées, erreurs HTTP simulées, puis essai live distinct et explicitement opt-in pour chaque fournisseur retenu.
+- **Validation :** tests contractuels avec réponses et erreurs HTTP simulées ; tout essai live reste une validation distincte, explicitement opt-in, suivie en phase 1.2.
 - **Dépendances / risques :** tarifs, noms de modèles et API changent ; les résultats live doivent porter date, version SDK/protocole et modèle.
 
 #### 1.2 [ ] Vérifier les fournisseurs prioritaires et publier les limites de compatibilité
