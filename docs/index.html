@@ -134,9 +134,9 @@
         <p>Copy a goal into your local workspace. Browse read-only research tasks or switch to synthetic workflows for practice. Source checks and agent trials are labelled separately.</p>
       </div>
       <div class="library-toolbar">
-        <div class="tab-row" role="tablist" aria-label="Example type">
-          <button id="real-tab" role="tab" aria-selected="true" aria-controls="task-list">Real websites</button>
-          <button id="practice-tab" role="tab" aria-selected="false" aria-controls="task-list">Practice workflows</button>
+        <div class="tab-row" id="example-tabs" role="tablist" aria-label="Example type">
+          <button id="real-tab" role="tab" aria-selected="true" aria-controls="task-list" tabindex="0">Real websites</button>
+          <button id="practice-tab" role="tab" aria-selected="false" aria-controls="task-list" tabindex="-1">Practice workflows</button>
         </div>
         <div class="filter-row" aria-label="Task categories">
           <button aria-pressed="true" data-category="all">All tasks</button>
