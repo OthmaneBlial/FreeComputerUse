@@ -1,7 +1,32 @@
 {
   "name": "free-computer-use",
   "version": "0.1.0",
-  "description": "Spend tokens on planning, execute browser actions locally.",
+  "description": "Local-first AI browser automation with Playwright and user-approved actions.",
+  "homepage": "https://othmaneblial.github.io/FreeComputerUse/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OthmaneBlial/FreeComputerUse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OthmaneBlial/FreeComputerUse/issues"
+  },
+  "keywords": [
+    "ai-agent",
+    "browser-automation",
+    "browser-use",
+    "computer-use",
+    "playwright",
+    "local-first",
+    "multi-model",
+    "openai-compatible",
+    "openai",
+    "anthropic",
+    "claude-code",
+    "chatgpt",
+    "deepseek",
+    "grok",
+    "openrouter"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22.13.0"
@@ -12,6 +37,7 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc && node scripts/copy-ui.mjs",
     "check": "tsc --noEmit && tsc -p tsconfig.tests.json",
@@ -38,7 +64,15 @@
     "README.md",
     "LICENSE",
     ".env.example",
-    "SECURITY.md"
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "docs/*.md",
+    "docs/brand-mark.svg",
+    "assets/readme/hero.svg",
+    "assets/readme/incident-demo.gif",
+    "assets/readme/incident-evidence.json",
+    "artifacts/benchmark-public.json"
   ],
   "license": "MIT",
   "dependencies": {
