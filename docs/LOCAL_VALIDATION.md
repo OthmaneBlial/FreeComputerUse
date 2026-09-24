@@ -58,6 +58,25 @@ An earlier run had been stopped after 2
 minutes 30 seconds in the former per-file history scan; the batched object scan
 and deleted-secret regression test resolved that bottleneck.
 
+The latest full validation on `main`, commit `1bfb8f7` (24 September 2026),
+passed `FCU_BROWSER_CHANNEL=chrome npm run validate`: 106/106 tests in 158.82
+seconds, build, security scan (263 worktree files, 265 historical paths, 1,036
+unique historical blobs; no recognized credentials or private-state paths),
+and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Node
+`25.9.0`, and system Chrome `154.0.8037.57`. The tests use local fixtures and
+provider contracts; no live model-provider request was made. GitHub Actions
+remained untouched.
+
+The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
+and installed into a new temporary npm prefix. Its SHA-256 matched the
+published checksum. With `LLM_API_KEY` empty and an isolated `FCU_DATA_DIR`,
+`agent --version`, `agent --help`, and `agent doctor` passed; the doctor launched
+system Chrome. `agent run 'Extract the table'
+https://othmaneblial.github.io/FreeComputerUse/lab/reports.html --ultra`
+completed the public synthetic practice task with the three expected rows, one
+browser action, and zero model calls. This CLI smoke used explicit Ultra mode;
+the separate final dashboard video demonstrates normal site approval.
+
 One earlier clean run failed 100/101 on a transient dashboard `502`; the first
 assertion reported only Chrome’s generic console message. The test now asserts
 captured HTTP 5xx paths before generic console errors. A focused rerun and two
