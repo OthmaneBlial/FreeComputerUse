@@ -160,7 +160,8 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
         return !cursor.hidden&&Math.abs(matrix.m41-expectedX)<1&&Math.abs(matrix.m42-expectedY)<1;
       },dashboard.getAgent()!.browser.interaction.snapshot()!,{timeout:8000});
     }
-    assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);assert.deepEqual(httpErrors,[]);
+    assert.deepEqual(httpErrors,[],`Unexpected dashboard HTTP errors: ${httpErrors.join(', ')}`);
+    assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[],`Browser console errors: ${consoleErrors.join(' | ')}`);
     const unauthenticated=await fetch(dashboard.url+'/api/state');assert.equal(unauthenticated.status,401);
     const crossOrigin=await browser.page.evaluate(async()=>{const response=await fetch('/api/control/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});return response.status;});assert.equal(crossOrigin,403);
   }finally{await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
