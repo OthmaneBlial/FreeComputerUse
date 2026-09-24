@@ -39,6 +39,18 @@ The model does not run shell commands or arbitrary JavaScript. Browser previews 
 
 Requires **Node.js 22.13+**, npm and an installed browser. The verified setup is macOS 26.6 (Apple Silicon), Node 25.9.0 and system Chrome 154.0.8037.57; the complete serial validation passed on this combination. The declared Node minimum and other OS/browser combinations remain unverified. This setup selects installed Chrome and avoids a separate Playwright browser download; see the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
 
+### Install from npm
+
+```bash
+npm install --global free-computer-use@0.1.0
+FCU_BROWSER_CHANNEL=chrome agent doctor
+FCU_BROWSER_CHANNEL=chrome agent ui
+```
+
+Open **http://127.0.0.1:4318**. The practice revenue-table task works without a model key. For model-planned tasks, configure a provider as described in [Pick your model](#pick-your-model).
+
+### Run from source
+
 ```bash
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git
 cd FreeComputerUse

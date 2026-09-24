@@ -5,7 +5,7 @@ public repository and registry data, plus task reports that users choose to
 share. Local browser interaction events only drive the dashboard visualization;
 they are not an installation or usage counter.
 
-## Public baseline — 24 September 2026
+## Pre-publication baseline — 24 September 2026
 
 | Signal | Observed value | Source |
 | --- | ---: | --- |
@@ -16,12 +16,20 @@ they are not an installation or usage counter.
 | Open issues / pull requests | 0 / 0 | Public GitHub API |
 | Discussions | Disabled | Public repository metadata |
 | GitHub releases / asset downloads | 0 / not applicable | Public releases endpoint |
-| npm `free-computer-use@0.1.0` | Not published (registry returned 404) | npm registry query |
+| npm `free-computer-use@0.1.0` | Not published at baseline (registry returned 404) | npm registry query |
 | Installations / community task reproductions | Installations not measured; no public reproductions documented | No installation telemetry; public issue list is empty and Discussions are disabled |
 
 This is a dated baseline, not a growth claim. GitHub stars and forks are
 secondary signals; they do not show that an installation or browser task
 worked. No public issue or discussion currently records a user reproduction.
+
+## Current distribution — 24 September 2026
+
+`free-computer-use@0.1.0` is now published on npm. Its public tarball was
+downloaded and matched byte for byte against the reviewed local artifact, then
+installed in a fresh temporary project. The CLI and dashboard practice task
+passed there. GitHub Release publication is still pending. Installation counts
+and community task reproductions are not measured.
 
 ## Monthly review
 
