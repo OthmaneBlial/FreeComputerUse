@@ -213,7 +213,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 5 — Documentation, présentation et contributions (P1)
 
-#### 5.1 [ ] Refaire le README autour d’une preuve rapide et d’une installation claire
+#### 5.1 [x] Refaire le README autour d’une preuve rapide et d’une installation claire
 
 - **Objectif :** faire comprendre en moins d’une minute le besoin résolu et le premier parcours.
 - **Changements :** présenter proposition de valeur, GIF/vidéo réelle courte, installation, premier run, permissions locales, voies API/abonnement testées, limites, support, troubleshooting, benchmarks datés, lien site, sécurité et contribution.
@@ -221,6 +221,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** les commandes du README fonctionnent depuis un checkout propre ; liens et captures valides ; bénéfices chiffrés accompagnés de protocole, échantillon et date ; aucune intégration non vérifiée présentée comme prête.
 - **Validation :** exécuter toutes les commandes d’installation/documentation sur environnement vierge et vérifier les liens locaux/externes.
 - **Dépendances / risques :** la vraie vidéo n’arrive qu’en phase 8 ; jusque-là utiliser uniquement les captures/vidéos existantes dont le parcours montré a été confirmé.
+- **Validé le 24 septembre 2026 :** le README ajoute le dépannage, les renvois Architecture/Contributing/Changelog et précise que le test STUN local ne prouve pas les autres trafics non HTTP. Depuis un clone temporaire du commit `fd86b50`, `npm ci --offline --no-audit --no-fund`, copie de `.env.example`, sélection de Chrome système, `chmod 600`, `npm run agent -- doctor` et `npm run dev -- --port 0` passent ; le navigateur démarre, le tableau de bord répond HTTP 200 et `.env` est en mode `0600`. Le contrôle de liens Markdown trouve 24 cibles, dont 21 locales sans cible cassée ; les quatre URLs Pages/labo/rapport/vidéo contrôlées répondent HTTP 200. Les assets hero SVG, GIF d’incident et JSON de preuve existent. La page GitHub publique affiche le commit `fd86b50`; le README et sa section Troubleshooting ont été vérifiés dans l’arbre d’accessibilité et à l’écran. Les intégrations non vérifiées restent explicitement étiquetées et les mesures gardent date, échantillon et limites.
 
 #### 5.2 [x] Fournir les fichiers attendus d’un projet open source maintenable
 
