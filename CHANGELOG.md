@@ -1,9 +1,6 @@
 # Changelog
 
-This project has no Git release tags or published npm package yet. The entries
-below describe the current repository state; they do not imply a release.
-
-## Unreleased
+## 0.1.0
 
 ### Added
 
