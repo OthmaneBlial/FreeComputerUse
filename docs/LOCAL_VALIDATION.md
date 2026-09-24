@@ -49,8 +49,11 @@ validation at commit `d978b06` passed 102/102 tests, build, the security scan
 vulnerabilities, using an empty `LLM_API_KEY`. The latest run on `main` at
 commit `aa9500d` passed 106/106 tests in 190.06 seconds, build, security scan
 (260 worktree files, 262 historical paths, 1,014 blobs) and npm audit with zero
-vulnerabilities. It used macOS `26.6`, Node `25.9.0`, system Chrome
-`154.0.8037.57`, and no provider credentials; no GitHub workflow was triggered.
+vulnerabilities. The latest run on `main` at commit `3fa3d6f` passed 106/106
+tests in 161.24 seconds, build, security scan (260 worktree files, 262
+historical paths, 1,020 blobs) and npm audit with zero vulnerabilities. Both
+runs used macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57`; the
+test gate made no live provider calls and triggered no GitHub Actions workflow.
 An earlier run had been stopped after 2
 minutes 30 seconds in the former per-file history scan; the batched object scan
 and deleted-secret regression test resolved that bottleneck.
