@@ -4,7 +4,7 @@ Use this checklist for every npm or GitHub release. npm and GitHub publication a
 
 ## Before packaging
 
-- [ ] Confirm the release version in `package.json`, `package-lock.json`, `CHANGELOG.md`, and the proposed Git tag.
+- [x] Confirm release version `0.1.0` in `package.json`, `package-lock.json`, `CHANGELOG.md`, and the verified `v0.1.0` tag.
 - [x] Review the versioned notes in `release-notes/`; remove draft-only wording for the published npm package.
 - [x] Review the changelog against the release candidate; keep unverified providers, platforms, and workflows labelled accurately.
 - [x] Build from a clean archive and record Node 25.9.0, npm 11.12.1, Playwright 1.63.0, and Chrome 154.0.8037.57.
@@ -30,8 +30,8 @@ Use this checklist for every npm or GitHub release. npm and GitHub publication a
 
 ## GitHub release
 
-- [ ] Create a version tag that points to the validated commit; verify the tag resolves to that commit.
-- [ ] Publish reviewed notes from `release-notes/` and attach only artifacts that passed the target-specific install checks.
-- [ ] Include SHA-256 checksums and platform requirements for every downloadable asset.
-- [ ] Download each release asset again, verify its checksum, and repeat its installation smoke test.
-- [ ] Verify the public release page, assets, links, and matching npm version before describing the release as complete.
+- [x] Create a version tag that points to the validated commit; verify the tag resolves to that commit.
+- [x] Publish reviewed notes from `release-notes/` and attach only artifacts that passed target-specific install checks.
+- [x] Include a SHA-256 checksum for the npm package asset; platform requirements are stated in the release notes.
+- [x] Download each release asset, verify the package checksum, install it in a fresh temporary directory, and rerun the CLI, doctor, and sandbox task smoke.
+- [x] Verify the public release page, both assets, download links, and matching npm version.

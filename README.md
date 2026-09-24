@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
+  <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/latest">GitHub release</a> ·
   <a href="https://othmaneblial.github.io/FreeComputerUse/">Project site</a> ·
   <a href="https://othmaneblial.github.io/FreeComputerUse/lab/index.html">Try the task lab</a> ·
   <a href="SECURITY.md">Security</a>

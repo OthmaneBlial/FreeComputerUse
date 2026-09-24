@@ -25,11 +25,15 @@ worked. No public issue or discussion currently records a user reproduction.
 
 ## Current distribution — 24 September 2026
 
-`free-computer-use@0.1.0` is now published on npm. Its public tarball was
-downloaded and matched byte for byte against the reviewed local artifact, then
-installed in a fresh temporary project. The CLI and dashboard practice task
-passed there. GitHub Release publication is still pending. Installation counts
-and community task reproductions are not measured.
+`free-computer-use@0.1.0` is published on npm and [GitHub Release
+v0.1.0](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.1.0)
+is public. The release tarball passed checksum verification and a fresh install,
+doctor, and practice-task run. At the first post-release review, public GitHub
+data showed 5 stars, 1 fork, 0 watchers, 1 listed contributor, 0 open issues,
+0 pull requests, and 0 release-asset downloads. The npm downloads endpoint
+returned HTTP 404 at that time; this is not treated as zero downloads.
+Installations and community task reproductions remain unmeasured. No hidden
+telemetry was added. The next review is due 24 October 2026.
 
 ## Monthly review
 
