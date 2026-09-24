@@ -92,9 +92,14 @@ results.
   other browser/OS builds, bundled Playwright Chromium and non-HTTP traffic
   beyond the tested WSS/STUN cases remain unverified. Do not infer compatibility
   for those targets from the local fixtures.
-- Phase 2.3: document inspect/export/delete steps, verify retention and cleanup
-  behavior, audit permissions for all persisted data, and keep plaintext storage
-  clearly disclosed.
+- Phase 2.3 local-data handling is validated on macOS `26.6`, Node `25.9.0`
+  and system Chrome `154.0.8037.57`: the local-data guide covers inspection,
+  export, deletion and manual retention; targeted profile/CLI/agent/results
+  tests passed 22/22, the full dashboard suite passed 11/11 in isolation, and
+  synthetic export/deletion recreated an empty mode-`0700` directory. OCR of
+  62 still images and all 290 frames in the two README GIFs found no `sk-` or
+  Bearer-shaped strings. OCR is heuristic. Storage remains unencrypted and has
+  no automatic expiry; Windows/Linux permissions remain unverified.
 - The 24 September serial regression suite covers cancellation, synthetic
   provider timeout, malformed responses, interrupted profile writes, rejected
   incompatible replays, last-tab closure and all eight lab workflow replays.
