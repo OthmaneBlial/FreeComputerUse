@@ -222,7 +222,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Validation :** exécuter toutes les commandes d’installation/documentation sur environnement vierge et vérifier les liens locaux/externes.
 - **Dépendances / risques :** la vraie vidéo n’arrive qu’en phase 8 ; jusque-là utiliser uniquement les captures/vidéos existantes dont le parcours montré a été confirmé.
 
-#### 5.2 [ ] Fournir les fichiers attendus d’un projet open source maintenable
+#### 5.2 [x] Fournir les fichiers attendus d’un projet open source maintenable
 
 - **Objectif :** rendre les contributions et retours plus faciles à traiter.
 - **Changements :** ajouter `CONTRIBUTING.md`, guide de développement, modèle de bug avec infos anonymisées, demandes de fonctionnalité, consignes de sécurité et historique `CHANGELOG.md`. Définir les attentes de revue et une politique de support de versions.
@@ -230,6 +230,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** une contribution peut installer, lancer les validations locales et ouvrir une issue sans deviner le format ; les modèles demandent versions et étapes reproductibles mais jamais clé, cookies ou données privées.
 - **Validation :** suivre le guide comme nouveau contributeur et vérifier les liens / commandes.
 - **Dépendances / risques :** ne pas créer de workflows d’automatisation GitHub tant que la contrainte de phase 4 reste active.
+- **Validé le 24 septembre 2026 :** ajout de `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md` et des formulaires GitHub Bug/Feature, sans workflow. Les liens locaux des trois guides passent ; Ruby/Psych parse les deux YAML. `git archive` propre + `npm ci --offline --no-audit --no-fund`, `.env` en `0600`, `npm run agent -- doctor` et `npm run dev -- --port 0` → HTTP 200 passent sur macOS `26.6`, Node `25.9.0` et Chrome système `154.0.8037.57`. Les commandes de validation du guide sont couvertes par la porte locale 101/101 documentée en phase 4.3. `git tag --list` est vide et `npm view free-computer-use version` renvoie actuellement 404 ; le changelog distingue donc `Unreleased` d’une publication.
 
 #### 5.3 [ ] Consolider la présentation publique et la découverte
 

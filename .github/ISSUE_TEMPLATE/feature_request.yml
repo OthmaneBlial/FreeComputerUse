@@ -1,0 +1,37 @@
+name: Feature request
+description: Describe a concrete user problem and a testable improvement.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Keep examples synthetic. Do not include API keys, tokens, cookies,
+        private URLs, browser profiles, or personal data.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who is blocked, and what task cannot be completed today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe what the user should be able to do and how success can be checked.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Permission, privacy or compatibility impact
+      description: Note any data sent to providers, new browser permissions, or target limits.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed keys, tokens, cookies, private URLs and personal data from this request.
+          required: true
