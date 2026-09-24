@@ -4,11 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101612">
-  <meta name="description" content="FreeComputerUse is a local-first AI browser agent built with Playwright. Bring OpenAI, Claude, Grok, DeepSeek or another model, approve each website and keep control of every browser action.">
+  <meta name="description" content="Local-first AI browser automation with Playwright. Use an OpenAI-compatible or Anthropic API, or supported ChatGPT and Claude CLI subscriptions. Approve sites; inspect and verify runs.">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="FreeComputerUse">
   <meta property="og:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta property="og:description" content="A local-first AI browser agent. Connect an API or supported ChatGPT and Claude subscriptions, approve site access, then watch every action.">
+  <meta property="og:description" content="Connect a provider API key or supported Codex/Claude Code sign-in. Approve site access, watch Playwright act locally and inspect verified results.">
   <meta property="og:url" content="https://othmaneblial.github.io/FreeComputerUse/">
+  <meta property="og:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
+  <meta property="og:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FreeComputerUse — Your browser. Your model. Your call.">
+  <meta name="twitter:description" content="Local-first Playwright browser automation with explicit site approval and verifiable results.">
+  <meta name="twitter:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
+  <meta name="twitter:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
   <title>FreeComputerUse — Local-first AI browser automation</title>
   <link rel="canonical" href="https://othmaneblial.github.io/FreeComputerUse/">
   <link rel="icon" type="image/svg+xml" href="brand-mark.svg">
@@ -27,6 +38,7 @@
       <a href="#how">How it works</a>
       <a href="#models">Models</a>
       <a href="#library">Task library</a>
+      <a href="#faq">FAQ</a>
       <a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
     <a class="header-cta" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Get started <span aria-hidden="true">↗</span></a>
@@ -157,6 +169,32 @@
       <p class="control-footnote">Local storage is not encrypted. A loopback-only proxy pins resolved addresses for browser HTTP(S) and WebSocket connections; system Chrome 154 tests cover simulated DNS rebinding, popup redirects, and approved or blocked plain WebSockets and WSS. The WSS fixture ignores its generated local certificate error; a separate opt-in smoke verifies Chrome TLS and an echo with one public WSS endpoint. Other WSS endpoints, network-specific NAT64, and other browser builds remain unverified. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> before using personal or sensitive data.</p>
     </section>
 
+    <section class="faq-section page-section" id="faq" aria-labelledby="faq-title">
+      <div class="faq-heading">
+        <p class="eyebrow">COMMON QUESTIONS</p>
+        <h2 id="faq-title">Know the limits.<br><em>Keep control.</em></h2>
+        <p>Short, evidence-based answers before you connect an account or open a site.</p>
+      </div>
+      <div class="faq-list">
+        <details>
+          <summary>Can I try FreeComputerUse without a model key?</summary>
+          <p>Yes. Open the <a href="lab/reports.html">practice revenue table</a> and run <code>Extract the table</code>. That one deterministic workflow needs no provider. General tasks need a configured model.</p>
+        </details>
+        <details>
+          <summary>Which model connections have live evidence?</summary>
+          <p>The current support matrix records one DeepSeek Flash planning run and one synthetic Codex CLI/ChatGPT plan. Contract tests are not live certifications; other provider routes remain unverified or contract-tested only. See the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">dated support matrix</a>.</p>
+        </details>
+        <details>
+          <summary>Does the model receive screenshots or browser profiles?</summary>
+          <p>No screenshots are sent. The task and selected page context go to the provider you choose; browser execution, profiles, history and downloads stay local. Local data is not encrypted.</p>
+        </details>
+        <details>
+          <summary>Which operating systems and browsers are verified?</summary>
+          <p>The verified target is macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154. Other operating systems, Node versions and browser builds remain unverified; check the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">support matrix</a>.</p>
+        </details>
+      </div>
+    </section>
+
     <section class="start-section page-section" id="start" aria-labelledby="start-title">
       <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Bring your own model.<br><em>Keep your browser close.</em></h2><p>Requires Node.js 22.13+, npm and a browser Playwright can launch. An installed Chrome or Edge can be selected as a best-effort option without a Playwright browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
       <pre class="terminal"><span>01 / TERMINAL</span><code>git clone https://github.com/OthmaneBlial/FreeComputerUse.git
@@ -168,7 +206,7 @@ FCU_BROWSER_CHANNEL=chrome npm run dev</code><small>Then open <b>http://127.0.0.
     </section>
   </main>
 
-  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
+  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

@@ -91,6 +91,16 @@ Use a provider API key, or sign in through the official CLI for a supported subs
 
 The provider API routes have not all been live-tested here; DeepSeek Flash is the measured default. Subscription modes use the local CLI sign-in, need no API key and respect plan limits. Their local agent tools and MCP servers are disabled while planning. See [provider setup and limits](docs/PROVIDERS.md), the [support matrix](docs/SUPPORT_MATRIX.md) and [.env.example](.env.example) for route-specific setup, tests and live-evidence status.
 
+## FAQ
+
+**Can I try it without a model key?** Yes, the practice revenue-table workflow runs with a deterministic local strategy. General tasks need a configured model.
+
+**Which providers have live evidence?** The current matrix records DeepSeek Flash and one synthetic plan through Codex CLI `0.156.1` with ChatGPT. Contract tests do not certify a live provider; see the [dated support matrix](docs/SUPPORT_MATRIX.md).
+
+**Does the model receive screenshots or browser profiles?** No screenshots are sent. The task and selected page context go to your provider; browser execution, profiles, history and downloads stay local. Local data is not encrypted.
+
+**Which platform is verified?** macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154. Other OS, Node and browser combinations remain unverified in the [support matrix](docs/SUPPORT_MATRIX.md).
+
 ## Control and privacy
 
 - Normal mode asks before direct navigation to a new origin and blocks hostnames resolving to private or reserved address ranges, including private IPv4 embedded in a discovered NAT64 prefix. A loopback-only proxy connects to the vetted numeric address, closing the DNS lookup-to-connection rebinding gap for browser HTTP(S) and WebSocket traffic. Explicit IP destinations require an exact origin grant. Ultra mode and the low-level `allowExternal` option opt out of origin and private-address checks. Chrome 154 tests cover redirect denial, simulated DNS rebinding, approved/blocked plain WebSockets, and approved/blocked browser-originated WSS. The WSS fixture uses a generated local certificate and ignores its certificate error only in the test; a separate opt-in smoke verifies Chrome TLS and an echo against one public WSS endpoint. Other WSS endpoints, live network-specific NAT64 discovery and other browser builds remain unverified. Sensitive actions have a separate confirmation gate. Ultra mode is explicit and off by default.
@@ -109,6 +119,7 @@ In a focused public suite recorded **18 September 2026**, 14/14 first-run result
 ## Explore and contribute
 
 - [Project site and task library](https://othmaneblial.github.io/FreeComputerUse/)
+- [Frequently asked questions](https://othmaneblial.github.io/FreeComputerUse/#faq)
 - [Useful browser-task examples](docs/USEFUL_EXAMPLES.md)
 - [Implementation notes](docs/IMPLEMENTATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
