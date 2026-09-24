@@ -274,6 +274,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** tag et release correspondent au commit validé ; assets téléchargés ont les checksums publiés ; instructions d’installation fonctionnent avec les assets réels ; aucune version n’est appelée publiée avant vérification GitHub/npm.
 - **Validation :** refaire les smoke tests sur les fichiers téléchargés, inspecter la page release et vérifier les registres publics après publication.
 - **Dépendances / risques :** dépend des phases 0 à 5 et du succès de packaging ; la release, l’upload et la publication npm sont des étapes distinctes à vérifier séparément.
+- **Préparation locale (24 septembre 2026) :** `release-notes/0.1.0.md` rassemble les fonctions, preuves, limites de compatibilité, SHA-256 et intégrité du tarball vérifié. Il porte explicitement le statut brouillon; aucun tag ni release publique n’est créé, et l’installation npm n’est pas annoncée tant que le registre répond 404.
 
 ### Phase 7 — Intégration écosystème et croissance mesurable (P2)
 
