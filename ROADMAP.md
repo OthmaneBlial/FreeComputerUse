@@ -288,6 +288,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** intégration de référence locale fonctionne avec un client identifié ; appels refusés restent refusés par la même policy ; le serveur n’ouvre aucun endpoint réseau non documenté et n’expose aucune clé.
 - **Validation :** tests de protocole avec client simulé, tests négatifs et essai manuel sur un client réellement supporté.
 - **Dépendances / risques :** attendre la stabilité du contrat providers/permissions ; l’intégration élargit la surface d’attaque et ne doit pas devenir un simple tunnel d’actions arbitraires.
+- **Implémentation locale (24 septembre 2026) :** `agent mcp` expose `start_task`, `inspect_page`, `follow_task` et `stop_task` sur `stdio`, sans endpoint HTTP. Les tâches réutilisent `Agent` en mode normal; l’approbation passe par l’élicitation formulaire du protocole et `requestState` signé, sans outil permettant au modèle de s’approuver. Quatre tests avec le client TypeScript MCP officiel couvrent une tâche locale vérifiée, les permissions par site et formulaire sensible, le refus avant toute requête au site, le rejet d’URL invalide, la découverte bornée et le transport `stdio` moderne; `npm run check` passe. `docs/MCP.md` décrit la configuration. Le test manuel dans une application MCP de bureau reste à faire; la case reste donc ouverte.
 
 #### 7.2 [ ] Fermer la boucle de retours et mesurer l’adoption
 

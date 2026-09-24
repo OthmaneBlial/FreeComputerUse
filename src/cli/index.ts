@@ -120,5 +120,13 @@ program.command('doctor').option('--api','Validate provider credentials or subsc
 program.command('ui').option('--port <n>','Loopback web UI port','4318').option('--headed','Show Chromium alongside preview').action(async options=>{
   const {startServer}=await import('../server/index.js');await startServer({port:z.coerce.number().int().min(0).max(65535).parse(options.port),headed:!!options.headed});
 });
+program.command('mcp').description('Start the local MCP server over stdio').action(async()=>{
+  const {serveStdio}=await import('@modelcontextprotocol/server/stdio');
+  const {createMcpRuntime}=await import('../mcp/index.js');
+  const runtime=createMcpRuntime(),handle=serveStdio(runtime.createServer);
+  let closing=false;
+  const shutdown=()=>{if(closing)return;closing=true;void handle.close().finally(()=>runtime.close());};
+  process.once('SIGINT',shutdown);process.once('SIGTERM',shutdown);stdin.once('end',shutdown);
+});
 program.action(()=>interactive());
 try{await program.parseAsync();}catch(error){const message=error instanceof Error?error.message:'Command failed';console.error(message.replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]'));process.exitCode=1;}

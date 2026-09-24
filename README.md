@@ -91,6 +91,15 @@ Use a provider API key, or sign in through the official CLI for a supported subs
 
 The provider API routes have not all been live-tested here; DeepSeek Flash is the measured default. Subscription modes use the local CLI sign-in, need no API key and respect plan limits. Their local agent tools and MCP servers are disabled while planning. See [provider setup and limits](docs/PROVIDERS.md), the [support matrix](docs/SUPPORT_MATRIX.md) and [.env.example](.env.example) for route-specific setup, tests and live-evidence status.
 
+## Connect an MCP host
+
+Run FreeComputerUse as a local MCP server over `stdio` with `agent mcp`. It
+provides tools to start a task, inspect the observed page, follow and verify the
+result, and stop a task. Site and sensitive-action approvals still require a
+human response in an MCP host that supports form elicitation. No HTTP endpoint
+is opened. See the [MCP setup and validation limits](docs/MCP.md). The separate
+provider CLI adapters keep their own tools and MCP disabled while planning.
+
 ## FAQ
 
 **Can I try it without a model key?** Yes, the practice revenue-table workflow runs with a deterministic local strategy. General tasks need a configured model.

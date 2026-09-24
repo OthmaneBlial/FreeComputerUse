@@ -100,7 +100,8 @@ runs an ephemeral Codex request in a temporary directory, with a read-only
 sandbox, structured output and Codex tools/MCP disabled. The adapter maps action
 unions and optional fields to Codex's strict output schema, represents record
 selectors as a list for the model, then restores the local action shape before
-Zod validation.
+Zod validation. This provider restriction does not disable the separate local
+FreeComputerUse MCP server; see [MCP setup](MCP.md).
 
 A live smoke passed on 23 September 2026 with Codex CLI `0.156.1` and an existing
 ChatGPT login. One bounded request produced a valid plan for synthetic page
@@ -126,7 +127,8 @@ the CLI version before checking first-party authentication. If the CLI cannot
 start or report a version, update it before troubleshooting account login.
 Planning uses print mode, disables local tools and MCP, avoids session
 persistence, and limits the request to one turn. The fake-CLI tests do not
-authenticate against Anthropic.
+authenticate against Anthropic. This restriction does not disable the separate
+local FreeComputerUse MCP server; see [MCP setup](MCP.md).
 
 ## Current evidence
 

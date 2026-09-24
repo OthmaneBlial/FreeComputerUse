@@ -76,11 +76,13 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
     "commander": "15.0.0",
     "playwright": "1.63.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
     "@types/node": "26.6.1",
     "tsx": "4.23.13",
     "typescript": "7.0.2"
