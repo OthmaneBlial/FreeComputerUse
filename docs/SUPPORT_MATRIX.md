@@ -141,8 +141,9 @@ parameters, endpoint and terms before use.
   local 1600x900 demo clip, loaded the brand asset, and reported no browser
   console errors. Horizontal overflow checks passed at 320, 390, 768 and 1440 px
   for the lab pages/workflow library. It refreshed 50 lab and two dashboard PNG
-  captures. The primary no-key dashboard path is keyboard-tested separately;
-  broader keyboard/screen-reader checks and dashboard widths 320/768 remain open.
+  captures. The dashboard and lab keyboard paths, accessible names, contrast,
+  and responsive widths are verified as recorded in `ROADMAP.md`. Spoken
+  VoiceOver/NVDA output remains unverified and is not claimed.
 - DeepSeek live smoke: one completion passed on 23 September 2026 using the
   synthetic title `Sandbox title`; one request, one parsed action, 1,517 input
   and 73 output tokens. This did not run a browser workflow or test other
