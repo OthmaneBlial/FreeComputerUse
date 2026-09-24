@@ -68,6 +68,14 @@ Open **http://127.0.0.1:4318**, enter a starting URL and goal, then approve site
 
 **Try it without an API key:** open [the practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html) and run the goal `Extract the table`. This narrow workflow has a deterministic local strategy; general tasks need a model provider.
 
+## Troubleshooting
+
+- **The browser does not start:** install Chrome, set `FCU_BROWSER_CHANNEL=chrome` in `.env`, then run `npm run agent -- doctor`. See the [verified platform limits](docs/SUPPORT_MATRIX.md); other OS/browser combinations are not certified here.
+- **The dashboard says no model is configured:** the practice revenue-table task works without a provider. For model planning, configure one route from [Pick your model](#pick-your-model). `npm run agent -- doctor --api` makes an opt-in request to the configured provider; use it only when you want that network check.
+- **A site is blocked or asks for approval:** normal mode asks before a new origin and blocks private/reserved DNS answers. Approve only the site needed for the task. Ultra mode disables those protections; do not use it as a workaround for a blocked destination.
+- **The run finishes without proving the goal:** inspect the result checks and use a narrower goal. Browser clicks alone do not mean the requested outcome was verified.
+- **You need to find or remove local data:** see [local storage, export, retention and deletion](docs/LOCAL_DATA.md). Data is not encrypted and is not automatically expired.
+
 ## Pick your model
 
 Use a provider API key, or sign in through the official CLI for a supported subscription. API usage and consumer subscriptions are separate billing products.
@@ -88,7 +96,7 @@ The provider API routes have not all been live-tested here; DeepSeek Flash is th
 - Normal mode asks before direct navigation to a new origin and blocks hostnames resolving to private or reserved address ranges, including private IPv4 embedded in a discovered NAT64 prefix. A loopback-only proxy connects to the vetted numeric address, closing the DNS lookup-to-connection rebinding gap for browser HTTP(S) and WebSocket traffic. Explicit IP destinations require an exact origin grant. Ultra mode and the low-level `allowExternal` option opt out of origin and private-address checks. Chrome 154 tests cover redirect denial, simulated DNS rebinding, approved/blocked plain WebSockets, and approved/blocked browser-originated WSS. The WSS fixture uses a generated local certificate and ignores its certificate error only in the test; a separate opt-in smoke verifies Chrome TLS and an echo against one public WSS endpoint. Other WSS endpoints, live network-specific NAT64 discovery and other browser builds remain unverified. Sensitive actions have a separate confirmation gate. Ultra mode is explicit and off by default.
 - Browser execution, profiles, history and downloads stay on your machine. Page context needed for a plan goes to the chosen model provider; screenshots are not sent.
 - The planner receives aliases for local profile and file values, not their contents. Local storage is **not encrypted**.
-- Chromium profiles disable WebRTC UDP that the proxy cannot carry. Sites needing direct UDP for voice/video may fail; the local Chrome STUN fixture confirms no direct packet reached its receiver. Other WebRTC and non-HTTP behavior remains under validation.
+- Chromium profiles disable WebRTC UDP that the proxy cannot carry. Sites needing direct UDP for voice/video may fail; one local Chrome STUN fixture confirms no direct packet reached its receiver. Other non-HTTP traffic remains unverified.
 - Runs record actions, checks, repairs, token estimates and workflow reuse so you can inspect what happened.
 
 Read [the security boundaries](SECURITY.md) before using personal or sensitive data.
@@ -103,7 +111,9 @@ In a focused public suite recorded **18 September 2026**, 14/14 first-run result
 - [Project site and task library](https://othmaneblial.github.io/FreeComputerUse/)
 - [Useful browser-task examples](docs/USEFUL_EXAMPLES.md)
 - [Implementation notes](docs/IMPLEMENTATION.md)
+- [Architecture](docs/ARCHITECTURE.md)
 - [Local validation commands](docs/LOCAL_VALIDATION.md)
+- [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 Useful contributions: reproducible browser tasks, safer permission scopes and checks that make results easier to trust. Keep shared examples synthetic or read-only; remove credentials and personal data from traces.
 
