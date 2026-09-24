@@ -233,7 +233,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Dépendances / risques :** ne pas créer de workflows d’automatisation GitHub tant que la contrainte de phase 4 reste active.
 - **Validé le 24 septembre 2026 :** ajout de `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md` et des formulaires GitHub Bug/Feature, sans workflow. Les liens locaux des trois guides passent ; Ruby/Psych parse les deux YAML. `git archive` propre + `npm ci --offline --no-audit --no-fund`, `.env` en `0600`, `npm run agent -- doctor` et `npm run dev -- --port 0` → HTTP 200 passent sur macOS `26.6`, Node `25.9.0` et Chrome système `154.0.8037.57`. Les commandes de validation du guide sont couvertes par la porte locale 101/101 documentée en phase 4.3. `git tag --list` est vide et `npm view free-computer-use version` renvoie actuellement 404 ; le changelog distingue donc `Unreleased` d’une publication.
 
-#### 5.3 [ ] Consolider la présentation publique et la découverte
+#### 5.3 [x] Consolider la présentation publique et la découverte
 
 - **Objectif :** assurer une identité et des métadonnées cohérentes dans GitHub et Pages.
 - **Changements :** harmoniser nom, logo, tagline, description, topics, image sociale, favicon, titre et métadonnées SEO ; relier repository, site, guide et release ; ajouter FAQ et cas d’usage concrets issus des scénarios vérifiés.
@@ -241,6 +241,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** aperçu partageable lisible sur GitHub et réseaux ; exemples exécutables et étiquetés selon leur preuve ; aucun élément visuel ou compte à rebours de lancement ne suggère une fonction absente.
 - **Validation :** inspection des métadonnées et aperçu social, parcours de liens depuis README vers Pages et retour.
 - **Dépendances / risques :** les changements distants de description/topics ne sont pas compris dans la présente création de roadmap.
+- **Validé le 24 septembre 2026 :** description et homepage GitHub relues via `gh`; 20 topics cohérents, dont `computer-use`. `docs/social-preview.png` (1200×630) est référencée par les métadonnées Open Graph/Twitter ; `docs/brand-mark.svg` sert de favicon. Pages déploie le commit `4efd20d1c79e1271a80975582a1232ab37e66257` avec succès (run `35944672601`) ; landing et image sociale répondent HTTP 200. Le README affiche le visuel de marque sur GitHub. La FAQ publique comporte quatre réponses fondées sur les capacités vérifiées. `lab:smoke` couvre 34 pages, 738 contrôles nommés, 8 cartes d’exercice, clavier et largeurs 320/390/768/1440 sans débordement ni erreur console ; le contrôle navigateur live confirme les mêmes points. `npm run validate` passe : 101/101 tests, build, audit de sécurité sans secret détecté et `npm audit` à zéro vulnérabilité.
 
 ### Phase 6 — Packaging et première release publique (P1)
 
