@@ -46,7 +46,12 @@ the scan checked 248 worktree files plus 250 unique historical paths and 948
 unique blobs, and npm audit reported zero vulnerabilities. The latest full
 validation at commit `d978b06` passed 102/102 tests, build, the security scan
 (255 worktree files, 257 historical paths, 980 blobs) and npm audit with zero
-vulnerabilities, using an empty `LLM_API_KEY`. An earlier run had been stopped after 2
+vulnerabilities, using an empty `LLM_API_KEY`. The latest run on `main` at
+commit `aa9500d` passed 106/106 tests in 190.06 seconds, build, security scan
+(260 worktree files, 262 historical paths, 1,014 blobs) and npm audit with zero
+vulnerabilities. It used macOS `26.6`, Node `25.9.0`, system Chrome
+`154.0.8037.57`, and no provider credentials; no GitHub workflow was triggered.
+An earlier run had been stopped after 2
 minutes 30 seconds in the former per-file history scan; the batched object scan
 and deleted-secret regression test resolved that bottleneck.
 
