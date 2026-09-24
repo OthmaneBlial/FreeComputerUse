@@ -37,7 +37,7 @@ The model does not run shell commands or arbitrary JavaScript. Browser previews 
 
 ## Quick start
 
-Requires **Node.js 22.13+**, npm and an installed browser. The verified first-run setup is macOS 26.6 (Apple Silicon), Node 25.9.0 and system Chrome 154.0.8037.57. The declared Node minimum and other OS/browser combinations remain unverified. This setup selects installed Chrome and avoids a separate Playwright browser download; see the [support matrix](docs/SUPPORT_MATRIX.md) for the full-suite limitation.
+Requires **Node.js 22.13+**, npm and an installed browser. The verified setup is macOS 26.6 (Apple Silicon), Node 25.9.0 and system Chrome 154.0.8037.57; the complete serial validation passed on this combination. The declared Node minimum and other OS/browser combinations remain unverified. This setup selects installed Chrome and avoids a separate Playwright browser download; see the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
 
 ```bash
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git

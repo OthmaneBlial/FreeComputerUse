@@ -186,7 +186,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Relances de la suite (24 septembre 2026) :** après l’ajout du scénario de redirection vers `file:`, une exécution complète a passé 99/100 : le long test dashboard a reçu une réponse locale `502`, puis a passé isolément. Deux exécutions complètes suivantes passent 100/100 (la plus récente en 179,5 s sur l’arbre courant). Le test dashboard enregistre désormais les chemins des éventuelles réponses HTTP 5xx. L’erreur unique n’a pas été reproduite, et sa cause n’est pas établie ; deux suites vertes ne prouvent pas l’absence de flakiness.
 - **Nouvelle vérification propre (24 septembre 2026, commit `1ca1006`) :** un premier `npm run validate` après `npm ci --offline` a passé 100/101 tests ; le même scénario dashboard a reçu un `502` et l’assertion affichait seulement le message console Chrome. Le test vérifie maintenant d’abord les réponses HTTP 5xx et imprime leurs chemins. Le scénario ciblé passe 1/1, puis la porte complète propre passe 101/101 en 151,35 s ; une autre suite complète propre passe aussi 101/101. La cause du `502` initial n’a pas été reproduite ni identifiée ; garder ce risque visible et ne pas compter le run échoué comme une réussite.
 
-#### 4.2 [ ] Documenter et vérifier la plateforme réellement supportée
+#### 4.2 [x] Documenter et vérifier la plateforme réellement supportée
 
 - **Objectif :** éviter que Node, Playwright ou SQLite natif échoue après installation selon la machine.
 - **Changements :** choisir les versions Node et OS à supporter, puis vérifier installation des navigateurs, lancement headed/headless, stockage SQLite, permissions et arrêt propre sur chaque cible.
@@ -194,6 +194,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** chaque cible publique passe depuis installation propre et reçoit une procédure précise ; toute cible non testée est marquée non vérifiée.
 - **Validation :** exécution locale manuelle des smoke tests sur chaque OS retenu ; consigner OS, Node, navigateur et résultat.
 - **Dépendances / risques :** environnement Mac actuellement utilisé ne prouve pas les parcours Windows/Linux ; aucun workflow GitHub Actions ne doit être réintroduit pendant cette tâche selon `docs/LOCAL_VALIDATION.md`.
+- **Cible vérifiée (24 septembre 2026) :** macOS `26.6` Apple Silicon, Node `25.9.0`, Chrome système `154.0.8037.57`. Depuis un checkout propre, `npm ci --offline --no-audit --no-fund` puis `FCU_BROWSER_CHANNEL=chrome npm run validate` passent ; les tests headless couvrent navigateur, SQLite, profils, permissions et fermeture. `FCU_BROWSER_CHANNEL=chrome npm run demo -- --headed --contact` complète sept actions sur fixture locale, zéro appel modèle, sortie `0`, puis ferme Chrome. Aucun navigateur n’a été téléchargé. Le support effectivement validé se limite à cette cible : le plancher Node `22.13.0` déclaré par `engines`, les autres versions Node, Windows/Linux, Edge et Chromium Playwright restent explicitement non vérifiés dans `docs/SUPPORT_MATRIX.md` et le README.
 
 #### 4.3 [x] Garder la validation compatible avec la contrainte CI actuelle
 

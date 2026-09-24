@@ -32,13 +32,13 @@ parameters, endpoint and terms before use.
 
 | Area | Declared or implemented | Verified evidence | Limit |
 | --- | --- | --- | --- |
-| Node.js | `package.json` requires Node `>=22.13.0`. | Clean source export installed with `npm ci --offline --no-audit --no-fund`; TypeScript checks and first-run CLI/UI smoke passed on Node `25.9.0`, macOS `26.6`, Apple Silicon on 23 September 2026. | Minimum Node version and other operating systems have not been validated. |
-| Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | System Chrome `154.0.8037.57` passed the serial 100/100 suite on 24 September 2026 after the dashboard stopped relaunching its persistent profile between tasks. | Matching Playwright Chromium is absent. Playwright warns that non-bundled browsers may be incompatible. Other browser builds and operating systems remain unverified. No browser was downloaded. |
-| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. A second loopback proxy enforces origin policy for HTTP(S)/WebSocket traffic, blocks private/reserved DNS answers and checks private IPv4 embedded in prefixes learned through `ipv4only.arpa`. The persistent Chromium profile disables WebRTC UDP that the proxy cannot carry. Explicit IP literals need exact origin approval. Ultra/`allowExternal` opts out of origin and private-address checks. Closing the active page cancels its run and pending approval. | On 24 September, the dashboard was changed to reuse one `Agent` and Chromium context between tasks, opening a fresh tab for each task. Regression checks confirm dashboard replay keeps the same context, all eight lab workflows replay in that context, and the persistent network proxy reapplies private-address policy when the mode changes. The serial full suite passed 100/100 on system Chrome `154.0.8037.57`, macOS `26.6`, Node `25.9.0`. Security cases include popup redirects, simulated DNS rebinding, reserved ranges, normal/Ultra behavior and approved/blocked WebSockets. A Chrome-originated WSS fixture returns a frame through the proxy; its generated local certificate is ignored. A separate opt-in `security:wss` smoke connected to Postman Echo with Chrome’s normal TLS validation and received its synthetic message. Synthetic DNS64 fixtures cover all six RFC 6052 prefix lengths; actual NAT64 discovery remains unverified. A local STUN receiver got no WebRTC UDP packets. | Before context reuse, relaunching Chrome `154.0.8037.57` with the same persistent profile caused a `SIGSEGV` on 23 September; the `.ips` report identifies `CrBrowserMain` and `EXC_BAD_ACCESS`. The dashboard now avoids this process boundary, and its full local regression suite passes. Reopening the same profile through a standalone Playwright process remains unverified. Matching Playwright Chromium is absent; no browser was downloaded. Live NAT64 discovery, other trusted WSS endpoints, non-HTTP traffic beyond the WebRTC STUN fixture, other browser builds, Windows/Linux and universal website success remain unverified. WebRTC services needing direct UDP may fail. |
+| Node.js | `package.json` declares an install floor of Node `>=22.13.0`; this does not certify that whole range. | A clean checkout installed with `npm ci --offline --no-audit --no-fund`, then passed `npm run validate` on Node `25.9.0`, macOS `26.6`, Apple Silicon and system Chrome `154.0.8037.57` on 24 September 2026. | Node `22.13.0`, other Node releases and Windows/Linux have not been validated. |
+| Browser engine | Playwright `1.63.0`; defaults to its matching Chromium. Optional `FCU_BROWSER_CHANNEL` selects installed Chrome/Edge to avoid a browser download. | System Chrome `154.0.8037.57` passed the clean serial 101/101 suite and full validation on 24 September 2026. `FCU_BROWSER_CHANNEL=chrome npm run demo -- --headed --contact` also completed seven local actions with zero model calls and exited cleanly. | Matching Playwright Chromium is absent. Playwright warns that non-bundled browsers may be incompatible. Other browser builds and operating systems remain unverified. No browser was downloaded. |
+| Browser task behavior | DOM observation, bounded action plans, origin/action approvals, result checks and compatible workflow replay are implemented. A loopback-only Chromium DevTools Protocol connection attaches to page targets before navigation and checks redirect hops. A second loopback proxy enforces origin policy for HTTP(S)/WebSocket traffic, blocks private/reserved DNS answers and checks private IPv4 embedded in prefixes learned through `ipv4only.arpa`. The persistent Chromium profile disables WebRTC UDP that the proxy cannot carry. Explicit IP literals need exact origin approval. Ultra/`allowExternal` opts out of origin and private-address checks. Closing the active page cancels its run and pending approval. | On 24 September, the dashboard was changed to reuse one `Agent` and Chromium context between tasks, opening a fresh tab for each task. Regression checks confirm dashboard replay keeps the same context, all eight lab workflows replay in that context, and the persistent network proxy reapplies private-address policy when the mode changes. The clean serial full suite passed 101/101 on system Chrome `154.0.8037.57`, macOS `26.6`, Node `25.9.0`. Security cases include popup redirects, simulated DNS rebinding, reserved ranges, normal/Ultra behavior and approved/blocked WebSockets. A Chrome-originated WSS fixture returns a frame through the proxy; its generated local certificate is ignored. A separate opt-in `security:wss` smoke connected to Postman Echo with Chrome’s normal TLS validation and received its synthetic message. Synthetic DNS64 fixtures cover all six RFC 6052 prefix lengths; actual NAT64 discovery remains unverified. A local STUN receiver got no WebRTC UDP packets. | Before context reuse, relaunching Chrome `154.0.8037.57` with the same persistent profile caused a `SIGSEGV` on 23 September; the `.ips` report identifies `CrBrowserMain` and `EXC_BAD_ACCESS`. The dashboard now avoids this process boundary, and its full local regression suite passes. Reopening the same profile through a standalone Playwright process remains unverified. Matching Playwright Chromium is absent; no browser was downloaded. Live NAT64 discovery, other trusted WSS endpoints, non-HTTP traffic beyond the WebRTC STUN fixture, other browser builds, Windows/Linux and universal website success remain unverified. WebRTC services needing direct UDP may fail. |
 | Vision and canvas | Local screenshots/preview exist. | Screenshot paths are documented as local. | Images are not sent to the model; model vision and visual-only/canvas control are not implemented. |
 | npm package | Package metadata declares a CLI and library entry point; package name is `free-computer-use`. | `npm pack` has not been validated from a clean installation in this run. | No npm publication is verified; registry lookup returned 404 during the 23 September audit. `0.1.0` is manifest metadata, not a published release. |
 | GitHub release / binary | No release tag or GitHub release was present at audit time. | None. | No downloadable release binary or archive is currently offered. |
-| GitHub Actions | No active workflow is in the checkout. | `docs/LOCAL_VALIDATION.md` records the repository owner's instruction to keep GitHub validation workflows disabled and not dispatch them. | Local checks remain the validation route unless the owner changes that instruction. |
+| GitHub Actions | No workflow files are tracked in the checkout. | `git ls-files '.github/workflows/*'` returned no workflow; no workflow was activated or dispatched. `docs/LOCAL_VALIDATION.md` records the owner instruction. | Local checks remain the validation route unless the owner changes that instruction. |
 
 ## Validation snapshot for this implementation session
 
@@ -147,25 +147,34 @@ parameters, endpoint and terms before use.
   and 73 output tokens. This did not run a browser workflow or test other
   vendors.
 - Full serial `FCU_BROWSER_CHANNEL=chrome npm test`: passed 100/100 on 24 September
-  2026 in 148.8 seconds, with system Chrome `154.0.8037.57`, macOS `26.6`, and
-  Node `25.9.0`. `npm test` pins test-file concurrency to one to keep the local
-  browser suite reproducible. This does not validate standalone same-profile
-  Chrome relaunches, bundled Playwright Chromium, Windows, or Linux. No browser
-  was downloaded.
-- After adding a page-to-`file:` redirect case, one later full run reported
-  99/100 because a long dashboard test saw a local `502`; that test passed alone,
-  and two subsequent full serial runs passed 100/100 (the latest in 179.5 seconds
-  on the exact current test suite). The dashboard test now records the path of
-  any HTTP 5xx response to make recurrence diagnosable. The 502 has not recurred;
-  its cause is unknown, so this run history does not prove the suite is free of
-  intermittent failures.
+  2026 in 148.8 seconds before the history-scan regression test was added. The
+  current clean suite passes 101/101 in 151.35 seconds with system Chrome
+  `154.0.8037.57`, macOS `26.6`, and Node `25.9.0`. `npm test` pins test-file
+  concurrency to one. This does not validate standalone same-profile Chrome
+  relaunches, bundled Playwright Chromium, Windows, or Linux. No browser was
+  downloaded.
+- **Clean full validation (24 September 2026, commit `1ca1006`):**
+  `npm ci --offline --no-audit --no-fund` added the locked dependencies without
+  a browser download. `FCU_BROWSER_CHANNEL=chrome npm run validate` then passed
+  in 157.19 seconds: 101/101 tests, build, history scan (248 worktree files,
+  250 unique paths, 948 unique blobs) and `npm audit` with zero vulnerabilities.
+  The run needs npm registry access only for the final audit.
+- One preceding clean full run passed 100/101 because a dashboard test saw a
+  local HTTP `502`; the isolated test and the next two full suites passed. The
+  test now reports captured HTTP 5xx paths before generic console errors, but
+  the original request path and root cause were not captured. Keep this
+  intermittent result visible; the passing reruns do not prove it impossible.
+- Headed browser smoke: `FCU_BROWSER_CHANNEL=chrome npm run demo -- --headed
+  --contact` passed on 24 September 2026 with the scripted local fixture. It
+  performed seven browser actions, used zero model calls, completed the local
+  contact workflow and exited `0`. The synthetic `.fcu/demo` data was removed.
+  The full Chrome suite verifies the headless path. Both tests used Node
+  `25.9.0`, macOS `26.6`, and Chrome `154.0.8037.57`.
 - `FCU_BROWSER_CHANNEL=chrome npm run security:wss`: passed on 24 September 2026; system Chrome `154.0.8037.57` used default TLS validation to connect to `wss://ws.postman-echo.com/raw` and received the fixed synthetic payload. This is one external endpoint check, not proof for every WSS service. Postman documents this endpoint in its [Echo API guide](https://learning.postman.com/docs/developer/echo-api).
-- `FCU_BROWSER_CHANNEL=chrome npm run validate` passed lab generation, TypeScript
-  checks, 97 tests in that run and the package build, then was stopped during its
-  full Git-history security scan after 2 minutes 30 seconds without a result. The
-  checkout-only security scan passed for 245 tracked file versions; a separate
-  `npm audit --omit=dev --audit-level=high` found zero vulnerabilities. The
-  historical scan and the complete umbrella command remain unverified.
+- An earlier `FCU_BROWSER_CHANNEL=chrome npm run validate` had been stopped
+  during its per-file Git-history scan after 2 minutes 30 seconds; that scan
+  checked only the checkout at the time. The batched historical-object scan now
+  completes as part of the clean full validation above.
 - ChatGPT subscription smoke: one synthetic plan completed on 23 September 2026
   using Codex CLI `0.156.1`; local budget estimates 7,022 input / 97 output
   tokens. The model ID and actual provider usage were not reported. No browser
