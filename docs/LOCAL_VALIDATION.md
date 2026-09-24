@@ -4,27 +4,53 @@ The project has no GitHub CI workflow. The former validation workflow is disable
 on GitHub, and its source definition has been removed at the owner's request.
 Do not enable or dispatch GitHub validation runs.
 
-Run the checks locally:
+## Full local gate
+
+Use a clean checkout with Git history, Node `>=22.13.0`, npm, and an installed
+Chrome or Edge browser. No provider key is needed. From the checkout root:
 
 ```bash
-npm run validate
+npm ci
+FCU_BROWSER_CHANNEL=chrome npm run validate
 ```
 
-This rebuilds the static lab under `docs/lab` while preserving the product landing page at `docs/index.html`, checks TypeScript, runs Chromium tests, builds the package, scans tracked files/history for recognizable secrets, and audits production dependencies.
-To avoid a Playwright browser download, set `FCU_BROWSER_CHANNEL=chrome` (or
-`msedge`) when that browser is already installed. This is best-effort: Playwright
-warns that non-bundled browsers may be incompatible with the installed Playwright
-version. On 24 September 2026, the full suite passed serially with system Chrome:
-`FCU_BROWSER_CHANNEL=chrome npm test` (100/100). The package test script pins
-concurrency to one. `FCU_BROWSER_CHANNEL=chrome npm run validate` passed lab
-generation, type checks, 97 tests in that run and package build, then was stopped
-after 2 minutes 30 seconds in the full Git-history security scan. The checkout-only
-scan passed for 245 tracked file versions; `npm audit --omit=dev
---audit-level=high` separately reported zero vulnerabilities. The history scan
-and full umbrella command remain unverified; see the
-[support matrix](SUPPORT_MATRIX.md).
-Browser smoke tests and live-provider benchmarks are also run locally and are
-separate opt-in commands because they can spend API tokens.
+`npm ci` installs package dependencies; it does not download a browser. The
+installed-browser channel is best-effort because Playwright may not match that
+browser build. Use `FCU_BROWSER_CHANNEL=msedge` if Edge is installed instead.
+
+`npm run validate` runs these checks in order:
+
+1. `lab:build` regenerates `docs/lab` and preserves the product landing page at
+   `docs/index.html`.
+2. `check` type-checks source, tests, fixtures, and scripts.
+3. `test` runs the serial unit, provider-contract, CLI, and browser suite against
+   local fixtures; it does not make live model-provider calls.
+4. `build` compiles the package and copies its UI assets.
+5. `security` scans tracked worktree files and unique blobs and paths reachable
+   from Git refs for known credential patterns and private-state paths. This is
+   a pattern scan, not a complete security audit.
+6. `npm audit --omit=dev --audit-level=high` checks production dependencies and
+   needs registry access.
+
+A passing run exits with code `0`, all tests passing, a `Security scan passed`
+summary, and no high-severity production dependency findings. Test totals and
+scan counts vary with repository contents. Keep the terminal output with the
+commit hash and environment when recording a validation result; never record API
+keys, cookies, or user data.
+
+On 24 September 2026, the complete command passed on macOS `26.6`, Node `25.9.0`,
+and system Chrome `154.0.8037.57`: 101/101 tests in 151 seconds, build passed,
+the scan checked 247 worktree files plus 249 unique historical paths and 944
+unique blobs, and npm audit reported zero vulnerabilities. An earlier run had
+been stopped after 2 minutes 30 seconds in the former per-file history scan;
+the batched object scan and deleted-secret regression test resolved that
+bottleneck. See the [support matrix](SUPPORT_MATRIX.md) for platform limits.
+
+Live-provider benchmarks are separate, opt-in commands and may spend API
+tokens: `npm run benchmark -- --live`, `npm run benchmark:public`,
+`npm run benchmark:complex -- --live`, and `npm run benchmark:real`. The
+`security:wss` smoke makes a network request to Postman Echo but uses no model
+key. None of these commands is part of `npm run validate`.
 
 `FCU_BROWSER_CHANNEL=chrome npm run security:wss` is an optional live network
 check. It uses installed Chrome to connect to Postman Echo over WSS, relies on
