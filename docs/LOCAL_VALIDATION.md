@@ -38,13 +38,21 @@ scan counts vary with repository contents. Keep the terminal output with the
 commit hash and environment when recording a validation result; never record API
 keys, cookies, or user data.
 
-On 24 September 2026, the complete command passed on macOS `26.6`, Node `25.9.0`,
-and system Chrome `154.0.8037.57`: 101/101 tests in 151 seconds, build passed,
-the scan checked 247 worktree files plus 249 unique historical paths and 944
-unique blobs, and npm audit reported zero vulnerabilities. An earlier run had
-been stopped after 2 minutes 30 seconds in the former per-file history scan;
-the batched object scan and deleted-secret regression test resolved that
-bottleneck. See the [support matrix](SUPPORT_MATRIX.md) for platform limits.
+On 24 September 2026, a clean checkout completed `npm ci --offline
+--no-audit --no-fund` without a browser download, then passed the complete gate
+on macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57`: 101/101 tests
+in 151.35 seconds, 157.19 seconds total, build passed, the scan checked 248
+worktree files plus 250 unique historical paths and 948 unique blobs, and npm
+audit reported zero vulnerabilities. An earlier run had been stopped after 2
+minutes 30 seconds in the former per-file history scan; the batched object scan
+and deleted-secret regression test resolved that bottleneck.
+
+One earlier clean run failed 100/101 on a transient dashboard `502`; the first
+assertion reported only Chrome’s generic console message. The test now asserts
+captured HTTP 5xx paths before generic console errors. A focused rerun and two
+subsequent complete suites passed, but the original failure did not recur, so
+its source remains unknown. See the [support matrix](SUPPORT_MATRIX.md) for
+platform limits.
 
 Live-provider benchmarks are separate, opt-in commands and may spend API
 tokens: `npm run benchmark -- --live`, `npm run benchmark:public`,
