@@ -152,6 +152,13 @@ parameters, endpoint and terms before use.
   browser suite reproducible. This does not validate standalone same-profile
   Chrome relaunches, bundled Playwright Chromium, Windows, or Linux. No browser
   was downloaded.
+- After adding a page-to-`file:` redirect case, one later full run reported
+  99/100 because a long dashboard test saw a local `502`; that test passed alone,
+  and two subsequent full serial runs passed 100/100 (the latest in 179.5 seconds
+  on the exact current test suite). The dashboard test now records the path of
+  any HTTP 5xx response to make recurrence diagnosable. The 502 has not recurred;
+  its cause is unknown, so this run history does not prove the suite is free of
+  intermittent failures.
 - `FCU_BROWSER_CHANNEL=chrome npm run security:wss`: passed on 24 September 2026; system Chrome `154.0.8037.57` used default TLS validation to connect to `wss://ws.postman-echo.com/raw` and received the fixed synthetic payload. This is one external endpoint check, not proof for every WSS service. Postman documents this endpoint in its [Echo API guide](https://learning.postman.com/docs/developer/echo-api).
 - `FCU_BROWSER_CHANNEL=chrome npm run validate` passed lab generation, TypeScript
   checks, 97 tests in that run and the package build, then was stopped during its
