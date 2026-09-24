@@ -72,7 +72,10 @@ the pending action. To stop a running task, call `stop_task`.
 The local tests use the official TypeScript MCP client SDK. They cover bounded
 tool discovery, task execution against synthetic local pages, site and
 sensitive-form approvals, refusal before the site receives a request, malformed
-URL rejection, and the modern `stdio` transport. These tests do not establish compatibility
-with every desktop host. A manual run in a desktop MCP application remains
-unverified. The npm package is not published; use the source checkout until a
-public installation is verified.
+URL rejection, and the modern `stdio` transport. A live UI check also connected
+the built CLI to MCP Inspector 2.8.0 over `stdio`, displayed the site's form
+elicitation and declined it. The task failed safely with zero model calls and
+zero requests to the local fixture. This verifies the reference client only;
+compatibility with other desktop agent hosts remains unverified. The npm
+package is not published; use the source checkout until a public installation
+is verified.

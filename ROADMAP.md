@@ -280,7 +280,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 ### Phase 7 — Intégration écosystème et croissance mesurable (P2)
 
-#### 7.1 [ ] Évaluer une intégration MCP locale
+#### 7.1 [x] Évaluer une intégration MCP locale
 
 - **Objectif :** rendre les capacités accessibles depuis des clients d’agents courants sans leur transférer implicitement tous les contrôles du navigateur.
 - **Changements :** concevoir un serveur MCP local limité aux opérations utiles (inspecter, lancer une tâche autorisée, suivre/vérifier le résultat) ; conserver l’approbation par site, limites d’actions et arrêt ; documenter configuration client, transport et confidentialité.
@@ -288,7 +288,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 - **Acceptation :** intégration de référence locale fonctionne avec un client identifié ; appels refusés restent refusés par la même policy ; le serveur n’ouvre aucun endpoint réseau non documenté et n’expose aucune clé.
 - **Validation :** tests de protocole avec client simulé, tests négatifs et essai manuel sur un client réellement supporté.
 - **Dépendances / risques :** attendre la stabilité du contrat providers/permissions ; l’intégration élargit la surface d’attaque et ne doit pas devenir un simple tunnel d’actions arbitraires.
-- **Implémentation locale (24 septembre 2026) :** `agent mcp` expose `start_task`, `inspect_page`, `follow_task` et `stop_task` sur `stdio`, sans endpoint HTTP. Les tâches réutilisent `Agent` en mode normal; l’approbation passe par l’élicitation formulaire du protocole et `requestState` signé, sans outil permettant au modèle de s’approuver. Quatre tests avec le client TypeScript MCP officiel couvrent une tâche locale vérifiée, les permissions par site et formulaire sensible, le refus avant toute requête au site, le rejet d’URL invalide, la découverte bornée et le transport `stdio` moderne; `npm run check` passe. `docs/MCP.md` décrit la configuration. Le test manuel dans une application MCP de bureau reste à faire; la case reste donc ouverte.
+- **Validation terminée le 24 septembre 2026 :** `agent mcp` expose `start_task`, `inspect_page`, `follow_task` et `stop_task` sur `stdio`, sans endpoint HTTP. Les tâches réutilisent `Agent` en mode normal; l’approbation passe par l’élicitation formulaire du protocole et `requestState` signé, sans outil permettant au modèle de s’approuver. Quatre tests avec le client TypeScript MCP officiel couvrent exécution vérifiée, approbations, refus avant requête, URL invalide, découverte bornée et transport `stdio`; `npm run check` et la validation complète (106/106 tests) passent. Dans le client graphique de référence MCP Inspector 2.8.0, le serveur `stdio` a démarré, affiché l’élicitation d’accès au site et traité un refus explicite comme `failed` avec zéro appel modèle et zéro requête à la fixture locale. Aucun endpoint HTTP n’est ouvert par `agent mcp`; l’essai n’a utilisé aucune clé. `docs/MCP.md` décrit le transport et les limites. Les autres clients agents de bureau restent non vérifiés.
 
 #### 7.2 [ ] Fermer la boucle de retours et mesurer l’adoption
 
