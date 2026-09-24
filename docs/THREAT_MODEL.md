@@ -83,15 +83,15 @@ results.
 
 ## Open security work
 
-- Phase 2.2: test system DNS and network-specific NAT64 behavior, private
-  IPv4/IPv6 targets and permitted private-network workflows, symlinks and
-  platform-specific path handling; then validate on the packaged Playwright
-  browser. A real trusted-certificate WSS check now passes for one Postman Echo
-  endpoint on system Chrome; other endpoints and browser builds remain unverified. The local proxy pins each checked DNS answer to its socket;
-  tests simulate a public-to-loopback answer change and pass on Chrome
-  `154.0.8037.57`. This does not prove other browser builds or non-HTTP egress.
-  Implement only mitigations that close a reproduced boundary without breaking
-  authorized local fixtures.
+- Phase 2.2 boundary tests passed 39/39 on the verified target: macOS `26.6`,
+  Node `25.9.0` and system Chrome `154.0.8037.57`; `npm run check` passed.
+  The checked cases include redirects, DNS rebinding, private IPv4/IPv6,
+  WebSockets, a rejected cleartext CONNECT tunnel, WebRTC STUN blocking,
+  download confinement and profile symlink rejection. A separate trusted-TLS
+  WSS smoke passed against one Postman Echo endpoint. Actual NAT64 discovery,
+  other browser/OS builds, bundled Playwright Chromium and non-HTTP traffic
+  beyond the tested WSS/STUN cases remain unverified. Do not infer compatibility
+  for those targets from the local fixtures.
 - Phase 2.3: document inspect/export/delete steps, verify retention and cleanup
   behavior, audit permissions for all persisted data, and keep plaintext storage
   clearly disclosed.
