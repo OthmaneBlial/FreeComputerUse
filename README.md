@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
+  <a href="#watch-a-real-run">Demo video</a> ·
   <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/latest">GitHub release</a> ·
   <a href="https://othmaneblial.github.io/FreeComputerUse/">Project site</a> ·
   <a href="https://othmaneblial.github.io/FreeComputerUse/lab/index.html">Try the task lab</a> ·
@@ -22,6 +23,12 @@
 FreeComputerUse is a local-first AI browser automation agent. A model plans small action batches; TypeScript and Playwright execute and verify them in your browser. Compatible workflows can be learned once and replayed later with **zero model calls**.
 
 ## Watch a real run
+
+[![FreeComputerUse 0.1.0: a real table extraction from the published package](assets/readme/product-demo-poster.jpg)](assets/readme/product-demo.mp4)
+
+[Watch the 22-second product demo](assets/readme/product-demo.mp4) · [Watch the short portrait cut](assets/readme/product-demo-portrait.mp4)
+
+The video shows the npm install command, the local dashboard, explicit site approval and a verified result. It uses the public synthetic practice task: three rows, one browser action and zero model calls. That task is deterministic and does not claim general website success.
 
 [![A real browser run: investigate a synthetic API incident and save a checked report](assets/readme/incident-demo.gif)](https://othmaneblial.github.io/FreeComputerUse/#watch)
 

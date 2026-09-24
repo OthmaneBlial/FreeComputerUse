@@ -1,6 +1,6 @@
 # FreeComputerUse — roadmap de publication
 
-**État actualisé le 24 septembre 2026, après publication npm.** Les cases cochées ont des preuves datées ci-dessous ; les autres restent à faire ou attendent leur date de revue.
+**État actualisé le 24 septembre 2026. Progression : 25/25 tâches (100 %).** La release publique, la revue d’adoption initiale et la démonstration vidéo finale ont été vérifiées. Chaque case cochée renvoie à une preuve datée.
 
 ## Résumé de l’audit
 
@@ -15,7 +15,7 @@ FreeComputerUse est un agent d’automatisation de navigateur local. Il observe 
 - Le site GitHub Pages existe et est servi depuis `main /docs`. `free-computer-use@0.1.0` est publié sur npm ; le tag `v0.1.0` et la release GitHub publique existent, avec tarball et checksum vérifiés depuis un téléchargement neuf.
 - Le dépôt ne contient pas de workflow GitHub Actions. `docs/LOCAL_VALIDATION.md` indique que sa suppression était demandée par le propriétaire et interdit de réactiver ou déclencher les validations GitHub. Cette contrainte doit être respectée tant qu’elle n’est pas modifiée explicitement.
 - Un problème de source de vérité bloque une validation reproductible : `npm run validate` commence par `npm run lab:build`, et `scripts/build-lab.ts` remplace `docs/index.html` par `lab/index.html`. Une validation peut donc écraser la page de présentation actuelle.
-- Il existe des vidéos MP4 de démonstration et un script de capture Playwright. Les fichiers existants ne constituent pas encore la démonstration finale exigée ici : ils ne prouvent pas à eux seuls une installation propre suivie d’un parcours complet du produit publié.
+- `assets/readme/product-demo.mp4` montre le lancement local du paquet publié, l’approbation du site et le résultat vérifié ; `assets/readme/product-demo-portrait.mp4` est une courte version verticale. Les anciennes vidéos restent des démonstrations distinctes.
 - Le projet annonce une exécution locale et des protections concrètes : permissions par site, DSL d’actions validé, interface liée à loopback, contrôles de requêtes locales, stockage local et masquage de certaines données. Les protections de contrôles sensibles incluent des heuristiques et ne garantissent pas la détection de toutes les pages trompeuses.
 
 ### Lacunes prioritaires
@@ -305,7 +305,7 @@ Les priorités indiquent l’ordre de travail : **P0** bloque une release crédi
 
 Cette phase ne commence qu’après l’implémentation et la validation des phases 0 à 7, une release effectivement disponible et des parcours annoncés qui fonctionnent depuis les fichiers publiés. Employer la skill **`ffmpeg-video-editor`** pendant la production. Aucune vidéo finale ne doit être tournée ou montée avant cette porte de sortie.
 
-#### 8.1 [ ] Préparer et capturer un parcours complet du produit publié
+#### 8.1 [x] Préparer et capturer un parcours complet du produit publié
 
 - **Objectif :** prouver visuellement le problème résolu, le démarrage et les fonctionnalités principales réellement livrées.
 - **Changements :** démarrer depuis la procédure d’installation publiée, configurer une connexion réellement supportée, lancer une tâche sandbox, montrer l’approbation du site, l’inspection/action, la vérification indépendante et, si validée, la répétition de workflow sans nouvel appel modèle. Capturer l’écran réel et garder les journaux, versions et artefacts de preuve privés nettoyés de tout secret.
@@ -313,8 +313,9 @@ Cette phase ne commence qu’après l’implémentation et la validation des pha
 - **Acceptation :** la vidéo montre un run réel sur le produit publié, le problème d’origine, le démarrage/installation, le flux principal et son résultat ; aucun mockup, écran fictif, résultat simulé ou affirmation sans preuve.
 - **Validation :** rejouer le parcours une fois avant capture ; confirmer que l’enregistrement correspond au run et que clés, cookies, adresses privées et données personnelles ne sont pas visibles.
 - **Dépendances / risques :** disponibilité d’un fournisseur valide et coût prévu ; garder la tâche dans une sandbox et prévoir une capture de reprise si le service externe échoue.
+- **Capture vérifiée le 24 septembre 2026 :** l’installation neuve du paquet `0.1.0` depuis l’asset GitHub, identique octet par octet au tarball npm, sert le dashboard local. La vidéo ouvre le dashboard, saisit une URL publique de laboratoire synthétique et le but `Extract the table`, montre la demande d’accès, puis l’exécution et les résultats. Statut `COMPLETED`, données January 1200/12, February 1800/18, March 1500/15, une action navigateur et zéro appel modèle. Aucun fournisseur ou clé n’est configuré ; zéro erreur console. Le clip source Playwright de 17,12 s est conservé hors dépôt dans `/Users/othmane/Movies/FreeComputerUse-0.1.0-demo/source-run.webm`, avec le script et les assets de production. Aucun secret ni donnée personnelle n’est visible.
 
-#### 8.2 [ ] Monter, exporter et vérifier les versions finales
+#### 8.2 [x] Monter, exporter et vérifier les versions finales
 
 - **Objectif :** produire une vidéo propre pour README/GitHub et une déclinaison courte pertinente.
 - **Changements :** avec `ffmpeg-video-editor`, faire un montage professionnel au rythme lisible : coupes propres, titres sobres, zooms/cadrages utiles, sous-titres si voix, niveaux audio propres ; exporter un master 16:9 adapté au README/GitHub et, si utile, une version courte verticale ou carrée pour réseaux. Conserver les sources et la commande/projet de montage.
@@ -322,6 +323,7 @@ Cette phase ne commence qu’après l’implémentation et la validation des pha
 - **Acceptation :** montage fidèle à la capture, lisible sans contexte externe, sans cacher les étapes de permission/échec ; audio intelligible ou retiré proprement ; encodage, résolution, fréquence, durée et poids adaptés aux limites de diffusion choisies.
 - **Validation :** inspecter les métadonnées avec `ffprobe`, décoder intégralement chaque export avec FFmpeg vers null, écouter/visionner l’intégralité et contrôler les coupes, sous-titres, niveaux audio, secrets et synchronisation ; vérifier l’asset affiché depuis le README.
 - **Dépendances / risques :** phase terminale ; si une fonction change après tournage, refaire la capture concernée et revalider tous les exports avant de garder la vidéo en page d’accueil.
+- **Exports finaux vérifiés avec la skill `ffmpeg-video-editor` (24 septembre 2026) :** le master README/GitHub [product-demo.mp4](assets/readme/product-demo.mp4) dure 21,44 s, 1600×900, H.264/yuv420p, 25 fps, 727 150 octets, sans piste audio. La version sociale [product-demo-portrait.mp4](assets/readme/product-demo-portrait.mp4) dure 17,12 s, 1080×1350, H.264/yuv420p, 25 fps, 258 066 octets, sans piste audio. L’intro présente la vraie commande npm, la capture reste l’interface réelle, un zoom recadre le résultat et l’outro résume les métriques. Le poster README est extrait du vrai résultat. `ffprobe` confirme les métadonnées ; FFmpeg décode intégralement les deux fichiers sans erreur ; le script de montage reproduit les deux exports octet par octet. Les liens sont ajoutés au README. Sources et commandes conservées dans `/Users/othmane/Movies/FreeComputerUse-0.1.0-demo/`.
 
 ## Conditions de sortie
 
