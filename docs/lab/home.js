@@ -13,6 +13,22 @@ function render(){
     const actions=node('div',null,'card-actions'),copy=node('button','Copy goal'),start=node('a','Open starting page ↗');copy.onclick=async()=>{try{await navigator.clipboard.writeText(task.goal);message('Goal copied. Paste it into “What should happen?” in your local workspace.');}catch{details.open=true;message('Copy the goal from the expanded details.');}};start.href=task.url;start.target='_blank';start.rel='noopener noreferrer';actions.append(copy,start);card.append(actions);$('task-list').append(card);
   }
 }
-for(const [id,nextMode] of [['real-tab','real'],['practice-tab','practice']])$(id).onclick=()=>{mode=nextMode;$('real-tab').setAttribute('aria-selected',String(mode==='real'));$('practice-tab').setAttribute('aria-selected',String(mode==='practice'));render();};
+const tabs=[...document.querySelectorAll('[role="tab"]')];
+function selectTab(tab){
+  mode=tab.id==='practice-tab'?'practice':'real';
+  for(const item of tabs){const selected=item===tab;item.setAttribute('aria-selected',String(selected));item.tabIndex=selected?0:-1;}
+  $('task-list').setAttribute('aria-labelledby',tab.id);render();
+}
+for(const tab of tabs)tab.onclick=()=>selectTab(tab);
+$('example-tabs').addEventListener('keydown',event=>{
+  const current=event.target.closest('[role="tab"]');if(!current)return;
+  const index=tabs.indexOf(current);let next;
+  if(event.key==='ArrowRight')next=tabs[(index+1)%tabs.length];
+  else if(event.key==='ArrowLeft')next=tabs[(index+tabs.length-1)%tabs.length];
+  else if(event.key==='Home')next=tabs[0];
+  else if(event.key==='End')next=tabs.at(-1);
+  else return;
+  event.preventDefault();selectTab(next);next.focus();
+});
 for(const button of document.querySelectorAll('[data-category]'))button.onclick=()=>{category=button.dataset.category;for(const peer of document.querySelectorAll('[data-category]'))peer.setAttribute('aria-pressed',String(peer===button));render();};
 render();

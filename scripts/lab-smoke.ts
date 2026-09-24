@@ -32,7 +32,12 @@ try{
    if(width===390)await browser.page.screenshot({path:`artifacts/lab/${name}-mobile.png`,fullPage:true});
   }
  }
- await browser.navigate(lab.url);await browser.page.getByRole('tab',{name:'Practice workflows'}).click();
+ await browser.navigate(lab.url);await browser.page.locator('#real-tab').focus();
+ for(const key of ['ArrowRight','ArrowRight','ArrowLeft','Home','End'])await browser.page.keyboard.press(key);
+ const practiceTab=await browser.page.evaluate(()=>{const tab=document.querySelector('#practice-tab')!,other=document.querySelector('#real-tab')!,panel=document.querySelector('#task-list')!;return{selected:tab.getAttribute('aria-selected'),tabIndex:(tab as HTMLButtonElement).tabIndex,otherTabIndex:(other as HTMLButtonElement).tabIndex,active:document.activeElement?.id,labelledBy:panel.getAttribute('aria-labelledby'),focusVisible:getComputedStyle(tab).outlineStyle==='solid'&&getComputedStyle(tab).outlineWidth==='2px'};});
+ if(practiceTab.selected!=='true'||practiceTab.tabIndex!==0||practiceTab.otherTabIndex!==-1||practiceTab.active!=='practice-tab'||practiceTab.labelledBy!=='practice-tab'||!practiceTab.focusVisible)throw new Error('Keyboard tabs do not preserve selection, focus and panel labels: '+JSON.stringify(practiceTab));
+ await browser.page.keyboard.press('Tab');if(!await browser.page.locator('[data-category="all"]').evaluate(element=>element===document.activeElement))throw new Error('Tab should leave the widget at the next control');
+ await browser.page.locator('#real-tab').click();await browser.page.getByRole('tab',{name:'Practice workflows'}).click();
  if(await browser.page.locator('.task-card').count()!==8)throw new Error('Practice workflow cards missing');
  for(const width of [1440,320,390,768]){
   await browser.page.setViewportSize({width,height:900});
@@ -43,5 +48,5 @@ try{
  await browser.page.locator('.brandmark').evaluate(el=>{if(!(el instanceof HTMLImageElement)||!el.complete||el.naturalWidth===0)throw new Error('Brand SVG did not load');});
  await browser.page.locator('header').screenshot({path:'artifacts/ui/brand.png'});
  await browser.page.screenshot({path:'artifacts/ui/workspace.png'});
- if(errors.length)throw new Error('Lab console errors: '+JSON.stringify(errors));console.log(JSON.stringify({pages:24,practiceCards:8,labResponsiveWidths:[320,390,768,1440],brandLoaded:true,consoleErrors:errors}));
+ if(errors.length)throw new Error('Lab console errors: '+JSON.stringify(errors));console.log(JSON.stringify({pages:24,practiceCards:8,labResponsiveWidths:[320,390,768,1440],keyboardTabs:true,brandLoaded:true,consoleErrors:errors}));
 }finally{await browser.close();await lab.close();await dashboard.close();}
