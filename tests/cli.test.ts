@@ -2,11 +2,21 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:http';
-import {chmod,mkdtemp,rm,stat,symlink,writeFile} from 'node:fs/promises';
+import {chmod,mkdtemp,readFile,rm,stat,symlink,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {pathToFileURL} from 'node:url';
 import {TraceStore,type Trace} from '../src/history/TraceStore.js';
+
+test('CLI version matches the package manifest',{timeout:10000},async()=>{
+  const manifest=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8')) as {version:string};
+  const result=await new Promise<{code:number|null;stdout:string;stderr:string}>((resolve,reject)=>{
+    const child=spawn(process.execPath,['--import','tsx','src/cli/index.ts','--version'],{cwd:process.cwd(),env:{...process.env,LLM_API_KEY:''},stdio:['ignore','pipe','pipe']});
+    let stdout='',stderr='';child.stdout.setEncoding('utf8').on('data',chunk=>stdout+=chunk);child.stderr.setEncoding('utf8').on('data',chunk=>stderr+=chunk);
+    child.once('error',reject);child.once('close',code=>resolve({code,stdout,stderr}));
+  });
+  assert.equal(result.code,0,result.stderr);assert.equal(result.stdout.trim(),manifest.version);
+});
 
 test('environment loading restricts local credentials and rejects symbolic links',{timeout:20000},async t=>{
   if(process.platform==='win32'){t.skip('POSIX .env file modes do not apply on Windows');return;}

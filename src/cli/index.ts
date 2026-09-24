@@ -18,7 +18,8 @@ import { ensureDataDirectory,loadEnvironment,runtimeConfig } from '../config.js'
 import type { ConfirmationPolicy } from '../actions/policy.js';
 import { z } from 'zod';
 
-loadEnvironment();const program=new Command().name('agent').description('DOM-first browser automation: plan once, execute locally.').version('0.1.0');
+const packageManifest=JSON.parse(await readFile(new URL('../../package.json',import.meta.url),'utf8')) as {version:string};
+loadEnvironment();const program=new Command().name('agent').description('DOM-first browser automation: plan once, execute locally.').version(packageManifest.version);
 const policySchema=z.enum(['sensitive','always','never']);
 interface RunOptions {headed?:boolean;debug?:boolean;profile?:string;allowOrigin?:string[];allowExternal?:boolean;confirmation?:string;workflows?:boolean;maxSteps?:string;maxRepairs?:string;ephemeral?:boolean;expectText?:string;expectUrl?:string;ultra?:boolean}
 function runFlags(command:Command){return command.option('--headed','Show Chromium').option('--debug','Log all observe/plan/execute/verify/repair events').option('--profile <file>','Use a local profile JSON file').option('--allow-origin <url>','Allow another exact origin',(value:string,old:string[])=>[...old,new URL(value).origin],[]).option('--allow-external','Allow browser requests outside the origin allowlist').option('--confirmation <policy>','sensitive | always | never','sensitive').option('--no-workflows','Skip learned workflow lookup').option('--max-steps <n>','Maximum browser actions','120').option('--max-repairs <n>','Maximum model repairs','3').option('--ephemeral','Do not reuse saved browser cookies/session').option('--expect-text <text>','Trusted final text criterion the model cannot weaken').option('--expect-url <part>','Trusted final URL substring the model cannot weaken').option('--ultra','Explicit Ultra mode: skip website and sensitive-action approvals');}
