@@ -1,6 +1,6 @@
 # FreeComputerUse — roadmap de publication
 
-**État actualisé le 24 septembre 2026. Progression : 25/25 tâches (100 %).** La release publique, la revue d’adoption initiale et la démonstration vidéo finale ont été vérifiées. Chaque case cochée renvoie à une preuve datée.
+**État actualisé le 26 septembre 2026. Les 25 jalons initiaux sont terminés ; la version publique 0.2.0 est aussi publiée et vérifiée.** La suite de la maintenance reste ouverte. Les preuves de la release sont dans [les notes 0.2.0](release-notes/0.2.0.md).
 
 ## Résumé de l’audit
 
@@ -8,11 +8,11 @@ FreeComputerUse est un agent d’automatisation de navigateur local. Il observe 
 
 ### État vérifié
 
-- `package.json` déclare la version `0.1.0`, Node `>=22.13.0`, un exécutable CLI `agent`, une entrée de bibliothèque et une liste de fichiers à inclure dans le paquet npm.
-- Validation complète fraîche sur `main` au commit `1bfb8f7` (24 septembre 2026) : `FCU_BROWSER_CHANNEL=chrome npm run validate` passe, avec **106/106 tests** (158,82 s), compilation, build, scan d’historique (263 fichiers du worktree, 265 chemins et 1 036 blobs historiques uniques, sans identifiant reconnu ni chemin privé détecté) et `npm audit` à zéro vulnérabilité. Environnement : macOS 26.6, Node 25.9.0 et Chrome système 154.0.8037.57. Le scan par motifs ne constitue pas un audit de sécurité complet.
+- `package.json` déclare la version `0.2.0`, Node `>=22.13.0`, un exécutable CLI `agent`, une entrée de bibliothèque et une liste de fichiers à inclure dans le paquet npm.
+- Le gate de release `FCU_BROWSER_CHANNEL=chrome npm run validate` passe : **130/130 tests** (260,51 s), vérifications de types et build, scan d’historique (263 fichiers du worktree, 265 chemins et 1 145 blobs historiques uniques, sans identifiant reconnu ni chemin privé détecté) et `npm audit` sans vulnérabilité. Environnement : macOS 26.6, Node 25.9.0 et Chrome système 154.0.8037.57. Le scan par motifs ne constitue pas un audit de sécurité complet.
 - `docs/BENCHMARKS.md` rapporte un essai daté du 18 septembre : 14/14 tâches publiques et leurs répétitions compatibles réussies dans cet essai, avec DeepSeek, une seule mesure par cas et des limites explicitement documentées. Le même document rapporte des résultats variables sur les tâches complexes et un audit GitHub Playwright non réussi. Cela ne prouve pas une réussite générale sur le Web.
 - Le README décrit plusieurs routes de modèles : API compatibles OpenAI, Anthropic, OpenRouter et interfaces CLI pour abonnements Codex et Claude Code. La matrice de compatibilité n’est pas accompagnée d’une validation réelle et versionnée de chaque fournisseur.
-- Le site GitHub Pages existe et est servi depuis `main /docs`. `free-computer-use@0.1.0` est publié sur npm ; le tag `v0.1.0` et la release GitHub publique existent, avec tarball et checksum vérifiés depuis un téléchargement neuf.
+- Le site GitHub Pages existe et est servi depuis `main /docs`. `free-computer-use@0.2.0` est publié sur npm avec le tag `latest`; son tarball téléchargé correspond octet pour octet au candidat local, est installé dans un préfixe neuf et passe `agent doctor` et le parcours synthétique sans modèle. Le tag annoté `v0.2.0` et la release GitHub publique sont documentés dans les [notes de release](release-notes/0.2.0.md).
 - Le dépôt ne contient pas de workflow GitHub Actions. `docs/LOCAL_VALIDATION.md` indique que sa suppression était demandée par le propriétaire et interdit de réactiver ou déclencher les validations GitHub. Cette contrainte doit être respectée tant qu’elle n’est pas modifiée explicitement.
 - Le problème initial de source de vérité Pages est corrigé : `scripts/build-lab.ts` génère sous `docs/lab/` et conserve `docs/index.html`. Deux builds successifs ont produit la même empreinte SHA-256 de l’arbre `docs/lab` (`0e1d8f23a81f51c3168aeb6b7047c94e9d1652ff1084081641adc7e9bcf7c2e6`) ; l’empreinte de la vitrine est restée identique (`58afba3d51f7273cf534f57147b1bb839ba9bdc450f8befbf0d647155b02c96c`). Le test de génération dédié et le build public passent.
 - `assets/readme/product-demo.mp4` montre le lancement local du paquet publié, l’approbation du site et le résultat vérifié ; `assets/readme/product-demo-portrait.mp4` est une courte version verticale. Les anciennes vidéos restent des démonstrations distinctes.

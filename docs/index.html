@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101612">
-  <meta name="description" content="Local-first AI browser automation with Playwright. Use an OpenAI-compatible or Anthropic API, or supported ChatGPT and Claude CLI subscriptions. Approve sites; inspect and verify runs.">
+  <meta name="description" content="Local-first browser automation with Playwright. Read page text and links without a model key, or connect a supported provider for open-ended tasks. Approve sites and verify results.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="FreeComputerUse">
   <meta property="og:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta property="og:description" content="Connect a provider API key or supported Codex/Claude Code sign-in. Approve site access, watch Playwright act locally and inspect verified results.">
+  <meta property="og:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. Approve site access, watch Playwright act locally and inspect results.">
   <meta property="og:url" content="https://othmaneblial.github.io/FreeComputerUse/">
   <meta property="og:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
   <meta property="og:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta name="twitter:description" content="Local-first Playwright browser automation with explicit site approval and verifiable results.">
+  <meta name="twitter:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. Explicit site approval and verifiable results.">
   <meta name="twitter:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
   <meta name="twitter:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
   <title>FreeComputerUse — Local-first AI browser automation</title>
@@ -39,6 +39,7 @@
       <a href="#models">Models</a>
       <a href="#library">Task library</a>
       <a href="#faq">FAQ</a>
+      <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.0">Release v0.2.0 <span aria-hidden="true">↗</span></a>
       <a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
     <a class="header-cta" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Get started <span aria-hidden="true">↗</span></a>
@@ -54,7 +55,7 @@
           <a class="button-primary" href="#library">Explore browser tasks <span aria-hidden="true">↓</span></a>
           <a class="button-quiet" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Read the quick start <span aria-hidden="true">↗</span></a>
         </div>
-        <p class="hero-caption">Bring an API key or sign in with a supported model CLI.</p>
+        <p class="hero-caption"><a href="#keyless">New in v0.2.0: read page text and extract links without a model key.</a></p>
       </div>
 
       <div class="run-card" aria-label="Illustration of a local browser automation run">
@@ -74,6 +75,23 @@
         <div><span>01</span><b>Runs locally</b><small>Playwright drives your browser</small></div>
         <div><span>02</span><b>Works across models</b><small>Choose an API or supported CLI</small></div>
         <div><span>03</span><b>Asks before direct navigation</b><small>Approve a new origin before it opens</small></div>
+      </div>
+    </section>
+
+    <section class="how-section page-section" id="keyless" aria-labelledby="keyless-title">
+      <div class="section-heading">
+        <p class="eyebrow">V0.2.0 · NO PROVIDER REQUIRED</p>
+        <h2 id="keyless-title">Useful browser work.<br><em>No model key needed.</em></h2>
+        <p>Start with local, deterministic tasks. Add a model only when the job needs open-ended planning.</p>
+      </div>
+      <div>
+        <div class="how-grid">
+          <article><span>01 / PAGE TEXT</span><h3>Read the page</h3><p>Extract visible text from the current page. Goal: “Read the page”.</p></article>
+          <article><span>02 / LINK LIST</span><h3>Extract the links</h3><p>Collect visible link labels and URLs. Goal: “Extract the links”.</p></article>
+          <article><span>03 / BOUNDED LINKS</span><h3>Choose a limit</h3><p>Extract the first N visible links and verify the requested count. Goal: “Extract the first 5 links”.</p></article>
+          <article><span>04 / PRACTICE DATA</span><h3>Try the sample table</h3><p>Extract three synthetic revenue rows from the <a href="lab/reports.html">practice page</a>.</p></article>
+        </div>
+        <p class="how-note"><span aria-hidden="true">↳</span> These exact workflows make zero model calls. See setup and limits in the <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.0">v0.2.0 release notes</a>.</p>
       </div>
     </section>
 
@@ -178,7 +196,7 @@
       <div class="faq-list">
         <details>
           <summary>Can I try FreeComputerUse without a model key?</summary>
-          <p>Yes. Open the <a href="lab/reports.html">practice revenue table</a> and run <code>Extract the table</code>. That one deterministic workflow needs no provider. General tasks need a configured model.</p>
+          <p>Yes. Run <code>Read the page</code>, <code>Extract the links</code>, <code>Extract the first 5 links</code>, or try <code>Extract the table</code> on the <a href="lab/reports.html">practice revenue table</a>. These narrow workflows make zero model calls. General tasks need a configured provider.</p>
         </details>
         <details>
           <summary>Which model connections have live evidence?</summary>
@@ -196,17 +214,14 @@
     </section>
 
     <section class="start-section page-section" id="start" aria-labelledby="start-title">
-      <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Bring your own model.<br><em>Keep your browser close.</em></h2><p>Requires Node.js 22.13+, npm and a browser Playwright can launch. An installed Chrome or Edge can be selected as a best-effort option without a Playwright browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
-      <pre class="terminal"><span>01 / TERMINAL</span><code>git clone https://github.com/OthmaneBlial/FreeComputerUse.git
-cd FreeComputerUse
-npm ci
-cp .env.example .env
-chmod 600 .env
-FCU_BROWSER_CHANNEL=chrome npm run dev</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
+      <div class="start-copy"><p class="eyebrow">V0.2.0 · GET RUNNING LOCALLY</p><h2 id="start-title">Try it without a key.<br><em>Add a model when ready.</em></h2><p>Requires Node.js 22.13+, npm and an installed browser. Use an API or supported CLI sign-in for open-ended tasks. The verified setup selects system Chrome without a separate browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
+      <pre class="terminal"><span>01 / TERMINAL</span><code>npm install --global free-computer-use@0.2.0
+FCU_BROWSER_CHANNEL=chrome agent doctor
+FCU_BROWSER_CHANNEL=chrome agent ui</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
     </section>
   </main>
 
-  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
+  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.0">Release v0.2.0 ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

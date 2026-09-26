@@ -1,6 +1,6 @@
 {
   "name": "free-computer-use",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local-first AI browser automation with Playwright and user-approved actions.",
   "homepage": "https://othmaneblial.github.io/FreeComputerUse/",
   "repository": {

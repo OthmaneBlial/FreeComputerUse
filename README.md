@@ -3,59 +3,82 @@
 ![FreeComputerUse — a local-first browser agent that plans, acts and verifies with you in control](assets/readme/hero.svg)
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/free-computer-use"><img alt="npm version" src="https://img.shields.io/npm/v/free-computer-use?style=flat-square&labelColor=18251f&color=c4e967"></a>
+  <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/latest"><img alt="Latest GitHub release" src="https://img.shields.io/github/v/release/OthmaneBlial/FreeComputerUse?style=flat-square&labelColor=18251f&color=c4e967"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-c4e967?style=flat-square&labelColor=18251f"></a>
+  <img alt="Node.js 22.13 or newer" src="https://img.shields.io/badge/Node.js-22.13%2B-43853d?style=flat-square&labelColor=18251f">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178c6?style=flat-square&labelColor=18251f">
   <img alt="Playwright" src="https://img.shields.io/badge/Playwright-45ba4b?style=flat-square&labelColor=18251f">
-  <img alt="Local-first" src="https://img.shields.io/badge/local--first-browser_runs-c4e967?style=flat-square&labelColor=18251f">
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
-  <a href="#watch-a-real-run">Demo video</a> ·
-  <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/latest">GitHub release</a> ·
+  <a href="#no-model-key-needed">Try it without a model</a> ·
+  <a href="#watch-a-real-run">Watch the demo</a> ·
+  <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/latest">Latest release</a> ·
   <a href="https://othmaneblial.github.io/FreeComputerUse/">Project site</a> ·
-  <a href="https://othmaneblial.github.io/FreeComputerUse/lab/index.html">Try the task lab</a> ·
   <a href="SECURITY.md">Security</a>
 </p>
 
-**Your browser. Your model. Your call.** Tell it what done looks like, then stay in control of every step.
+**Your browser. Your model. Your call.** Give your browser a goal; the model proposes short action batches, and Playwright runs them locally. You approve website access and sensitive actions, then inspect what happened.
 
-FreeComputerUse is a local-first AI browser automation agent. A model plans small action batches; TypeScript and Playwright execute and verify them in your browser. Compatible workflows can be learned once and replayed later with **zero model calls**.
+Use an API or a supported model CLI for open-ended tasks. For common page-reading jobs, skip model setup entirely: FreeComputerUse can read visible text and links with deterministic local strategies.
 
-## Watch a real run
+## No model key needed
 
-[![FreeComputerUse 0.1.0: a real table extraction from the published package](assets/readme/product-demo-poster.jpg)](assets/readme/product-demo.mp4)
-
-[Watch the 22-second product demo](assets/readme/product-demo.mp4) · [Watch the short portrait cut](assets/readme/product-demo-portrait.mp4)
-
-The video shows the npm install command, the local dashboard, explicit site approval and a verified result. It uses the public synthetic practice task: three rows, one browser action and zero model calls. That task is deterministic and does not claim general website success.
-
-[![A real browser run: investigate a synthetic API incident and save a checked report](assets/readme/incident-demo.gif)](https://othmaneblial.github.io/FreeComputerUse/#watch)
-
-One goal led through six pages to a verified incident brief: **21 successful actions, 10 model calls, one repaired failure**. The configured cost estimate was **$0.00650**. This is one recorded synthetic task, not a general success-rate claim. [Watch the full recording](https://othmaneblial.github.io/FreeComputerUse/lab/media/incident-demo.mp4) · [Inspect the evidence](assets/readme/incident-evidence.json).
-
-## How it works
-
-1. **Observe** the page’s DOM and accessible controls.
-2. **Plan** a bounded batch with the model you choose.
-3. **Execute** browser actions locally with Playwright; direct navigation to a new origin asks for approval.
-4. **Verify** results, repair only what failed, then reuse compatible learned workflows.
-
-The model does not run shell commands or arbitrary JavaScript. Browser previews stay local; the goal and selected page context are sent to your configured model provider.
-
-## Quick start
-
-Requires **Node.js 22.13+**, npm and an installed browser. The verified setup is macOS 26.6 (Apple Silicon), Node 25.9.0 and system Chrome 154.0.8037.57; the complete serial validation passed on this combination. The declared Node minimum and other OS/browser combinations remain unverified. This setup selects installed Chrome and avoids a separate Playwright browser download; see the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
-
-### Install from npm
+Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.1.0
+npm install --global free-computer-use@0.2.0
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
 
-Open **http://127.0.0.1:4318**. The practice revenue-table task works without a model key. For model-planned tasks, configure a provider as described in [Pick your model](#pick-your-model).
+Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then approve access to that website:
+
+| Goal | Result |
+| --- | --- |
+| `Read the page` | Extract visible page text. |
+| `Extract the links` | List visible link labels and URLs. |
+| `Extract the first 5 links` | Return a bounded list of the first five links. |
+| `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
+
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The declared minimum is Node.js 22.13; the verified setup is macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154.0.8037.57. Other OS/browser combinations and the declared Node minimum remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+
+## Watch a real run
+
+[![FreeComputerUse: a real practice-table extraction from the published package](assets/readme/product-demo-poster.jpg)](assets/readme/product-demo.mp4)
+
+[Watch the 22-second dashboard walkthrough](assets/readme/product-demo.mp4) · [Watch the short portrait cut](assets/readme/product-demo-portrait.mp4)
+
+This recording uses the 0.1.0 package. It shows the npm install, local dashboard, explicit site approval and a verified synthetic table result: three rows, one browser action and zero model calls. The same practice workflow remains available. It is a deterministic demo, not a claim about arbitrary websites.
+
+[![Recorded browser run: investigate a synthetic API incident and save a checked report](assets/readme/incident-demo.gif)](https://othmaneblial.github.io/FreeComputerUse/#watch)
+
+One recorded task followed six pages to a checked incident brief: **21 successful actions, 10 model calls, one repaired failure**. The configured cost estimate was **$0.00650**. This is one synthetic run, not a general success-rate claim. [Watch the full recording](https://othmaneblial.github.io/FreeComputerUse/lab/media/incident-demo.mp4) · [Inspect the evidence](assets/readme/incident-evidence.json).
+
+## How it works
+
+1. **Observe** the page DOM and accessible controls.
+2. **Plan** a bounded batch with the model you choose.
+3. **Execute** browser actions locally with Playwright; direct navigation to a new origin asks for approval.
+4. **Verify** results, repair only what failed, then replay compatible learned workflows later.
+
+The model does not run shell commands or arbitrary JavaScript. Browser previews stay local; the task and selected page context go to your configured model provider. Screenshots are not sent.
+
+## Quick start
+
+Requires Node.js 22.13+, npm and an installed browser. The verified setup selects installed Chrome and avoids a separate Playwright browser download.
+
+### Install from npm
+
+```bash
+npm install --global free-computer-use@0.2.0
+FCU_BROWSER_CHANNEL=chrome agent doctor
+FCU_BROWSER_CHANNEL=chrome agent ui
+```
+
+Open **http://127.0.0.1:4318**. Try a keyless goal above, or configure a provider for model-planned tasks.
 
 ### Run from source
 
@@ -67,9 +90,7 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Set `FCU_BROWSER_CHANNEL=chrome` in `.env` to use the verified installed-Chrome path without downloading a browser binary.
-
-For model-planned tasks, configure a provider in `.env`. The browser sandbox task below works without a model key:
+Set `FCU_BROWSER_CHANNEL=chrome` in `.env` to use installed Chrome. For model-planned tasks, add the provider details to your local `.env`; for example:
 
 ```dotenv
 FCU_BROWSER_CHANNEL=chrome
@@ -84,21 +105,11 @@ npm run agent -- doctor
 npm run dev
 ```
 
-Open **http://127.0.0.1:4318**, enter a starting URL and goal, then approve site access.
-
-**Try it without an API key:** run `Read the page` to extract visible text, `Extract the links` to get visible link labels and URLs, or open [the practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html) and run `Extract the table`. These narrow workflows use deterministic local strategies; model-planned tasks need a configured provider.
-
-## Troubleshooting
-
-- **The browser does not start:** install Chrome, set `FCU_BROWSER_CHANNEL=chrome` in `.env`, then run `npm run agent -- doctor`. See the [verified platform limits](docs/SUPPORT_MATRIX.md); other OS/browser combinations are not certified here.
-- **The dashboard says no model is configured:** page-text reading, visible-link listing and the practice revenue-table task work without a provider. For model planning, configure one route from [Pick your model](#pick-your-model). `npm run agent -- doctor --api` makes an opt-in request to the configured provider; use it only when you want that network check.
-- **A site is blocked or asks for approval:** normal mode asks before a new origin and blocks private/reserved DNS answers. Approve only the site needed for the task. Ultra mode disables those protections; do not use it as a workaround for a blocked destination.
-- **The run finishes without proving the goal:** inspect the result checks and use a narrower goal. Browser clicks alone do not mean the requested outcome was verified.
-- **You need to find or remove local data:** see [local storage, export, retention and deletion](docs/LOCAL_DATA.md). Data is not encrypted and is not automatically expired.
+Then open **http://127.0.0.1:4318**, enter a starting URL and goal, and approve site access.
 
 ## Pick your model
 
-Use a provider API key, or sign in through the official CLI for a supported subscription. API usage and consumer subscriptions are separate billing products.
+Use a provider API key or sign in through the official CLI for a supported subscription. API usage and consumer subscriptions are separate billing products.
 
 | Provider | Configuration |
 | --- | --- |
@@ -109,51 +120,41 @@ Use a provider API key, or sign in through the official CLI for a supported subs
 | ChatGPT plan | Install Codex CLI, sign in with `codex login`, set `LLM_PROVIDER=codex-subscription` |
 | Claude Pro/Max plan | Install Claude Code 2.1.248+, sign in with `claude auth login` (not Console), set `LLM_PROVIDER=claude-subscription` |
 
-The provider API routes have not all been live-tested here; DeepSeek Flash is the measured default. Subscription modes use the local CLI sign-in, need no API key and respect plan limits. Their local agent tools and MCP servers are disabled while planning. See [provider setup and limits](docs/PROVIDERS.md), the [support matrix](docs/SUPPORT_MATRIX.md) and [.env.example](.env.example) for route-specific setup, tests and live-evidence status.
+DeepSeek Flash is the measured default. Other provider routes are not all live-tested. Subscription modes use local CLI sign-in, need no API key, respect plan limits, and disable their local agent tools and MCP servers while planning. See [provider setup and limits](docs/PROVIDERS.md), the [support matrix](docs/SUPPORT_MATRIX.md) and [.env.example](.env.example).
 
 ## Connect an MCP host
 
-Run FreeComputerUse as a local MCP server over `stdio` with `agent mcp`. It
-provides tools to start a task, inspect the observed page, follow and verify the
-result, and stop a task. Site and sensitive-action approvals still require a
-human response in an MCP host that supports form elicitation. No HTTP endpoint
-is opened. See the [MCP setup and validation limits](docs/MCP.md). The separate
-provider CLI adapters keep their own tools and MCP disabled while planning.
+Run FreeComputerUse as a local MCP server over `stdio` with `agent mcp`. It exposes bounded tools to start a task, inspect the page, follow and verify results, and stop a task. Site and sensitive-action approvals still need a human response in an MCP host that supports form elicitation. No HTTP endpoint is opened. See the [MCP setup and validation limits](docs/MCP.md).
+
+## Security and privacy
+
+- Normal mode asks before direct navigation to a new origin and blocks private or reserved DNS answers. A loopback-only proxy connects to the vetted numeric address for browser HTTP(S) and WebSocket traffic. Ultra mode and the low-level `allowExternal` option opt out of origin and private-address checks; Ultra mode is off by default.
+- Sensitive actions have a separate confirmation gate. Read the [security boundaries](SECURITY.md) before using personal or sensitive data.
+- Browser execution, profiles, history and downloads stay on your machine. Selected task and page context goes to the provider you choose; screenshots are not sent.
+- Planner inputs use aliases for local profile and file values, not their contents. Local data is **not encrypted** and does not expire automatically. See [storage, export, retention and deletion](docs/LOCAL_DATA.md).
+- Chromium profiles disable WebRTC UDP that the proxy cannot carry. Sites that require direct UDP for voice or video may fail.
+
+## Evidence and limits
+
+A focused public suite recorded **18 September 2026** passed 14/14 first-run tasks and 14/14 compatible learned repeats with independent checks. First runs used 18 model calls; repeats used zero. These single-trial sandbox results do not predict success on arbitrary websites. [Report](artifacts/benchmark-public.json) · [Method and limitations](docs/BENCHMARKS.md).
+
+Provider, operating-system, browser and accessibility evidence stays bounded to the [support matrix](docs/SUPPORT_MATRIX.md). Contract tests do not certify a live provider; builds do not certify an untested platform.
 
 ## FAQ
 
-**Can I try it without a model key?** Yes. `Read the page`, `Extract the links` and the practice revenue-table workflow use deterministic local strategies. Most other tasks need a configured model.
+**Can I try it without an API key?** Yes. Use `Read the page`, `Extract the links`, `Extract the first 5 links`, or the synthetic revenue-table task. These workflows make zero model calls.
 
-**Which providers have live evidence?** The current matrix records DeepSeek Flash and one synthetic plan through Codex CLI `0.156.1` with ChatGPT. Contract tests do not certify a live provider; see the [dated support matrix](docs/SUPPORT_MATRIX.md).
+**Does the model receive screenshots or browser profiles?** No. The selected task and page context go to your provider; screenshots and browser profiles stay local. Local data is not encrypted.
 
-**Does the model receive screenshots or browser profiles?** No screenshots are sent. The task and selected page context go to your provider; browser execution, profiles, history and downloads stay local. Local data is not encrypted.
-
-**Which platform is verified?** macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154. Other OS, Node and browser combinations remain unverified in the [support matrix](docs/SUPPORT_MATRIX.md).
-
-## Control and privacy
-
-- Normal mode asks before direct navigation to a new origin and blocks hostnames resolving to private or reserved address ranges, including private IPv4 embedded in a discovered NAT64 prefix. A loopback-only proxy connects to the vetted numeric address, closing the DNS lookup-to-connection rebinding gap for browser HTTP(S) and WebSocket traffic. Explicit IP destinations require an exact origin grant. Ultra mode and the low-level `allowExternal` option opt out of origin and private-address checks. Chrome 154 tests cover redirect denial, simulated DNS rebinding, approved/blocked plain WebSockets, and approved/blocked browser-originated WSS. The WSS fixture uses a generated local certificate and ignores its certificate error only in the test; a separate opt-in smoke verifies Chrome TLS and an echo against one public WSS endpoint. Other WSS endpoints, live network-specific NAT64 discovery and other browser builds remain unverified. Sensitive actions have a separate confirmation gate. Ultra mode is explicit and off by default.
-- Browser execution, profiles, history and downloads stay on your machine. Page context needed for a plan goes to the chosen model provider; screenshots are not sent.
-- The planner receives aliases for local profile and file values, not their contents. Local storage is **not encrypted**.
-- Chromium profiles disable WebRTC UDP that the proxy cannot carry. Sites needing direct UDP for voice/video may fail; one local Chrome STUN fixture confirms no direct packet reached its receiver. Other non-HTTP traffic remains unverified.
-- Runs record actions, checks, repairs, token estimates and workflow reuse so you can inspect what happened.
-
-Read [the security boundaries](SECURITY.md) before using personal or sensitive data.
-See [where local data is stored and how to inspect, export or delete it](docs/LOCAL_DATA.md).
-
-## Evidence
-
-In a focused public suite recorded **18 September 2026**, 14/14 first-run results and 14/14 compatible learned repeats passed independent checks. First runs used 18 model calls; repeats used zero. These single-trial sandbox results do not predict success on arbitrary websites. [Report](artifacts/benchmark-public.json) · [Method and limitations](docs/BENCHMARKS.md).
+**Which platform is verified?** macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154.0.8037.57. Check the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
 
 ## Explore and contribute
 
 - [Project site and task library](https://othmaneblial.github.io/FreeComputerUse/)
-- [Frequently asked questions](https://othmaneblial.github.io/FreeComputerUse/#faq)
+- [Latest GitHub release](https://github.com/OthmaneBlial/FreeComputerUse/releases/latest)
 - [Useful browser-task examples](docs/USEFUL_EXAMPLES.md)
-- [Implementation notes](docs/IMPLEMENTATION.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Local validation commands](docs/LOCAL_VALIDATION.md)
-- [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+- [Architecture](docs/ARCHITECTURE.md) · [implementation notes](docs/IMPLEMENTATION.md)
+- [Local validation commands](docs/LOCAL_VALIDATION.md) · [contributing](CONTRIBUTING.md) · [changelog](CHANGELOG.md)
 
 Useful contributions: reproducible browser tasks, safer permission scopes and checks that make results easier to trust. Keep shared examples synthetic or read-only; remove credentials and personal data from traces.
 
