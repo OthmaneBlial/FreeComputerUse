@@ -141,6 +141,22 @@ test('planner context keeps accumulated extraction evidence within its character
   }finally{await agent.close();store.close();}
 });
 
+test('follow-up planner context retains unchanged controls across stateless calls',async()=>{
+  const store=new TraceStore(':memory:');let plans=0,secondPage='';
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    if(++plans===1)return PlanSchema.parse({goal:context.goal,steps:['Reveal notice'],actions:[{type:'click',target:{role:'button',name:'Reveal notice'}}],completion:[{type:'text_exists',value:'Notice revealed'}],continue:true});
+    secondPage=context.page;
+    return PlanSchema.parse({goal:context.goal,steps:['Finish workflow'],actions:[{type:'click',target:{role:'button',name:'Finish'}}],completion:[{type:'text_exists',value:'Workflow finished'}],continue:false});
+  },repair:async()=>{throw new Error('unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra',adapters:[],useWorkflows:false});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent('<button id="reveal">Reveal notice</button><button id="finish">Finish</button><p id="notice" hidden>Notice revealed</p><p id="result"></p>');
+    await agent.browser.page.evaluate(()=>{document.querySelector('#reveal')!.addEventListener('click',()=>{document.querySelector('#notice')!.removeAttribute('hidden');});document.querySelector('#finish')!.addEventListener('click',()=>{document.querySelector('#result')!.textContent='Workflow finished';});});
+    const trace=await agent.run('Finish the workflow');
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(plans,2);assert(secondPage.includes('Finish'));
+  }finally{await agent.close();store.close();}
+});
+
 test('generic adapter extracts tables without invoking a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
   const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});

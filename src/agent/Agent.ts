@@ -87,7 +87,14 @@ export class Agent extends EventEmitter {
     const supplementalLimit=Math.floor(maxChars*.3);
     const full=this.observer.compressor.compress(state,{goal,maxChars:maxChars-supplementalLimit});
     let page=full.text;
-    if(previous){const diff=JSON.stringify(diffPages(previous,state));if(diff.length<page.length)page=`PAGE DIFF\n${diff}`;}
+    if(previous){
+      const delta=diffPages(previous,state),refs=new Set([...delta.added,...delta.changed].map(element=>element.ref));
+      const complete=state.elements.every(element=>refs.has(element.ref))
+        &&(!state.headings.length||delta.headings!==undefined)&&(!state.text||delta.text!==undefined)
+        &&(!state.tables.length||delta.tables!==undefined)&&(!state.dialogs.length||delta.dialogs!==undefined)
+        &&(!state.frames.length||delta.frames!==undefined);
+      const diff=JSON.stringify(delta);if(complete&&diff.length<page.length)page=`PAGE DIFF\n${diff}`;
+    }
     const pages=this.browser.context.pages(),recentPages=pages.slice(-Math.max(1,Math.min(4,Math.floor(supplementalLimit/180))));
     const lines=[`OPEN TABS ${JSON.stringify(recentPages.map((p,index)=>({index:pages.length-recentPages.length+index,url:p.url().slice(0,120),active:p===this.browser.page})))}`];
     const previewLimit=Math.min(400,Math.max(100,Math.floor(supplementalLimit/5)));

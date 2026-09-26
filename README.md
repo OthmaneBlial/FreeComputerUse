@@ -24,16 +24,16 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.5: keep the goal, skip the echo
+## New in 0.2.6: keep current context between plans
 
-The planner already receives your full task goal as trusted context. It no longer has to send that same text back in its response: the runtime restores the original goal and validates it against the 4,000-character limit. That leaves more of the model's output budget for useful steps, actions and checks, especially on long or non-English tasks. Goals above the limit still fail before browser work starts.
+When a task needs another planning pass, unchanged controls and page text stay available to the next plan. The agent uses a compact diff only when it contains all current controls and relevant page data; otherwise it sends the full bounded snapshot. This fixes follow-up plans that could lose useful context between stateless model calls.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.5
+npm install --global free-computer-use@0.2.6
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -77,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.5
+npm install --global free-computer-use@0.2.6
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```

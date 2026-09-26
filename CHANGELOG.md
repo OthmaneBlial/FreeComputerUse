@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.2.6 - 2026-09-27
+
+### Fixed
+
+- Keep unchanged controls and page data in follow-up planner context when a
+  compact page diff would omit them. Use diffs only when they contain the full
+  current snapshot needed by the next stateless provider call.
+
 ## 0.2.5 - 2026-09-27
 
 ### Changed
