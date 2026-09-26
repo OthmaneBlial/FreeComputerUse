@@ -117,8 +117,10 @@ export class Interaction extends EventEmitter {
       let text:string|undefined,expected:string|undefined;
       if(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement){
         text=el.value;
-        if(value!==undefined&&el.selectionStart!==null&&el.selectionEnd!==null)
-          expected=text.slice(0,el.selectionStart)+value+text.slice(el.selectionEnd);
+        if(value!==undefined){
+          if(el.selectionStart!==null&&el.selectionEnd!==null)expected=text.slice(0,el.selectionStart)+value+text.slice(el.selectionEnd);
+          else if(!text)expected=value;
+        }
       }else if(el instanceof HTMLElement&&el.isContentEditable){
         text=el.innerText;
         const selection=window.getSelection(),range=selection?.rangeCount?selection.getRangeAt(0):undefined;

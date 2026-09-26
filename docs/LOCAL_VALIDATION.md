@@ -92,6 +92,14 @@ zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
 Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
 model-provider request was made. GitHub Actions remained untouched.
 
+The working tree based on `main` commit `facee50` passed the gate on
+26 September 2026: 115/115 tests in 210.84 seconds, type-check and build,
+security scan (263 worktree files, 265 historical paths, 1,061 unique historical
+blobs; no recognized credentials or private-state paths), and npm audit with
+zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
+Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
+model-provider request was made. GitHub Actions remained untouched.
+
 The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
 and installed into a new temporary npm prefix. Its SHA-256 matched the
 published checksum. With `LLM_API_KEY` empty and an isolated `FCU_DATA_DIR`,

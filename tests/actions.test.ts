@@ -88,6 +88,17 @@ test('type reports partially accepted text as an uncertain failure',async()=>{
   }finally{await browser.close();}
 });
 
+test('type detects partial input when the field has no selection API',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input type="number" aria-label="Amount" oninput="if(this.value.length===1)this.readOnly=true">');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'type',target:{label:'Amount'},value:'123'});
+    assert.equal(await browser.page.getByLabel('Amount').inputValue(),'1');
+    assert.equal(result.success,false);assert.equal(result.uncertain,true);
+  }finally{await browser.close();}
+});
+
 test('type verifies insertion at the focused input selection',async()=>{
   const browser=await new Browser().launch();
   try{
