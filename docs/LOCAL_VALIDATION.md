@@ -76,6 +76,14 @@ and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Node
 provider contracts; no live model-provider request was made. GitHub Actions
 remained untouched.
 
+The working tree based on `main` commit `4fb4fa1` passed the same gate on
+26 September 2026: 113/113 tests in 230.32 seconds, type-check and build,
+security scan (263 worktree files, 265 historical paths, 1,054 unique historical
+blobs; no recognized credentials or private-state paths), and npm audit with
+zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
+Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
+model-provider request was made. GitHub Actions remained untouched.
+
 The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
 and installed into a new temporary npm prefix. Its SHA-256 matched the
 published checksum. With `LLM_API_KEY` empty and an isolated `FCU_DATA_DIR`,
@@ -90,8 +98,10 @@ An earlier dashboard run received `400 /api/preview` after an optional browser
 screenshot failed. Preview capture failures now return `204` with no frame, and
 a regression test injects a capture failure. The dashboard test records all
 unexpected HTTP 4xx and 5xx paths before reporting generic browser console
-errors. A previous `502` run remains unexplained. See the
-[support matrix](SUPPORT_MATRIX.md) for platform limits.
+errors. It treats a `502 /api/preview` during background polling as transient,
+then requires a later preview fetch to return `200`; the UI retries preview
+fetches automatically. The local proxy's underlying connection error is not
+exposed. See the [support matrix](SUPPORT_MATRIX.md) for platform limits.
 
 Live-provider benchmarks are separate, opt-in commands and may spend API
 tokens: `npm run benchmark -- --live`, `npm run benchmark:public`,

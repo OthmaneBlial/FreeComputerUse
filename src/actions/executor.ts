@@ -117,6 +117,7 @@ export class Executor {
         case 'hover':await interaction.perform(locator!,'hover',()=>locator!.hover({timeout}),interactionOptions);break;
         case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
         case 'type':{
+          if(!await locator!.isEditable())throw new Error('Type target is not editable');
           const readValue=()=>locator!.evaluate(el=>'value'in el?String((el as HTMLInputElement).value):el instanceof HTMLElement&&el.isContentEditable?el.innerText:undefined);
           const {before,after,expected}=await interaction.enter(locator!,value,false,interactionOptions);
           if(value&&(expected!==undefined?after!==expected:before!==undefined&&(after??await readValue())===before))throw new Error('Type postcondition failed');

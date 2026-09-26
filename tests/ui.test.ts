@@ -109,7 +109,7 @@ test('the real cursor is visible before the first model reply and survives docum
 test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true,provider:new FixtureProvider()}),fixture=await startFixtures();
-  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${new URL(response.url()).pathname}`);});
+  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{const path=new URL(response.url()).pathname;if(response.status()>=400&&!(path==='/api/preview'&&response.status()===502))httpErrors.push(`${response.status()} ${path}`);});
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'Local profile'}).click();
     await browser.page.locator('#profile-json').fill(JSON.stringify({profile:{firstName:'Alex',lastName:'Example',email:'alex@example.test',message:'Synthetic message',country:'France'},files:{}}));

@@ -66,6 +66,17 @@ test('type reports unchanged fields as uncertain failures',async()=>{
   }finally{await browser.close();}
 });
 
+test('type rejects noneditable targets',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button aria-label="Run action">Run</button>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'type',target:{label:'Run action'},value:'unexpected'});
+    assert.equal(await browser.page.getByLabel('Run action').innerText(),'Run');
+    assert.equal(result.success,false);
+  }finally{await browser.close();}
+});
+
 test('type reports partially accepted text as an uncertain failure',async()=>{
   const browser=await new Browser().launch();
   try{
