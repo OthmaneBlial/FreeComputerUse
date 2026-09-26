@@ -312,6 +312,21 @@ zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
 Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
 model-provider request was made. GitHub Actions remained untouched.
 
+The working tree later committed as `03c8ea7` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 133/133
+tests in 180.21 seconds, type-check and build, security scan (264 worktree files,
+266 historical paths, 1,175 unique historical blobs; no recognized credentials
+or private-state paths), and npm audit with zero vulnerabilities. Environment:
+macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57`. Tests used local
+fixtures and provider contracts; no live model-provider request was made.
+GitHub Actions remained untouched.
+
+The same working tree passed the gate on Node `22.13.0`: 133/133 tests in
+177.86 seconds, type-check and build, the same history scan and npm audit with
+zero vulnerabilities. Environment: macOS `26.6`/Apple Silicon and system Chrome
+`154.0.8037.57`. Node emitted its expected experimental `node:sqlite` warning.
+GitHub Actions remained untouched.
+
 The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
 and installed into a new temporary npm prefix. Its SHA-256 matched the
 published checksum. With `LLM_API_KEY` empty and an isolated `FCU_DATA_DIR`,
