@@ -40,7 +40,7 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-The v0.2.4 release-candidate working tree based on `main` at `5d38ae6` passed
+The v0.2.4 candidate committed as `0570fe9`, based on `main` at `5d38ae6`, passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 137/137
 tests in 223.73 seconds, type-check/build, security scan (267 worktree files,
 269 historical paths, 1,239 historical blobs; no recognized credentials or
@@ -49,6 +49,18 @@ macOS `26.6`, Apple Silicon, Node `25.9.0`, and system Chrome `154.0.8037.57`.
 The agent-boundary regression confirms a 4,001-character goal is rejected
 before browser launch or trace creation. No live model-provider request was
 made.
+
+Published v0.2.4 is `latest` on npm with integrity
+`sha512-+FLUn2Zk4qaoArQeW+lPfEIHK+Rr56Z7shUQG7pSTwLKaYPkt4SOUObj/Kdfc9ormgRhtxnQjuWRgjvJIIWcQQ==`.
+The registry tarball and GitHub release asset match byte for byte (SHA-256
+`7ad563d54697c05b6a5f8478207ed1823ee776fd6b62cd8cf959225c223435f0`); the
+downloaded GitHub checksum passes. A fresh npm prefix reports `agent --version`
+as `0.2.4`; `agent doctor` passes Chrome launch, and 4,001-character CLI input
+is rejected before browser launch. The public practice-table task returned
+three rows with one browser action, no failed actions and zero model calls.
+GitHub Pages built commit `0570fe9697dce183f5b6baa0c7d1b456b7ad66ba`; the
+homepage returned HTTP 200. Playwright confirmed the v0.2.4 release copy and
+links, no horizontal overflow at 320/390/768/1440 px, and no console errors.
 
 The v0.2.3 release-candidate working tree based on `main` at `7fcff07` passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 136/136 tests
