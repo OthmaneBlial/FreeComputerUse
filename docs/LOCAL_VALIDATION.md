@@ -47,6 +47,13 @@ no recognized credentials or private-state paths), and npm audit with zero
 vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system Chrome
 `154.0.8037.57`. No live model-provider request was made.
 
+The v0.2.1 release candidate at `a9b2362` passed the same gate from a clean Git
+clone on 26 September 2026: 134/134 tests in 179.76 seconds, type-check/build,
+security scan (265 worktree files, 267 historical paths, 1,197 unique historical
+blobs; no recognized credentials or private-state paths), and npm audit with
+zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
+Chrome `154.0.8037.57`. No live model-provider request was made.
+
 The v0.2.0 release candidate, based on main commit `26fc0c6` with the version,
 README, changelog and homepage updates, passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 130/130
