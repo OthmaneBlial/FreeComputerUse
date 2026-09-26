@@ -194,10 +194,15 @@ export class Executor {
             }))),action.fields);
           }
           else data=(await root.filter({visible:true}).allInnerTexts()).join('\n').slice(0,100000);
+          const {match,limit}=action;
           if(Array.isArray(data)){
-            const match=action.match;
             if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
-            if(action.limit)data=(data as unknown[]).slice(0,action.limit);
+            if(limit)data=(data as unknown[]).slice(0,limit);
+          }else if(typeof data==='string'&&(match||limit)){
+            let lines=data.split(/\r?\n/);
+            if(match)lines=lines.filter(line=>line.toLowerCase().includes(match.toLowerCase()));
+            if(limit)lines=lines.slice(0,limit);
+            data=lines.join('\n');
           }
           this.browser.extractions.push({key:action.key,value:data});
           data={[action.key]:data};break;

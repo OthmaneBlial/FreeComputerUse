@@ -199,6 +199,16 @@ test('table and link extraction excludes visually hidden descendant text',async(
   }finally{await browser.close();}
 });
 
+test('text extraction applies substring and line limits',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<main><p>Overview</p><p>Price: 90</p><p>Price: 45</p><p>Stock: 4</p></main>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'price',match:'PRICE',limit:1});
+    assert.equal(result.success,true,result.error??'Extraction failed');assert.equal(browser.extractions[0]?.value,'Price: 90');
+  }finally{await browser.close();}
+});
+
 test('popup navigation waits for the new document before extraction and closing',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{
