@@ -219,6 +219,9 @@ test('text extraction applies substring and line limits',async()=>{
     const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
     const result=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'price',match:'PRICE',limit:1});
     assert.equal(result.success,true,result.error??'Extraction failed');assert.equal(browser.extractions[0]?.value,'Price: 90');
+    await browser.page.setContent(`<main>${'x'.repeat(100001)}</main>`);
+    const bounded=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'bounded'});
+    assert.equal(bounded.success,true,bounded.error??'Extraction failed');assert.equal((browser.extractions[1]?.value as string).length,100000);
   }finally{await browser.close();}
 });
 

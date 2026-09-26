@@ -199,7 +199,7 @@ export class Executor {
               return[key,value];
             }))),action.fields);
           }
-          else data=(await root.filter({visible:true}).evaluateAll(els=>els.map(el=>{
+          else data=await root.filter({visible:true}).evaluateAll(els=>els.map(el=>{
             const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
             const [excluded]=[(node:Element)=>{
               if(node.matches('[hidden],[inert],[aria-hidden="true"]')||modalVisible&&modal&&!modal.contains(node)&&modal!==node&&!node.contains(modal))return true;
@@ -224,7 +224,7 @@ export class Executor {
               return /^(block|flex|grid|flow-root|list-item|table)/.test(getComputedStyle(element).display)?`\n${content}\n`:content;
             }];
             return read(el).replace(/[ \t]*\n[ \t]*/g,'\n').replace(/\n+/g,'\n').trim();
-          }))).join('\n').slice(0,100000);
+          }).join('\n').slice(0,100000));
           const {match,limit}=action;
           if(Array.isArray(data)){
             if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
