@@ -43,7 +43,7 @@ Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then ap
 | `Extract the first 5 links` | Return a bounded list of the first five links. |
 | `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
 
-These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The declared minimum is Node.js 22.13; the verified setup is macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154.0.8037.57. Other OS/browser combinations and the declared Node minimum remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The full local validation suite passed on Node.js 22.13.0 and 25.9.0 on macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
 
 ## Watch a real run
 
@@ -146,7 +146,7 @@ Provider, operating-system, browser and accessibility evidence stays bounded to 
 
 **Does the model receive screenshots or browser profiles?** No. The selected task and page context go to your provider; screenshots and browser profiles stay local. Local data is not encrypted.
 
-**Which platform is verified?** macOS 26.6 on Apple Silicon, Node 25.9.0 and system Chrome 154.0.8037.57. Check the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
+**Which platform is verified?** Full local validation passed on macOS 26.6/Apple Silicon with Node 22.13.0 and 25.9.0 and system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified; see the [support matrix](docs/SUPPORT_MATRIX.md) for exact coverage and limits.
 
 ## Explore and contribute
 
