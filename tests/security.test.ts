@@ -39,6 +39,12 @@ test('concurrent token reservations cannot oversubscribe the input/output budget
 test('trusted extraction criteria derive from the original goal',()=>{
   assert.deepEqual(goalCriteria('Extract the first five stories'),[{type:'extraction_created'},{type:'extraction_count',min:5,max:5}]);
   assert.deepEqual(goalCriteria('Fill the form using my profile'),[]);
+  assert.deepEqual(goalCriteria('Download the invoice'),[{type:'download_created'}]);
+  assert.deepEqual(goalCriteria('Export the report as CSV'),[{type:'download_created'}]);
+  assert.deepEqual(goalCriteria('Tell me how to download the invoice'),[{type:'extraction_created'}]);
+  assert.deepEqual(goalCriteria('Can I download the invoice'),[]);
+  assert.deepEqual(goalCriteria('Find the download link for the report'),[]);
+  assert.deepEqual(goalCriteria('Do not download the invoice'),[]);
 });
 
 import {once} from 'node:events';

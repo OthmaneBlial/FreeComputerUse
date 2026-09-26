@@ -116,6 +116,16 @@ test('generic adapter extracts tables without invoking a provider',async()=>{
   finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('download goals cannot complete without creating a browser download',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');
+  const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  const plan=PlanSchema.parse({goal:'Download the invoice',steps:['Open preferences'],actions:[{type:'click',target:{role:'button',name:'Open modal'}}],completion:[{type:'element_visible',target:{role:'dialog',name:'Preferences'}}],continue:false});
+  try{
+    const trace=await agent.run('Download the invoice',fixture.url+'/dynamic',plan,false);
+    assert.equal(trace.status,'failed');assert.equal(agent.browser.downloads.length,0);
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
 test('completion-only repair preserves successful actions; failed replay never invokes a provider',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let repairs=0;
   const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairs++;return{actions:[],replace:0,completion:[{type:'text_exists',value:'Northstar'}]};}};
