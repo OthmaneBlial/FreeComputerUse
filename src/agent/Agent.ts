@@ -118,7 +118,7 @@ export class Agent extends EventEmitter {
     const usageStart=this.budget.snapshot();let initial:PageState|undefined,repairs=0,cacheHits=0,planCalls=0;
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);
-    const repeated=new Map<string,number>(),navigations=new Map<string,number>(),completed:string[]=[];
+    const repeated=new Map<string,number>(),repeatRecoveries=new Set<string>(),navigations=new Map<string,number>(),completed:string[]=[];
     let revision=this.control.revision,completionReplans=0;
     try{
       if(!this.browser.context)await this.browser.launch();
@@ -155,7 +155,16 @@ export class Agent extends EventEmitter {
           const before=this.state!;const action=actions[index]!;
           if(this.options.mode!=='ultra'&&/\{\{(?:profile|files)\./.test(JSON.stringify(action))&&!/\b(profile|personal details|my details|credentials|resume|cv|local file)\b/i.test(goal))throw new Error('The user goal does not authorize access to local profile/file aliases');
           const key=before.hash+JSON.stringify(action);const count=(repeated.get(key)??0)+1;repeated.set(key,count);
-          if(count>(this.options.maxRepeatedStates??3))throw new Error('Repeated state/action loop detected');
+          if(count>(this.options.maxRepeatedStates??3)){
+            if(!provider||repairs>=(this.options.maxRepairs??8)||repeatRecoveries.has(key))throw new Error('Repeated state/action loop detected');
+            repeatRecoveries.add(key);repairs++;this.event('REPAIR','Replanning after an action repeated without changing the observed page',{action,repeats:count});
+            const context=this.context(goal,before,completed,previous);
+            const repaired=RepairSchema.parse(await provider.repair({...context,failedAction:action,error:'This action was already executed at the same observed page state. Do not repeat it; replace or remove it, then continue from the current page or finish if the trusted criteria are met.',remaining:actions.slice(index,index+12)}));
+            if(repaired.replace<1||repaired.replace>actions.length-index)throw new Error('Repair attempted to keep or replace actions outside the repeated portion');
+            if(repaired.completion)plan.completion=repaired.completion;
+            if(repaired.continue!==undefined)plan.continue=repaired.continue;
+            actions.splice(index,repaired.replace,...repaired.actions);continue;
+          }
           this.event('EXECUTE',`${action.type}${'target'in action?' '+JSON.stringify(action.target):''}`,{index:index+1,total:actions.length});
           const result=await this.executor.run(action);trace.actions.push(result);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
           let after=await this.observe();

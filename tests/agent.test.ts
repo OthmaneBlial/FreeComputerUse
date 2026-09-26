@@ -123,6 +123,27 @@ test('max steps terminates repeated batches',async()=>{
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('repeated actions get one bounded repair before the no-progress guard stops them',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');
+  const extract=(key:string)=>({type:'extract' as const,format:'text' as const,key});
+  const run=async(replacement:ReturnType<typeof extract>)=>{
+    let repairCalls=0;
+    const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairCalls++;return{actions:[replacement],replace:1};}};
+    const agent=new Agent({store,provider,maxRepeatedStates:1,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+    try{
+      const plan=PlanSchema.parse({goal:'Read this page',steps:['Read the page'],actions:[extract('repeated'),extract('repeated')],completion:[{type:'extraction_created',key:'summary'}],continue:false});
+      const trace=await agent.run('Read this page',fixture.url+'/demo',plan);
+      return{trace,repairCalls};
+    }finally{await agent.close();}
+  };
+  try{
+    const recovered=await run(extract('summary'));
+    assert.equal(recovered.trace.status,'completed',recovered.trace.error??'Task failed');assert.equal(recovered.repairCalls,1);
+    const stillRepeating=await run(extract('repeated'));
+    assert.equal(stillRepeating.trace.status,'failed');assert.match(stillRepeating.trace.error??'',/Repeated state\/action loop detected/);assert.equal(stillRepeating.repairCalls,1);
+  }finally{store.close();await fixture.close();}
+});
+
 test('planner context keeps accumulated extraction evidence within its character budget',async()=>{
   const store=new TraceStore(':memory:');let secondPage='',calls=0;
   const provider:LLMProvider={name:'fixture',plan:async context=>{
