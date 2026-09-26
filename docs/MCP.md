@@ -26,11 +26,45 @@ profiles, history and downloads stay in the configured local data directory.
 Do not add API keys to an MCP config or share the MCP process with an
 untrusted host.
 
+## Install from npm
+
+Install the published package globally:
+
+```sh
+npm install --global free-computer-use@0.2.0
+```
+
+Create a dedicated working directory for the MCP process and put provider
+settings in its `.env` file. The process reads `.env` from its configured
+working directory; use the [provider setup guide](PROVIDERS.md), and do not put
+API keys in the host configuration. Set `FCU_DATA_DIR` to a separate dedicated
+local directory for browser state and history.
+
+```json
+{
+  "mcpServers": {
+    "free-computer-use": {
+      "command": "agent",
+      "args": ["mcp"],
+      "cwd": "/absolute/path/to/free-computer-use-config",
+      "env": {
+        "FCU_BROWSER_CHANNEL": "chrome",
+        "FCU_DATA_DIR": "/absolute/path/to/free-computer-use-data"
+      }
+    }
+  }
+}
+```
+
+Replace both paths with local absolute paths. If the desktop host cannot find
+global npm commands on its `PATH`, set `command` to the absolute path of the
+installed `agent` executable. Restart the host after changing its configuration.
+
 ## Run from a source checkout
 
-Use Node.js 22.13 or later, npm and an installed browser. The checked platform
-is macOS 26.6 on Apple Silicon with Node 25.9.0 and system Chrome 154.0.8037.57.
-Other platforms and browser combinations remain unverified.
+Use Node.js 22.13 or later, npm and an installed browser. The full suite passed
+on macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57 on Node 22.13.0
+and 25.9.0. Other platforms and browser combinations remain unverified.
 
 ```sh
 git clone https://github.com/OthmaneBlial/FreeComputerUse.git
@@ -75,7 +109,9 @@ sensitive-form approvals, refusal before the site receives a request, malformed
 URL rejection, and the modern `stdio` transport. A live UI check also connected
 the built CLI to MCP Inspector 2.8.0 over `stdio`, displayed the site's form
 elicitation and declined it. The task failed safely with zero model calls and
-zero requests to the local fixture. This verifies the reference client only;
-compatibility with other desktop agent hosts remains unverified. The npm
-package is not published; use the source checkout until a public installation
-is verified.
+zero requests to the local fixture. On 26 September 2026, the published
+`free-computer-use@0.2.0` package was installed in a fresh prefix on Node
+22.13.0; the official TypeScript MCP client connected to `agent mcp` over
+`stdio` and listed all four tools. That package smoke verifies launch and tool
+discovery, not task execution or approvals through the published package.
+Compatibility with other desktop agent hosts remains unverified.
