@@ -187,6 +187,17 @@ test('record extraction omits hidden, password, payment and one-time-code input 
   }finally{await browser.close();}
 });
 
+test('record extraction omits hidden field text and link attributes',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<!doctype html><html><head><base href="https://example.test/"></head><body><article class="card"><span class="hidden" style="opacity:0">Hidden instruction</span><span aria-hidden="true"><a class="hidden-link" href="/private">Private destination</a></span><span class="visible">Visible fact</span></article></body></html>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'extract',target:{css:'.card'},format:'records',key:'facts',fields:{hiddenText:{css:'.hidden',attribute:'text'},hiddenLink:{css:'.hidden-link',attribute:'href'},visibleText:{css:'.visible',attribute:'text'}}});
+    assert.equal(result.success,true,result.error??'Extraction failed');
+    assert.deepEqual(browser.extractions[0]?.value,[{hiddenText:'',hiddenLink:'',visibleText:'Visible fact'}]);
+  }finally{await browser.close();}
+});
+
 test('table and link extraction excludes hidden cells, text and links',async()=>{
   const browser=await new Browser().launch();
   try{

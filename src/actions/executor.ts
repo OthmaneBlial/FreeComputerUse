@@ -185,14 +185,16 @@ export class Executor {
                 const cells=[...el.querySelectorAll(':scope > td')];
                 if(indices.length===1&&cells.length>=headers.length)node=cells[indices[0]!+cells.length-headers.length]??node;
               }
-              if(node){if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
+              if(node){
+                let hidden=!!node.closest('[hidden],[inert],[aria-hidden="true"]');
+                for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')hidden=true;}
+                const autocomplete=(node.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
+                const sensitiveInput=field.attribute==='value'&&node instanceof HTMLInputElement&&(node.type==='hidden'||node.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)));
+                if(hidden&&!sensitiveInput)value='';
+                else if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
                 else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
                 else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
-                else if(field.attribute==='value'){
-                  const autocomplete=(node.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
-                  const sensitiveInput=node instanceof HTMLInputElement&&(node.type==='hidden'||node.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)));
-                  value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
-                }
+                else if(field.attribute==='value')value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
                 else value=node.getAttribute(field.attribute)??'';}
               return[key,value];
             }))),action.fields);
