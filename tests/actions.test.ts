@@ -66,6 +66,28 @@ test('type reports unchanged fields as uncertain failures',async()=>{
   }finally{await browser.close();}
 });
 
+test('type reports partially accepted text as an uncertain failure',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input aria-label="Locks after first key" oninput="if(this.value.length===1)this.readOnly=true">');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'type',target:{label:'Locks after first key'},value:'complete text'});
+    assert.equal(await browser.page.getByLabel('Locks after first key').inputValue(),'c');
+    assert.equal(result.success,false);assert.equal(result.uncertain,true);
+  }finally{await browser.close();}
+});
+
+test('type verifies insertion at the focused input selection',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input aria-label="Editable field" value="hello world">');
+    const field=browser.page.getByLabel('Editable field');await field.focus();await field.evaluate(el=>(el as HTMLInputElement).setSelectionRange(6,11));
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'type',target:{label:'Editable field'},value:'there'});
+    assert.equal(await field.inputValue(),'hello there');assert.equal(result.success,true);
+  }finally{await browser.close();}
+});
+
 test('download names stay inside the selected folder and support Unicode across platforms',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),downloadDir=join(dir,'downloads');await mkdir(downloadDir,{mode:0o755});
   const browser=await new Browser().launch();

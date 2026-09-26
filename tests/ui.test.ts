@@ -40,6 +40,16 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 
+test('a failed dashboard preview capture returns no frame',async()=>{
+  const session=await startApprovalSession(new FixtureProvider());
+  try{
+    const page=session.dashboard.getAgent()!.browser.page;
+    Object.defineProperty(page,'screenshot',{configurable:true,value:async()=>{throw new Error('Synthetic preview timeout');}});
+    const status=await session.browser.page.evaluate(async()=> (await fetch('/api/preview')).status);
+    assert.equal(status,204);
+  }finally{await session.close();}
+});
+
 test('dashboard and provider context redact credentials in the active page URL',{timeout:30000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-url-redaction-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures();let prompt='';
@@ -99,7 +109,7 @@ test('the real cursor is visible before the first model reply and survives docum
 test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true,provider:new FixtureProvider()}),fixture=await startFixtures();
-  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{if(response.status()>=500)httpErrors.push(`${response.status()} ${new URL(response.url()).pathname}`);});
+  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{if(response.status()>=400)httpErrors.push(`${response.status()} ${new URL(response.url()).pathname}`);});
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'Local profile'}).click();
     await browser.page.locator('#profile-json').fill(JSON.stringify({profile:{firstName:'Alex',lastName:'Example',email:'alex@example.test',message:'Synthetic message',country:'France'},files:{}}));

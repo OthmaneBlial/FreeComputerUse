@@ -67,6 +67,15 @@ Node `25.9.0`, and system Chrome `154.0.8037.57`. The tests use local fixtures
 and provider contracts; no live model-provider request was made. GitHub Actions
 remained untouched.
 
+On 26 September 2026, the working tree based on `main` commit `50e7a0e` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate`: 112/112 tests in 239.66 seconds,
+type-check and build, security scan (263 worktree files, 265 historical paths,
+1,047 unique historical blobs; no recognized credentials or private-state paths),
+and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Node
+`25.9.0`, and system Chrome `154.0.8037.57`. Tests used local fixtures and
+provider contracts; no live model-provider request was made. GitHub Actions
+remained untouched.
+
 The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
 and installed into a new temporary npm prefix. Its SHA-256 matched the
 published checksum. With `LLM_API_KEY` empty and an isolated `FCU_DATA_DIR`,
@@ -77,12 +86,12 @@ completed the public synthetic practice task with the three expected rows, one
 browser action, and zero model calls. This CLI smoke used explicit Ultra mode;
 the separate final dashboard video demonstrates normal site approval.
 
-One earlier clean run failed 100/101 on a transient dashboard `502`; the first
-assertion reported only Chrome’s generic console message. The test now asserts
-captured HTTP 5xx paths before generic console errors. A focused rerun and two
-subsequent complete suites passed, but the original failure did not recur, so
-its source remains unknown. See the [support matrix](SUPPORT_MATRIX.md) for
-platform limits.
+An earlier dashboard run received `400 /api/preview` after an optional browser
+screenshot failed. Preview capture failures now return `204` with no frame, and
+a regression test injects a capture failure. The dashboard test records all
+unexpected HTTP 4xx and 5xx paths before reporting generic browser console
+errors. A previous `502` run remains unexplained. See the
+[support matrix](SUPPORT_MATRIX.md) for platform limits.
 
 Live-provider benchmarks are separate, opt-in commands and may spend API
 tokens: `npm run benchmark -- --live`, `npm run benchmark:public`,

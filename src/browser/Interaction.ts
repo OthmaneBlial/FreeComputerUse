@@ -7,6 +7,7 @@ export interface PointerState {
   visible:boolean;kind:InteractionKind;time:number;
 }
 export interface InteractionOptions {timeout:number;checkpoint:()=>Promise<void>;beforeEffect?:()=>Promise<void>}
+type TextEntryResult={before?:string;after?:string;expected?:string};
 const delay=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 
 // Only trusted browser operations publish telemetry. No scripts, styles or
@@ -111,11 +112,33 @@ export class Interaction extends EventEmitter {
     return result;
     }finally{await target?.dispose();}
   }
-  async enter(locator:Locator,value:string,replace:boolean,options:InteractionOptions) {
+  private textState(locator:Locator,inserted?:string){
+    return locator.evaluate((el, value)=>{
+      let text:string|undefined,expected:string|undefined;
+      if(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement){
+        text=el.value;
+        if(value!==undefined&&el.selectionStart!==null&&el.selectionEnd!==null)
+          expected=text.slice(0,el.selectionStart)+value+text.slice(el.selectionEnd);
+      }else if(el instanceof HTMLElement&&el.isContentEditable){
+        text=el.innerText;
+        const selection=window.getSelection(),range=selection?.rangeCount?selection.getRangeAt(0):undefined;
+        if(value!==undefined&&text===el.textContent&&range&&el.contains(range.startContainer)&&el.contains(range.endContainer)){
+          const offset=(node:Node,position:number)=>{const prefix=document.createRange();prefix.selectNodeContents(el);prefix.setEnd(node,position);return prefix.toString().length;};
+          expected=text.slice(0,offset(range.startContainer,range.startOffset))+value+text.slice(offset(range.endContainer,range.endOffset));
+        }
+      }
+      return{ text,expected };
+    },inserted);
+  }
+  async enter(locator:Locator,value:string,replace:boolean,options:InteractionOptions):Promise<TextEntryResult> {
     if(!this.enabled){
       if(replace)await locator.fill(value,{timeout:options.timeout});
-      else await locator.pressSequentially(value,{timeout:options.timeout});
-      return;
+      else{
+        await locator.focus({timeout:options.timeout});
+        const before=await this.textState(locator,value);await locator.pressSequentially(value,{timeout:options.timeout});
+        const after=await this.textState(locator);return{before:before.text,after:after.text,expected:before.expected};
+      }
+      return{};
     }
     const page=this.currentPage(),pageId=this.pageId(page),target=await locator.elementHandle({timeout:options.timeout});
     try{
@@ -123,7 +146,8 @@ export class Interaction extends EventEmitter {
     await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();
     const canType=await locator.evaluate(el=>el.matches('textarea,input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=number]')||(el as HTMLElement).isContentEditable);
     await locator.click({timeout:options.timeout});this.cue('click');
-    await options.checkpoint();await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();this.cue(replace?'fill':'type');
+    await options.checkpoint();await this.assertTarget(locator,target,page,pageId);await options.beforeEffect?.();
+    const before=replace?undefined:await this.textState(locator,value);this.cue(replace?'fill':'type');
     // Native date/select/file inputs keep their native semantics. Passwords and
     // long text are entered in one operation, never exposed in cursor events.
     if(!canType||value.length>160){
@@ -138,6 +162,8 @@ export class Interaction extends EventEmitter {
       }
     }
     await delay(260);await options.checkpoint();
+    if(!replace){const after=await this.textState(locator);return{before:before?.text,after:after.text,expected:before?.expected};}
+    return{};
     }finally{await target?.dispose();}
   }
   async scroll(pixels:number,options:InteractionOptions) {

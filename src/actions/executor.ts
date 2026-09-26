@@ -118,8 +118,8 @@ export class Executor {
         case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
         case 'type':{
           const readValue=()=>locator!.evaluate(el=>'value'in el?String((el as HTMLInputElement).value):el instanceof HTMLElement&&el.isContentEditable?el.innerText:undefined);
-          const before=await readValue();await interaction.enter(locator!,value,false,interactionOptions);
-          if(value&&before!==undefined&&await readValue()===before)throw new Error('Type postcondition failed');
+          const {before,after,expected}=await interaction.enter(locator!,value,false,interactionOptions);
+          if(value&&(expected!==undefined?after!==expected:before!==undefined&&(after??await readValue())===before))throw new Error('Type postcondition failed');
           break;
         }
         case 'select':{

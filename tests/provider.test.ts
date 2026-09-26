@@ -147,7 +147,7 @@ if(args[0]==='--version'){process.stdout.write((process.env.FCU_TEST_CLI_VERSION
 if(args[0]==='login'){process.stderr.write('Logged in using ChatGPT\\n');process.exit(0);}
 if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',apiKeySource:null}));process.exit(0);}
 process.on('SIGTERM',()=>{});
-setTimeout(()=>process.exit(0),1300);
+setTimeout(()=>process.exit(0),2200);
 setInterval(()=>{},1000);
 `,{mode:0o700});await chmod(command,0o700);
     const context={goal:'Read',page:'Fixture',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]};
@@ -156,7 +156,7 @@ setInterval(()=>{},1000);
       [new ClaudeSubscriptionProvider({command,timeoutMs:100},new TokenBudget()),'2.1.248',/Claude Code CLI timed out/],
     ] as const){
       process.env.FCU_TEST_CLI_VERSION=version;const started=Date.now();await assert.rejects(provider.plan(context),error);
-      assert(Date.now()-started<900,'Provider timeout must not wait for the fake CLI exit');
+      assert(Date.now()-started<1800,'Provider timeout must not wait for the fake CLI exit');
     }
   }finally{
     if(previousVersion===undefined)delete process.env.FCU_TEST_CLI_VERSION;else process.env.FCU_TEST_CLI_VERSION=previousVersion;

@@ -68,7 +68,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       if(req.method==='GET'&&path==='/api/preview'){
         if(!agent?.browser.page||agent.browser.page.isClosed()){res.writeHead(204);res.end();return;}
         const running=agent,page=running.browser.page,pageId=running.browser.interaction.pageId(page);
-        const screenshot=await page.screenshot({type:'jpeg',quality:70,timeout:2500});
+        let screenshot:Buffer;try{screenshot=await page.screenshot({type:'jpeg',quality:70,timeout:2500});}catch{res.writeHead(204);res.end();return;}
         if(agent!==running||page!==running.browser.page||pageId!==running.browser.interaction.pageId(page)){res.writeHead(204);res.end();return;}
         res.writeHead(200,{'Content-Type':'image/jpeg','X-FCU-Page-ID':String(pageId),'X-FCU-Run-ID':running.trace?.id??''});res.end(screenshot);return;
       }
