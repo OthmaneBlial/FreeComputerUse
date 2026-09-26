@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
-import { diffPages, similarity } from '../src/browser/PageCompressor.js';
+import { diffPages, PageCompressor, similarity } from '../src/browser/PageCompressor.js';
 import { stateHash } from '../src/browser/DomExtractor.js';
 import { ActionSchema, PlanSchema } from '../src/actions/schema.js';
 
@@ -56,6 +56,13 @@ test('ranked selector survives replacement and rejects ambiguous duplicate butto
     const duplicate=state.elements.filter(e=>e.name==='Duplicate')[1]!;
     assert.equal((await observer.selectors.resolve(browser.page,duplicate.ref)).strategy,'reference');
   }finally{await browser.close();}
+});
+
+test('page compression ranks relevant controls first and preserves tie order',()=>{
+  const elements=['General action','Other action','Travel reservation'].map((name,index)=>({ref:`e${index}`,tag:'button',role:'button',name,frame:0,selectors:{role:'button',name},path:'body'}));
+  const state={url:'https://example.test/',title:'Results',headings:[],text:'',elements,tables:[],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
+  const text=new PageCompressor().compress(state,{goal:'travel reservation',maxChars:2000}).text;
+  assert(text.indexOf('[e2]')<text.indexOf('[e0]'));assert(text.indexOf('[e0]')<text.indexOf('[e1]'));
 });
 
 test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{

@@ -11,7 +11,9 @@ export class PageCompressor {
     const max=options.maxChars??12000;
     const brief=(e:PageElement)=>`[${e.ref}] ${e.role} ${JSON.stringify(e.name)}${e.href?` href=${JSON.stringify(e.href)}`:''}${e.selectors.id?` id=${JSON.stringify(e.selectors.id)}`:''}${e.type?` type=${e.type}`:''}${e.required?' required':''}${e.disabled?' disabled':''}${e.form?` form=${JSON.stringify(e.form)}`:''}${e.hasValue?' populated':''}${e.checked?' checked':''}${e.error?` error=${JSON.stringify(e.error)}`:''}${e.options?` options=${JSON.stringify(e.options)}`:''}`;
     const elements=state.elements.filter(e=>!options.region||e.region===options.region||e.form===options.region);
-    const ranked=options.goal ? [...elements].sort((a,b)=>similarity(options.goal!,[b.name,b.form,b.role].join(' '))-similarity(options.goal!,[a.name,a.form,a.role].join(' '))) : elements;
+    const goal=options.goal;
+    const ranked=goal ? elements.map((element,index)=>({element,index,score:similarity(goal,[element.name,element.form,element.role].join(' '))}))
+      .sort((a,b)=>b.score-a.score||a.index-b.index).map(item=>item.element) : elements;
     const lines=[`PAGE ${state.title}`,`URL ${state.url}`,`STATE ${state.hash}`,`HEADINGS ${state.headings.join(' | ')}`,`WARNINGS ${state.warnings.join(' | ')}`];
     if (options.level!==1) {
       // Reserve space for document data even when navigation contains hundreds
