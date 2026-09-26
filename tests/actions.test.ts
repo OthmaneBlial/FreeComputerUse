@@ -222,6 +222,22 @@ test('text extraction applies substring and line limits',async()=>{
   }finally{await browser.close();}
 });
 
+test('text extraction excludes hidden descendants and blocked modal backgrounds',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<main><p>First public <span style="opacity:0">Hidden opacity</span></p><p>Second public <span aria-hidden="true">Hidden aria</span></p><p>Third public <span inert>Hidden inert</span></p></main>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'visible'});
+    assert.equal(result.success,true,result.error??'Extraction failed');
+    assert.equal(browser.extractions[0]?.value,'First public\nSecond public\nThird public');
+    await browser.page.setContent('<main><p>Blocked background</p><dialog><p>Dialog content</p></dialog></main>');
+    await browser.page.locator('dialog').evaluate(el=>(el as HTMLDialogElement).showModal());
+    const modal=await executor.run({type:'extract',format:'text',key:'dialog'});
+    assert.equal(modal.success,true,modal.error??'Extraction failed');
+    assert.equal(browser.extractions[1]?.value,'Dialog content');
+  }finally{await browser.close();}
+});
+
 test('popup navigation waits for the new document before extraction and closing',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{

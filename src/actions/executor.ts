@@ -199,7 +199,32 @@ export class Executor {
               return[key,value];
             }))),action.fields);
           }
-          else data=(await root.filter({visible:true}).allInnerTexts()).join('\n').slice(0,100000);
+          else data=(await root.filter({visible:true}).evaluateAll(els=>els.map(el=>{
+            const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+            const [excluded]=[(node:Element)=>{
+              if(node.matches('[hidden],[inert],[aria-hidden="true"]')||modalVisible&&modal&&!modal.contains(node)&&modal!==node&&!node.contains(modal))return true;
+              const style=getComputedStyle(node);return style.display==='none'||style.visibility!=='visible'||style.opacity==='0';
+            }];
+            let hiddenParent=false;
+            for(let parent:Element|null=el.parentElement;parent;parent=parent.parentElement)if(excluded(parent)){hiddenParent=true;break;}
+            const omitted=new Set<Element>(),dirty=new Set<Element>();
+            const [inspect]=[(node:Element,hidden=false)=>{
+              if(hidden||excluded(node)){omitted.add(node);for(let parent:Element|null=node;parent;parent=parent.parentElement){dirty.add(parent);if(parent===el)break;}return;}
+              for(const child of node.children)inspect(child);
+            }];
+            inspect(el,hiddenParent);
+            const [read]=[(node:Node):string=>{
+              if(node.nodeType===Node.TEXT_NODE)return node.nodeValue??'';
+              if(node.nodeType!==Node.ELEMENT_NODE)return '';
+              const element=node as HTMLElement;
+              if(omitted.has(element))return '';
+              if(!dirty.has(element))return element.innerText??element.textContent??'';
+              if(element.tagName==='BR')return '\n';
+              const content=[...element.childNodes].map(read).join('');
+              return /^(block|flex|grid|flow-root|list-item|table)/.test(getComputedStyle(element).display)?`\n${content}\n`:content;
+            }];
+            return read(el).replace(/[ \t]*\n[ \t]*/g,'\n').replace(/\n+/g,'\n').trim();
+          }))).join('\n').slice(0,100000);
           const {match,limit}=action;
           if(Array.isArray(data)){
             if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
