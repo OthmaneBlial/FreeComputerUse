@@ -10,12 +10,12 @@ import { ProfileStore } from '../profile/ProfileStore.js';
 import { VariableResolver } from '../profile/VariableResolver.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
 import { ensureDataDirectory,runtimeConfig } from '../config.js';
-import { PlanSchema } from '../actions/schema.js';
+import { PlanSchema,TaskGoalSchema } from '../actions/schema.js';
 import type { LLMProvider } from '../llm/LLMProvider.js';
 
 const browserURL=z.url().refine(value=>{try{checkedHttpURL(value);return true;}catch{return false;}},'Only HTTP(S) destinations without embedded credentials are supported');
 const SitePermission=z.object({origin:z.url().refine(value=>{const url=new URL(value);return url.origin===value&&!url.username&&!url.password;},'Expected a canonical site origin')}).strict();
-const RunRequest=z.object({goal:z.string().min(1).max(4000),url:browserURL,allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
+const RunRequest=z.object({goal:TaskGoalSchema,url:browserURL,allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
 const Manual=z.discriminatedUnion('type',[
   z.object({type:z.literal('click'),x:z.number().min(0).max(10000),y:z.number().min(0).max(10000)}).strict(),
   z.object({type:z.literal('type'),value:z.string().max(10000)}).strict(),

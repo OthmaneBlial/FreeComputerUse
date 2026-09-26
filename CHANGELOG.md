@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.4 - 2026-09-27
+
+### Fixed
+
+- Enforce the shared 4,000-character task-goal limit in the agent API before
+  browser startup or trace creation, matching CLI, dashboard and MCP behavior.
+
 ## 0.2.3 - 2026-09-27
 
 ### Fixed

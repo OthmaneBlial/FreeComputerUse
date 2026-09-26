@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const text = z.string().min(1).max(2000);
+export const TaskGoalSchema = z.string().min(1).max(4000);
 export const SemanticTargetSchema = z.object({
   role: text.optional(), name: text.optional(), label: text.optional(),
   placeholder: text.optional(), testId: text.optional(), id: text.optional(),
@@ -51,7 +52,7 @@ export const ActionSchema = z.discriminatedUnion('type', [
 ]);
 export type Action = z.infer<typeof ActionSchema>;
 export const PlanSchema = z.object({
-  goal: z.string().min(1).max(4000), steps: z.array(text).min(1).max(12),
+  goal: TaskGoalSchema, steps: z.array(text).min(1).max(12),
   actions: z.array(ActionSchema).min(1).max(80),
   completion: z.array(ConditionSchema).min(1).max(12),
   continue: z.boolean().default(false),

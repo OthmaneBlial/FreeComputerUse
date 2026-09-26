@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import type { BrowserContext, Page } from 'playwright';
-import { PlanSchema,RepairSchema,type Plan,type Condition } from '../actions/schema.js';
+import { PlanSchema,RepairSchema,TaskGoalSchema,type Plan,type Condition } from '../actions/schema.js';
 import { Executor,type ActionResult } from '../actions/executor.js';
 import { Browser,checkedHttpURL,type BrowserOptions } from '../browser/Browser.js';
 import { SecurityBoundaryError } from '../browser/SecurityBoundaryError.js';
@@ -102,6 +102,7 @@ export class Agent extends EventEmitter {
     return {goal:this.variables.redact(goal),page,aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.browser.options.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
   }
   async run(goal:string,url?:string,providedPlan?:Plan,allowProvider=true):Promise<Trace>{
+    goal=TaskGoalSchema.parse(goal);
     if(this.active)throw new Error('An agent task is already running');
     if(this.control.stopped)throw new Error('Create a new agent after stopping a task');
     if(url)checkedHttpURL(url,this.browser.page?.url());

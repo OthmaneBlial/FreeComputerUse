@@ -1,6 +1,6 @@
 # FreeComputerUse — roadmap de publication
 
-**État actualisé le 27 septembre 2026. Les 25 jalons initiaux sont terminés ; la version publique 0.2.3 aligne la limite du planificateur sur les 4 000 caractères autorisés par les API dashboard et MCP.** npm, le tag GitHub, la release et Pages sont publiés et vérifiés. La maintenance reste ouverte ; les preuves sont dans les [notes 0.2.3](release-notes/0.2.3.md).
+**État actualisé le 27 septembre 2026. Les 25 jalons initiaux sont terminés ; la candidate 0.2.4 fait respecter la limite de 4 000 caractères au cœur de l’agent, y compris pour la CLI et la bibliothèque.** La validation locale a passé 137/137 tests ; npm, le tag, la release GitHub et Pages restent à publier et vérifier.
 
 ## Résumé de l’audit
 
@@ -8,8 +8,8 @@ FreeComputerUse est un agent d’automatisation de navigateur local. Il observe 
 
 ### État vérifié
 
-- `package.json` déclare la version publiée `0.2.3`, Node `>=22.13.0`, un exécutable CLI `agent`, une entrée de bibliothèque et une liste de fichiers à inclure dans le paquet npm.
-- Le gate complet `FCU_BROWSER_CHANNEL=chrome npm run validate` a passé **136/136 tests** sur Node `25.9.0`, avec vérifications de types et build, scan d’historique et `npm audit` sans vulnérabilité. Le run antérieur après les changements proxy a passé 133/133 sur Node `22.13.0` et `25.9.0`. Environnement : macOS 26.6/Apple Silicon et Chrome système 154.0.8037.57. Le scan par motifs ne constitue pas un audit de sécurité complet.
+- `package.json` déclare la candidate `0.2.4`, Node `>=22.13.0`, un exécutable CLI `agent`, une entrée de bibliothèque et une liste de fichiers à inclure dans le paquet npm.
+- Le gate complet `FCU_BROWSER_CHANNEL=chrome npm run validate` a passé **137/137 tests** sur Node `25.9.0`, avec vérifications de types et build, scan d’historique et `npm audit` sans vulnérabilité. Le run antérieur après les changements proxy a passé 133/133 sur Node `22.13.0` et `25.9.0`. Environnement : macOS 26.6/Apple Silicon et Chrome système 154.0.8037.57. Le scan par motifs ne constitue pas un audit de sécurité complet.
 - `docs/BENCHMARKS.md` rapporte un essai daté du 18 septembre : 14/14 tâches publiques et leurs répétitions compatibles réussies dans cet essai, avec DeepSeek, une seule mesure par cas et des limites explicitement documentées. Le même document rapporte des résultats variables sur les tâches complexes et un audit GitHub Playwright non réussi. Cela ne prouve pas une réussite générale sur le Web.
 - Le README décrit plusieurs routes de modèles : API compatibles OpenAI, Anthropic, OpenRouter et interfaces CLI pour abonnements Codex et Claude Code. La matrice de compatibilité n’est pas accompagnée d’une validation réelle et versionnée de chaque fournisseur.
 - Le site GitHub Pages a terminé son build depuis `main /docs` au commit `11b6a29`; la page v0.2.3 répond HTTP 200. Playwright confirme le texte de release, trois liens vers v0.2.3, les largeurs 320/390/768/1440, sans débordement ni erreur console.

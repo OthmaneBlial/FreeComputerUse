@@ -7,6 +7,7 @@ import { ensureDataDirectory, runtimeConfig } from '../config.js';
 import { checkedHttpURL } from '../browser/Browser.js';
 import { TraceStore, type Trace } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
+import { TaskGoalSchema } from '../actions/schema.js';
 
 type AgentSession = { agent: Agent; store: TraceStore };
 type AgentFactory = (url: string) => Promise<AgentSession>;
@@ -23,7 +24,7 @@ type BrowserTask = {
 };
 
 const approvalSchema = z.object({ confirmed: z.boolean() }).strict();
-const taskInput = z.object({ goal: z.string().trim().min(1).max(4000), url: z.url() }).strict().refine(({ url }) => {
+const taskInput = z.object({ goal: z.string().trim().pipe(TaskGoalSchema), url: z.url() }).strict().refine(({ url }) => {
   try { checkedHttpURL(url); return true; } catch { return false; }
 }, 'Only HTTP(S) URLs without embedded credentials are supported');
 const idInput = z.object({ taskId: z.uuid() }).strict();

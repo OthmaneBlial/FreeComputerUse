@@ -24,16 +24,16 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.3: long task goals work end to end
+## New in 0.2.4: one task-goal limit everywhere
 
-Dashboard and MCP tasks allow goals up to 4,000 characters. The planner schema now accepts that same full limit, so a valid longer request is not rejected when the model repeats it in its plan. Version 0.2.2 also keeps page context and recent extraction evidence inside one character cap.
+CLI, library, dashboard and MCP tasks now share the same 4,000-character goal limit. Overlong goals fail before the browser opens or a run is saved, instead of reaching a planner schema that cannot accept them. Version 0.2.3 aligned the planner schema with the dashboard and MCP limit.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.3
+npm install --global free-computer-use@0.2.4
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -47,7 +47,7 @@ Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then ap
 | `Extract the first 5 links` | Return a bounded list of the first five links. |
 | `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
 
-These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. Release 0.2.3 passed the full local suite 136/136 on Node.js 25.9.0; 0.2.2 passed 135/135. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Runs used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. Release candidate 0.2.4 passed the full local suite 137/137 on Node.js 25.9.0; 0.2.3 passed 136/136. Runs used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
 
 ## Watch a real run
 
@@ -77,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.3
+npm install --global free-computer-use@0.2.4
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```

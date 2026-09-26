@@ -40,6 +40,16 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.4 release-candidate working tree based on `main` at `5d38ae6` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 137/137
+tests in 223.73 seconds, type-check/build, security scan (267 worktree files,
+269 historical paths, 1,239 historical blobs; no recognized credentials or
+private-state paths), and npm audit with zero vulnerabilities. Environment:
+macOS `26.6`, Apple Silicon, Node `25.9.0`, and system Chrome `154.0.8037.57`.
+The agent-boundary regression confirms a 4,001-character goal is rejected
+before browser launch or trace creation. No live model-provider request was
+made.
+
 The v0.2.3 release-candidate working tree based on `main` at `7fcff07` passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 136/136 tests
 in 182.55 seconds, type-check/build, security scan (266 worktree files, 268

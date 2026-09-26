@@ -31,6 +31,14 @@ test('planner schema accepts the 4000-character goals supported by dashboard and
   assert.equal(plan.goal,goal);
 });
 
+test('Agent.run rejects goals over the shared limit before launching or saving a run',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store});
+  try{
+    await assert.rejects(agent.run('g'.repeat(4001)),/4000/);
+    assert.equal(agent.browser.context,undefined);assert.equal(store.history(1).length,0);
+  }finally{await agent.close();store.close();}
+});
+
 test('observe/plan/execute/verify learns semantic workflow and replays without a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
   const vault={profile:{firstName:'Alex',lastName:'Example',email:'private@example.test',country:'France',message:'Synthetic message'},files:{}};
