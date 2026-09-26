@@ -86,12 +86,12 @@ npm run dev
 
 Open **http://127.0.0.1:4318**, enter a starting URL and goal, then approve site access.
 
-**Try it without an API key:** open [the practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html) and run the goal `Extract the table`. This narrow workflow has a deterministic local strategy; general tasks need a model provider.
+**Try it without an API key:** run `Read the page` to extract visible page text, or open [the practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html) and run `Extract the table`. These narrow workflows use deterministic local strategies; model-planned tasks need a configured provider.
 
 ## Troubleshooting
 
 - **The browser does not start:** install Chrome, set `FCU_BROWSER_CHANNEL=chrome` in `.env`, then run `npm run agent -- doctor`. See the [verified platform limits](docs/SUPPORT_MATRIX.md); other OS/browser combinations are not certified here.
-- **The dashboard says no model is configured:** the practice revenue-table task works without a provider. For model planning, configure one route from [Pick your model](#pick-your-model). `npm run agent -- doctor --api` makes an opt-in request to the configured provider; use it only when you want that network check.
+- **The dashboard says no model is configured:** page-text reading and the practice revenue-table task work without a provider. For model planning, configure one route from [Pick your model](#pick-your-model). `npm run agent -- doctor --api` makes an opt-in request to the configured provider; use it only when you want that network check.
 - **A site is blocked or asks for approval:** normal mode asks before a new origin and blocks private/reserved DNS answers. Approve only the site needed for the task. Ultra mode disables those protections; do not use it as a workaround for a blocked destination.
 - **The run finishes without proving the goal:** inspect the result checks and use a narrower goal. Browser clicks alone do not mean the requested outcome was verified.
 - **You need to find or remove local data:** see [local storage, export, retention and deletion](docs/LOCAL_DATA.md). Data is not encrypted and is not automatically expired.
@@ -122,7 +122,7 @@ provider CLI adapters keep their own tools and MCP disabled while planning.
 
 ## FAQ
 
-**Can I try it without a model key?** Yes, the practice revenue-table workflow runs with a deterministic local strategy. General tasks need a configured model.
+**Can I try it without a model key?** Yes. `Read the page` extracts visible text, and the practice revenue-table workflow uses a deterministic local strategy. Most other tasks need a configured model.
 
 **Which providers have live evidence?** The current matrix records DeepSeek Flash and one synthetic plan through Codex CLI `0.156.1` with ChatGPT. Contract tests do not certify a live provider; see the [dated support matrix](docs/SUPPORT_MATRIX.md).
 

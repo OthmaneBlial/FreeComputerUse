@@ -11,7 +11,7 @@ import {FixtureProvider} from '../fixtures/FixtureProvider.js';
 import {PlanSchema} from '../src/actions/schema.js';
 import type {LLMProvider} from '../src/llm/LLMProvider.js';
 
-async function startApprovalSession(provider:LLMProvider,goal='Read the page',hostname?:string){
+async function startApprovalSession(provider:LLMProvider,goal='Summarize the page',hostname?:string){
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-state-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures(),dashboard=await startServer({port:0,quiet:true,provider}),browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();
   try{
