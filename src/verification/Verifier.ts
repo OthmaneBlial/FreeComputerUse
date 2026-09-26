@@ -54,8 +54,8 @@ export class Verifier {
     let failed:Condition[]=[];
     do{
       if(this.browser.page.isClosed())return{success:false,failed:conditions};
-      failed=[];
-      for(const condition of conditions){try{if(!await this.one(condition,since))failed.push(condition);}catch{failed.push(condition);}}
+      const passed=await Promise.all(conditions.map(async condition=>{try{return await this.one(condition,since);}catch{return false;}}));
+      failed=conditions.filter((_condition,index)=>!passed[index]);
       if(!failed.length)return{success:true,failed};
       await this.browser.page.waitForTimeout(60);
     }while(Date.now()<deadline);

@@ -8,6 +8,7 @@ import { Observer } from '../src/browser/Observer.js';
 import { Executor } from '../src/actions/executor.js';
 import { Control } from '../src/agent/Control.js';
 import { VariableResolver } from '../src/profile/VariableResolver.js';
+import type { Condition } from '../src/actions/schema.js';
 import { startFixtures } from '../fixtures/server.js';
 
 test('local variables never expose values in aliases and deny arbitrary uploads',()=>{
@@ -69,6 +70,19 @@ test('element-not-visible verification distinguishes hidden, missing, ambiguous 
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'aside'}}),true);
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'#missing'}}),true);
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'['}}),false);
+  }finally{await browser.close();}
+});
+
+test('completion conditions are checked concurrently',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const conditions=Array.from({length:4},(_,index)=>({type:'text_exists',value:String(index)} satisfies Condition));
+    let active=0,maximum=0;
+    const gate=new Promise<void>(resolve=>setTimeout(resolve,30));
+    executor.verifier.one=async()=>{active++;maximum=Math.max(maximum,active);await gate;active--;return true;};
+    const result=await executor.verifier.check(conditions,500);
+    assert.equal(result.success,true);assert.equal(maximum,conditions.length);
   }finally{await browser.close();}
 });
 
