@@ -16,13 +16,18 @@ export class Verifier {
     }
     if('target' in condition) {
       let locator;
-      try{locator=(await this.observer.selectors.resolve(page,condition.target,100)).locator;}catch{
-        return condition.type==='element_not_visible';
+      const notVisible=condition.type==='element_not_visible';
+      try{locator=(await this.observer.selectors.resolve(page,condition.target,notVisible?0:100,notVisible)).locator;}catch(error){
+        return notVisible&&error instanceof Error&&(error.message==='Target frame no longer exists'||error.message.startsWith('Target missing or ambiguous:'));
       }
       switch(condition.type){
         case 'element_exists':return await locator.count()>0;
         case 'element_visible':return locator.isVisible();
-        case 'element_not_visible':return !(await locator.isVisible());
+        case 'element_not_visible':{
+          const count=await locator.count();
+          for(let index=0;index<count;index++)if(await locator.nth(index).isVisible())return false;
+          return true;
+        }
         case 'input_value_equals':return await locator.inputValue()===this.variables.resolve(condition.value);
         case 'checkbox_checked':return locator.isChecked();
       }

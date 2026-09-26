@@ -56,6 +56,18 @@ test('executor fills, selects, verifies, uploads, downloads, navigates and contr
   }finally{await browser.close();await fixture.close();await rm(dir,{recursive:true,force:true});}
 });
 
+test('element-not-visible verification distinguishes hidden, missing, ambiguous and invalid targets',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>Visible match</button><button style="display:none">Hidden match</button><aside style="display:none">Hidden only</aside>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'button'}}),false);
+    assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'aside'}}),true);
+    assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'#missing'}}),true);
+    assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'['}}),false);
+  }finally{await browser.close();}
+});
+
 test('tab changes report uncertain failures only when they may have happened',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{
