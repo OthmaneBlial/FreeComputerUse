@@ -40,6 +40,32 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.8 source commit `62db2c9` passed `FCU_BROWSER_CHANNEL=chrome npm run
+validate` on 27 September 2026: 141/141 tests in 193.06 seconds, type-check,
+build, security scan (271 worktree files, 273 historical paths, 1,307
+historical blobs; no recognized credentials or private-state paths), and npm
+audit with zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon,
+Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model
+request was made.
+
+The published 1,159,879-byte npm `0.2.8` package contains 135 files. Its
+registry tarball and GitHub release asset match the candidate byte for byte;
+SHA-256 is
+`ed08de727df51f6861b4ad61a306974ecc04e290524c8fc93f9bcb2d90c429c4`, and npm
+integrity is
+`sha512-KvWe7PxJZac41zu/86sPVL3D5PIoxEVqv5KbPfpdPQpsuoDbnjlWZGfCWuNQxHYCo9XWEzk8FyW1M/PsNsWkaA==`.
+npm reports `0.2.8` as `latest`. A fresh-prefix install from the registry
+tarball reports `agent --version` as `0.2.8`; `agent doctor` passes Chrome
+launch. The read-only public practice-table task returns three rows with one
+browser action, no failed actions and zero model calls. The GitHub release
+checksum passes, and its two downloaded assets match the tested package and
+checksum file.
+
+GitHub Pages built the v0.2.8 site from commit `62db2c9`; the homepage returned
+HTTP 200. Playwright confirmed the release copy and four v0.2.8 links, no
+horizontal overflow at 320/390/768/1440 px, and no console errors. No workflow
+was enabled or dispatched.
+
 The v0.2.7 source commit `1f1d698` passed `FCU_BROWSER_CHANNEL=chrome npm run
 validate` on 27 September 2026: 140/140 tests in 181.90 seconds, type-check,
 build, security scan (270 worktree files, 272 historical paths, 1,293
