@@ -187,10 +187,10 @@ test('record extraction omits hidden, password, payment and one-time-code input 
   }finally{await browser.close();}
 });
 
-test('table and link extraction excludes visually hidden descendant text',async()=>{
+test('table and link extraction excludes hidden cells, text and links',async()=>{
   const browser=await new Browser().launch();
   try{
-    await browser.page.setContent('<!doctype html><html><head><base href="https://example.test/"></head><body><table><tr><td>Public cell<span style="display:none">hidden-table-secret</span></td><td style="display:none">hidden-cell-secret</td></tr></table><a href="/safe"><span style="display:none">hidden-link-injection</span>Public link</a></body></html>');
+    await browser.page.setContent('<!doctype html><html><head><base href="https://example.test/"></head><body><table><tr><td>Public cell<span style="display:none">hidden-table-secret</span></td><td style="display:none">hidden-cell-secret</td></tr></table><a href="/safe"><span style="display:none">hidden-link-injection</span>Public link</a><a href="/invisible" style="visibility:hidden">Invisible</a><a href="/transparent" style="opacity:0">Transparent</a><a href="/aria-hidden" aria-hidden="true">Aria hidden</a><a href="/inert" inert>Inert</a></body></html>');
     const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
     assert((await executor.run({type:'extract',target:{css:'table'},format:'table',key:'table'})).success);
     assert.deepEqual(browser.extractions[0]?.value,[['Public cell','']]);
