@@ -83,6 +83,23 @@ test('minimal repair changes only the failed action and preserves successful pre
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('uncertain-action repair uses page state refreshed after human review',async()=>{
+  const store=new TraceStore(':memory:');let repairPage='';
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async context=>{repairPage=context.page;throw new Error('Stop after capturing repair context');}};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent('<main><p>Before action</p></main>');
+    const plan=PlanSchema.parse({goal:'Review the page',steps:['Click the control'],actions:[{type:'click',target:{role:'button',name:'Continue'}}],completion:[{type:'text_exists',value:'Reviewed state'}],continue:false});
+    agent.executor.run=async action=>{
+      await agent.browser.page.locator('main p').evaluate(el=>el.textContent='Action result awaiting review');
+      return{action,startedAt:Date.now(),durationMs:1,success:false,error:'Synthetic uncertain click',uncertain:true};
+    };
+    agent.control.once('approval',()=>void agent.browser.page.locator('main p').evaluate(el=>el.textContent='Reviewed state').then(()=>agent.control.approve()));
+    const trace=await agent.run('Review the page',undefined,plan);
+    assert.equal(trace.status,'failed');assert.match(repairPage,/Reviewed state/);assert.doesNotMatch(repairPage,/Action result awaiting review/);
+  }finally{await agent.close();store.close();}
+});
+
 test('max steps terminates repeated batches',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
   const provider:LLMProvider={name:'test',plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Read'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'element_visible',target:{css:'main'}}],continue:true}),repair:async()=>{throw new Error('unexpected repair');}};

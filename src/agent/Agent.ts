@@ -143,7 +143,7 @@ export class Agent extends EventEmitter {
           if(count>(this.options.maxRepeatedStates??3))throw new Error('Repeated state/action loop detected');
           this.event('EXECUTE',`${action.type}${'target'in action?' '+JSON.stringify(action.target):''}`,{index:index+1,total:actions.length});
           const result=await this.executor.run(action);trace.actions.push(result);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
-          const after=await this.observe();
+          let after=await this.observe();
           if(before.url!==after.url){const loops=(navigations.get(after.url)??0)+1;navigations.set(after.url,loops);if(loops>(this.options.maxNavigationLoops??3))throw new Error('Navigation loop detected');}
           if(result.success){
             const descriptor='target'in result.action&&typeof result.action.target==='object'?result.action.target:undefined;
@@ -153,7 +153,7 @@ export class Agent extends EventEmitter {
           if(this.control.stopped||/rejected by human|stopped by human/.test(result.error??''))throw new Error(result.error);
           if(result.uncertain){
             await this.control.confirm('The previous action may already have happened. Approve a repair only after checking the browser.',result.action);
-            await this.observe();
+            after=await this.observe();
           }
           if(!provider||repairs>=(this.options.maxRepairs??8))throw new Error(result.error??'Repair limit reached');
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
