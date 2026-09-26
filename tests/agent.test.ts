@@ -109,6 +109,24 @@ test('max steps terminates repeated batches',async()=>{
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('planner context keeps accumulated extraction evidence within its character budget',async()=>{
+  const store=new TraceStore(':memory:');let secondPage='',calls=0;
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    if(++calls===1)return PlanSchema.parse({goal:context.goal,steps:['Collect evidence'],actions:Array.from({length:8},(_,index)=>({type:'extract',key:`evidence-${index}`,format:'text'})),completion:[{type:'text_exists',value:'Budget test'}],continue:true});
+    secondPage=context.page;
+    return PlanSchema.parse({goal:context.goal,steps:['Finish'],actions:[{type:'extract',key:'final',format:'text'}],completion:[{type:'text_exists',value:'Budget test'}],continue:false});
+  },repair:async()=>{throw new Error('unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra',useWorkflows:false,adapters:[]});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent(`<main><p>Budget test ${'x'.repeat(3500)}</p><p>${'y'.repeat(3500)}</p></main>`);
+    const trace=await agent.run('Collect evidence',undefined);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
+    assert(secondPage.length>0);
+    assert(secondPage.length<=9000,`planner context was ${secondPage.length} chars`);
+    assert(secondPage.includes('evidence-7'));
+  }finally{await agent.close();store.close();}
+});
+
 test('generic adapter extracts tables without invoking a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');
   const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});

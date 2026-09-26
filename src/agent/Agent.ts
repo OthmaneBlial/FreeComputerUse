@@ -84,13 +84,22 @@ export class Agent extends EventEmitter {
   private context(goal:string,state:PageState,completed:string[],previous?:PageState):PlanningContext{
     const remaining=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
     const maxChars=Math.min(this.budget.tight?3000:9000,Math.max(1200,remaining-9000));
-    const full=this.observer.compressor.compress(state,{goal,maxChars});
+    const supplementalLimit=Math.floor(maxChars*.3);
+    const full=this.observer.compressor.compress(state,{goal,maxChars:maxChars-supplementalLimit});
     let page=full.text;
     if(previous){const diff=JSON.stringify(diffPages(previous,state));if(diff.length<page.length)page=`PAGE DIFF\n${diff}`;}
-    const structured=this.browser.extractions.filter(e=>e.value!==null&&typeof e.value==='object').slice(-16).map(e=>({key:e.key,preview:JSON.stringify(e.value).slice(0,1400)}));
-    const priorText=this.browser.extractions.filter(e=>typeof e.value==='string').slice(-16).map(e=>({key:e.key,preview:(e.value as string).slice(-1800)}));
-    page+='\nOPEN TABS '+JSON.stringify(this.browser.context.pages().map((p,index)=>({index,url:p.url,active:p===this.browser.page})))+'\nEXTRACTED EVIDENCE FROM PRIOR PAGES '+this.variables.redact(JSON.stringify([...structured,...priorText]));
-    return {goal:this.variables.redact(goal),page:this.variables.redact(page),aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.browser.options.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
+    const pages=this.browser.context.pages(),recentPages=pages.slice(-Math.max(1,Math.min(4,Math.floor(supplementalLimit/180))));
+    const lines=[`OPEN TABS ${JSON.stringify(recentPages.map((p,index)=>({index:pages.length-recentPages.length+index,url:p.url().slice(0,120),active:p===this.browser.page})))}`];
+    const previewLimit=Math.min(400,Math.max(100,Math.floor(supplementalLimit/5)));
+    const evidence=this.browser.extractions.slice(-8).reverse();
+    for(const item of evidence){
+      const preview=typeof item.value==='string'?item.value:JSON.stringify(item.value,(_key,value)=>typeof value==='string'?value.slice(0,120):Array.isArray(value)?value.slice(0,4):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).slice(0,6)):value);
+      lines.push(`PRIOR EVIDENCE ${item.key}: ${(preview??'').slice(0,previewLimit)}`);
+    }
+    let used=0;const supplemental:string[]=[];
+    for(const line of lines){if(used+line.length+1>supplementalLimit)continue;supplemental.push(line);used+=line.length+1;}
+    page=this.variables.redact(page+'\n'+supplemental.join('\n')).slice(0,maxChars);
+    return {goal:this.variables.redact(goal),page,aliases:this.variables.aliases(),completed:completed.slice(-12),allowedOrigins:this.browser.options.allowedOrigins??[],phase:'current batch',trustedCompletionCriteria:[...this.options.completionCriteria??[],...goalCriteria(goal)]};
   }
   async run(goal:string,url?:string,providedPlan?:Plan,allowProvider=true):Promise<Trace>{
     if(this.active)throw new Error('An agent task is already running');

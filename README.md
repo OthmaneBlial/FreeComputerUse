@@ -20,16 +20,20 @@
   <a href="SECURITY.md">Security</a>
 </p>
 
-**Your browser. Your model. Your call.** Give your browser a goal; the model proposes short action batches, and Playwright runs them locally. You approve website access and sensitive actions, then inspect what happened.
+**Your browser. Your model. Your call.** Give your browser a goal; your chosen model proposes short, typed action batches, and Playwright runs them locally. Approve website access and sensitive actions, then inspect the evidence and checks behind the result.
 
-Use an API or a supported model CLI for open-ended tasks. For common page-reading jobs, skip model setup entirely: FreeComputerUse can read visible text and links with deterministic local strategies.
+Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
+
+## New in 0.2.2: planner context stays bounded
+
+Longer tasks can collect large results across pages. The planner now receives the current page, recent tabs and extraction evidence inside one character cap, so prior results cannot silently inflate later prompts. Recent evidence remains available for planning, with bounded previews and a fixed recent-result window.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.1
+npm install --global free-computer-use@0.2.2
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -43,7 +47,7 @@ Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then ap
 | `Extract the first 5 links` | Return a bounded list of the first five links. |
 | `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
 
-These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The full local validation suite passed on Node.js 22.13.0 and 25.9.0 on macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The 0.2.2 release candidate passed the full local suite 135/135 on Node.js 25.9.0. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Both used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
 
 ## Watch a real run
 
@@ -73,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.1
+npm install --global free-computer-use@0.2.2
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```

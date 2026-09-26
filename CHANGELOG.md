@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.2.2 - 2026-09-26
+
+### Fixed
+
+- Keep the planner page context within its configured character budget, including
+  recent tabs and extracted evidence from earlier pages.
+- Bound retained extraction previews and serialize only compact slices of
+  structured results.
+
 ## 0.2.1 - 2026-09-26
 
 ### Changed
