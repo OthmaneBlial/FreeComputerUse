@@ -9,12 +9,17 @@ export interface Compression { text:string; bytes:number; rawBytes:number; reduc
 export class PageCompressor {
   compress(state:PageState, options:{goal?:string;maxChars?:number;level?:1|2|3;region?:string}={}):Compression {
     const max=options.maxChars??12000;
+    let metadataTruncated=false;
+    const bounded=(value:string,limit:number)=>{
+      if(value.length<=limit)return value;
+      metadataTruncated=true;return `${value.slice(0,Math.max(0,limit-1))}…`;
+    };
     const brief=(e:PageElement)=>`[${e.ref}] ${e.role} ${JSON.stringify(e.name)}${e.href?` href=${JSON.stringify(e.href)}`:''}${e.selectors.id?` id=${JSON.stringify(e.selectors.id)}`:''}${e.type?` type=${e.type}`:''}${e.required?' required':''}${e.disabled?' disabled':''}${e.form?` form=${JSON.stringify(e.form)}`:''}${e.hasValue?' populated':''}${e.checked?' checked':''}${e.error?` error=${JSON.stringify(e.error)}`:''}${e.options?` options=${JSON.stringify(e.options)}`:''}`;
     const elements=state.elements.filter(e=>!options.region||e.region===options.region||e.form===options.region);
     const goal=options.goal;
     const ranked=goal ? elements.map((element,index)=>({element,index,score:similarity(goal,[element.name,element.form,element.role].join(' '))}))
       .sort((a,b)=>b.score-a.score||a.index-b.index).map(item=>item.element) : elements;
-    const lines=[`PAGE ${state.title}`,`URL ${state.url}`,`STATE ${state.hash}`,`HEADINGS ${state.headings.join(' | ')}`,`WARNINGS ${state.warnings.join(' | ')}`];
+    const lines=[`PAGE ${bounded(state.title,Math.min(160,Math.floor(max*.08)))}`,`URL ${bounded(state.url,Math.min(400,Math.floor(max*.1)))}`,`STATE ${state.hash}`,`HEADINGS ${bounded(state.headings.join(' | '),Math.floor(max*.12))}`,`WARNINGS ${bounded(state.warnings.join(' | '),Math.floor(max*.05))}`];
     if(state.truncated)lines.push('[DOM control list truncated; additional controls may be missing]');
     if (options.level!==1) {
       // Reserve space for document data even when navigation contains hundreds
@@ -28,7 +33,7 @@ export class PageCompressor {
     } else lines.push(`INTERACTIVE COUNT ${elements.length}`,`REGIONS ${[...new Set(elements.map(e=>e.region).filter(Boolean))].join(' | ')}`);
     lines.push('VISIBLE TEXT',state.text);
     const full=lines.join('\n');
-    const truncated=full.length>max || state.truncated;
+    const truncated=full.length>max || state.truncated || metadataTruncated;
     const text=full.length>max ? full.slice(0,Math.max(0,max-55))+'\n[TRUNCATED: request a region or more context]' : full;
     const bytes=Buffer.byteLength(text);
     return {text,bytes,rawBytes:state.htmlBytes,reduction:state.htmlBytes?1-bytes/state.htmlBytes:0,truncated};

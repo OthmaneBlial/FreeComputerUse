@@ -104,6 +104,12 @@ test('page compression ranks relevant controls first and preserves tie order',()
   const partial=new PageCompressor().compress({...state,truncated:true});assert(partial.truncated);assert(partial.text.includes('[DOM control list truncated; additional controls may be missing]'));
 });
 
+test('page compression retains controls when page metadata is oversized',()=>{
+  const state={url:'https://example.test/',title:'T'.repeat(1500),headings:[],text:'',elements:[{ref:'e0',tag:'button',role:'button',name:'Confirm reservation',frame:0,selectors:{role:'button',name:'Confirm reservation'},path:'body'}],tables:[],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
+  const compressed=new PageCompressor().compress(state,{goal:'confirm reservation',maxChars:1200});
+  assert(compressed.truncated);assert(compressed.text.length<=1200);assert(compressed.text.includes('[e0] button "Confirm reservation"'));
+});
+
 test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
   assert(ActionSchema.safeParse({type:'fill',target:'f0e1',value:'{{profile.email}}'}).success);
   assert(!ActionSchema.safeParse({type:'evaluate',code:'process.exit()'}).success);

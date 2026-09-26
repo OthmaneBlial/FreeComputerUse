@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.7 - 2026-09-27
+
+### Fixed
+
+- Bound page title, URL, heading and warning summaries so oversized page
+  metadata cannot consume planner context before interactive controls.
+
 ## 0.2.6 - 2026-09-27
 
 ### Fixed
