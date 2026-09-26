@@ -56,6 +56,16 @@ test('executor fills, selects, verifies, uploads, downloads, navigates and contr
   }finally{await browser.close();await fixture.close();await rm(dir,{recursive:true,force:true});}
 });
 
+test('type reports unchanged fields as uncertain failures',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input aria-label="Locked field" value="unchanged" readonly>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'type',target:{label:'Locked field'},value:'new text'});
+    assert.equal(result.success,false);assert.equal(result.uncertain,true);
+  }finally{await browser.close();}
+});
+
 test('download names stay inside the selected folder and support Unicode across platforms',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),downloadDir=join(dir,'downloads');await mkdir(downloadDir,{mode:0o755});
   const browser=await new Browser().launch();

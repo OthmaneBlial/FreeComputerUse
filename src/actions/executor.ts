@@ -116,7 +116,12 @@ export class Executor {
         case 'doubleClick':await interaction.perform(locator!,'doubleClick',()=>locator!.dblclick({timeout}),interactionOptions);break;
         case 'hover':await interaction.perform(locator!,'hover',()=>locator!.hover({timeout}),interactionOptions);break;
         case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
-        case 'type':await interaction.enter(locator!,value,false,interactionOptions);break;
+        case 'type':{
+          const readValue=()=>locator!.evaluate(el=>'value'in el?String((el as HTMLInputElement).value):el instanceof HTMLElement&&el.isContentEditable?el.innerText:undefined);
+          const before=await readValue();await interaction.enter(locator!,value,false,interactionOptions);
+          if(value&&before!==undefined&&await readValue()===before)throw new Error('Type postcondition failed');
+          break;
+        }
         case 'select':{
           const options=await locator!.evaluate(el=>[...(el as HTMLSelectElement).options].map(o=>({label:o.label,value:o.value})));
           const option=options.find(o=>o.value===value)||options.find(o=>o.label===value);
@@ -191,7 +196,7 @@ export class Executor {
       if(action.verify?.length){const checked=await this.verifier.check(action.verify,timeout,startedAt);if(!checked.success)throw new Error(`Action verification failed: ${JSON.stringify(checked.failed)}`);}
       return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:true,strategy,data};
     }catch(error){
-      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&['click','doubleClick','press','submit','download'].includes(action.type)};
+      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&['click','doubleClick','press','submit','download','type'].includes(action.type)};
     }finally{await disposeApproved?.();}
   }
 }
