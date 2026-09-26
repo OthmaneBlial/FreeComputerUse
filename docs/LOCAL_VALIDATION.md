@@ -50,6 +50,18 @@ No live model-provider request was made. The v0.2.3 lab smoke passed 34 pages,
 758 accessible controls, eight practice cards, keyboard interaction, responsive
 widths 320/390/768/1440, and no console errors.
 
+Published v0.2.3 is `latest` on npm with integrity
+`sha512-iRODgQYXxZ8EZVI9+gyNoS9+Sd5CYt3VD7u86onOYgBf7RdC4Xxkm7zyxJoFy8DG+iNBTaScyulBfGIOz5ES0A==`.
+The registry tarball and GitHub release asset match the tested package byte for
+byte (SHA-256
+`3f2134fee673dfc2cac1abfab3965409a5f3383e74fc4e48804fa9c29e0dfac6`); the
+downloaded GitHub checksum passes. A fresh npm prefix reports `agent --version`
+as `0.2.3`; `agent doctor` passes Chrome launch. The public practice-table task
+returned three data rows with one browser action, no failed actions and zero
+model calls. GitHub Pages built commit `11b6a2974374eece42ca5cee5f8db137e084e85f`;
+the homepage returned HTTP 200. Playwright confirmed the 0.2.3 release copy and
+links, no horizontal overflow at 320/390/768/1440 px, and no console errors.
+
 The source and tests committed as `8d91e65` and tagged `v0.2.2`, based on `main`
 at `5a59f40`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26
 September 2026: 135/135 tests in 216.39 seconds, type-check/build, security scan
