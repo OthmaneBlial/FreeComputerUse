@@ -1,10 +1,11 @@
 import { chmod, lstat, mkdir, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
-import type { Download, Locator } from 'playwright';
+import type { Download, Locator, Page } from 'playwright';
 import { ActionSchema, type Action, type Condition } from './schema.js';
 import { sensitiveReason, type ConfirmationPolicy } from './policy.js';
-import type { Browser } from '../browser/Browser.js';
+import { checkedHttpURL,type Browser } from '../browser/Browser.js';
+import { SecurityBoundaryError } from '../browser/SecurityBoundaryError.js';
 import type { Observer } from '../browser/Observer.js';
 import type { VariableResolver } from '../profile/VariableResolver.js';
 import type { Control } from '../agent/Control.js';
@@ -53,7 +54,8 @@ export class Executor {
   }
   async run(input:Action):Promise<ActionResult> {
     let action=ActionSchema.parse(input);const startedAt=Date.now();
-    let strategy:string|undefined,executed=false,receiptAction=action;
+    let strategy:string|undefined,executed=false,navigationUncertain=false,receiptAction=action;
+    let pageBefore:Page|undefined;
     let assertApproved:(()=>Promise<void>)|undefined,disposeApproved:(()=>Promise<void>)|undefined;
     try {
       await this.control.checkpoint();
@@ -80,7 +82,7 @@ export class Executor {
         await assertApproved();
       }
       await this.control.checkpoint();
-      const page=this.browser.page;const timeout=action.timeoutMs??4000;let data:unknown;
+      const page=this.browser.page;pageBefore=page;const timeout=action.timeoutMs??4000;let data:unknown;
       const interaction=this.browser.interaction,interactionOptions={timeout,checkpoint:()=>this.control.checkpoint(),beforeEffect:assertApproved};
       const value='value'in action?this.variables.resolve(action.value):'';
       if(locator&&['click','press','submit'].includes(action.type)){
@@ -93,13 +95,13 @@ export class Executor {
       }
       executed=true;
       switch(action.type){
-        case 'navigate':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.navigate(action.url);break;
-        case 'openTab':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');await this.browser.openTab(action.url);break;
-        case 'closeTab':await this.browser.closeTab();break;
+        case 'navigate':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');checkedHttpURL(action.url,page.url());navigationUncertain=true;await this.browser.navigate(action.url);break;
+        case 'openTab':if(action.url.includes('{{profile.')||action.url.includes('{{files.'))throw new Error('Local vault values cannot be embedded in navigation URLs');checkedHttpURL(action.url,page.url());navigationUncertain=true;await this.browser.openTab(action.url);break;
+        case 'closeTab':navigationUncertain=this.browser.context.pages().length>1;await this.browser.closeTab();break;
         case 'switchTab':await this.browser.switchTab(action.index,timeout);break;
-        case 'back':await page.goBack({waitUntil:'domcontentloaded'});break;
-        case 'forward':await page.goForward({waitUntil:'domcontentloaded'});break;
-        case 'reload':await page.reload({waitUntil:'domcontentloaded'});break;
+        case 'back':navigationUncertain=true;await page.goBack({waitUntil:'domcontentloaded'});break;
+        case 'forward':navigationUncertain=true;await page.goForward({waitUntil:'domcontentloaded'});break;
+        case 'reload':navigationUncertain=true;await page.reload({waitUntil:'domcontentloaded'});break;
         case 'click':{
           const downloadIntent=await locator!.evaluate(el=>/^\s*(download|export)\b/i.test(el.getAttribute('aria-label')||el.textContent||el.getAttribute('value')||''));
           const downloadEvent=downloadIntent?page.waitForEvent('download',{timeout}).catch(()=>undefined):Promise.resolve(undefined);
@@ -255,7 +257,8 @@ export class Executor {
       if(action.verify?.length){const checked=await this.verifier.check(action.verify,timeout,startedAt);if(!checked.success)throw new Error(`Action verification failed: ${JSON.stringify(checked.failed)}`);}
       return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:true,strategy,data};
     }catch(error){
-      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&['click','doubleClick','press','submit','download','type'].includes(action.type)};
+      const blockedBeforeNavigation=error instanceof SecurityBoundaryError&&['navigate','openTab'].includes(action.type)&&this.browser.page===pageBefore;
+      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&((navigationUncertain&&!blockedBeforeNavigation)||['click','doubleClick','press','submit','download','type'].includes(action.type))};
     }finally{await disposeApproved?.();}
   }
 }

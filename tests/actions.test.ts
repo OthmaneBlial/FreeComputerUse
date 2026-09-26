@@ -56,6 +56,19 @@ test('executor fills, selects, verifies, uploads, downloads, navigates and contr
   }finally{await browser.close();await fixture.close();await rm(dir,{recursive:true,force:true});}
 });
 
+test('tab changes report uncertain failures only when they may have happened',async()=>{
+  const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
+  try{
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const last=await executor.run({type:'closeTab'});
+    assert.equal(last.success,false);assert.equal(last.uncertain,false);
+    const createTab=browser.openTab.bind(browser);
+    browser.openTab=async url=>{await createTab(url);throw new Error('Browser reply lost');};
+    const result=await executor.run({type:'openTab',url:fixture.url+'/invoices'});
+    assert.equal(result.success,false);assert.equal(result.uncertain,true);assert.equal(browser.context.pages().length,2);
+  }finally{await browser.close();await fixture.close();}
+});
+
 test('type reports unchanged fields as uncertain failures',async()=>{
   const browser=await new Browser().launch();
   try{
