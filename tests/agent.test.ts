@@ -133,6 +133,9 @@ test('generic adapter lists visible links without invoking a provider',async()=>
     const trace=await agent.run('Extract the links',fixture.url);
     assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.metrics.llmCalls,0);assert.equal(trace.metrics.planBatches,0);
     assert((agent.browser.extractions[0]?.value as {text:string;url:string}[]).some(link=>link.text==='Contact form'&&link.url===fixture.url+'/demo'));
+    const limited=await agent.run('List the first 3 links',fixture.url);
+    assert.equal(limited.status,'completed',limited.error??'Task failed');assert.equal(limited.metrics.llmCalls,0);
+    assert.equal((agent.browser.extractions[0]?.value as {text:string;url:string}[]).length,3);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
