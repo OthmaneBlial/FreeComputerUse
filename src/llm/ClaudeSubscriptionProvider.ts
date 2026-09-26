@@ -8,7 +8,7 @@ import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
-import { cliVersionAtLeast,parseCliVersion,safeCliEnvironment } from './cliEnvironment.js';
+import { cliProcessTerminator,cliVersionAtLeast,parseCliVersion,safeCliEnvironment } from './cliEnvironment.js';
 
 const execFile=promisify(execFileCallback);
 export interface ClaudeSubscriptionConfig {command?:string;model?:string;timeoutMs?:number}
@@ -88,12 +88,13 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
       return await new Promise<string>((resolve,reject)=>{
         if(signal.aborted){reject(new Error('Claude request cancelled'));return;}
         const child=spawn(this.config.command??'claude',args,{cwd:directory,env:claudeEnvironment(),stdio:['pipe','pipe','ignore']});
+        const terminate=cliProcessTerminator(child);
         let output='',failure:Error|undefined,timedOut=false;
-        const timer=setTimeout(()=>{timedOut=true;child.kill('SIGTERM');},this.config.timeoutMs??60000);
-        const stop=()=>child.kill('SIGTERM');
+        const timer=setTimeout(()=>{timedOut=true;terminate();},this.config.timeoutMs??60000);
+        const stop=()=>terminate();
         signal.addEventListener('abort',stop,{once:true});
         if(signal.aborted)stop();
-        child.stdout.setEncoding('utf8').on('data',(chunk:string)=>{output+=chunk;if(Buffer.byteLength(output)>1_000_000){failure=new Error('Claude response exceeded the output-size limit');child.kill('SIGTERM');}});
+        child.stdout.setEncoding('utf8').on('data',(chunk:string)=>{output+=chunk;if(Buffer.byteLength(output)>1_000_000){failure=new Error('Claude response exceeded the output-size limit');terminate();}});
         child.on('error',()=>{failure=new Error('Claude Code CLI could not start; install Claude Code and run `claude auth login`.');});
         child.on('close',code=>{
           clearTimeout(timer);signal.removeEventListener('abort',stop);

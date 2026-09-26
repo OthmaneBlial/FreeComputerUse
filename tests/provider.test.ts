@@ -138,6 +138,32 @@ test('subscription diagnostics give recovery steps for missing CLIs and unsigned
   }finally{await rm(directory,{recursive:true,force:true});}
 });
 
+test('subscription timeouts terminate CLIs that ignore SIGTERM',{skip:process.platform==='win32'},async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'fcu-provider-timeout-')),command=join(directory,'fake-provider'),previousVersion=process.env.FCU_TEST_CLI_VERSION;
+  try{
+    await writeFile(command,`#!/usr/bin/env node
+const args=process.argv.slice(2);
+if(args[0]==='--version'){process.stdout.write((process.env.FCU_TEST_CLI_VERSION??'0.156.1')+'\\n');process.exit(0);}
+if(args[0]==='login'){process.stderr.write('Logged in using ChatGPT\\n');process.exit(0);}
+if(args[0]==='auth'){process.stdout.write(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',apiKeySource:null}));process.exit(0);}
+process.on('SIGTERM',()=>{});
+setTimeout(()=>process.exit(0),1300);
+setInterval(()=>{},1000);
+`,{mode:0o700});await chmod(command,0o700);
+    const context={goal:'Read',page:'Fixture',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]};
+    for(const [provider,version,error] of [
+      [new CodexSubscriptionProvider({command,timeoutMs:100},new TokenBudget()),'0.156.1',/Codex CLI timed out/],
+      [new ClaudeSubscriptionProvider({command,timeoutMs:100},new TokenBudget()),'2.1.248',/Claude Code CLI timed out/],
+    ] as const){
+      process.env.FCU_TEST_CLI_VERSION=version;const started=Date.now();await assert.rejects(provider.plan(context),error);
+      assert(Date.now()-started<900,'Provider timeout must not wait for the fake CLI exit');
+    }
+  }finally{
+    if(previousVersion===undefined)delete process.env.FCU_TEST_CLI_VERSION;else process.env.FCU_TEST_CLI_VERSION=previousVersion;
+    await rm(directory,{recursive:true,force:true});
+  }
+});
+
 test('Codex and Claude subscription adapters enforce their CLI contracts without leaking API credentials',{skip:process.platform==='win32'},async()=>{
   const directory=await mkdtemp(join(tmpdir(),'fcu-provider-cli-')),command=join(directory,'fake-provider'),codexLog=join(directory,'codex.json'),claudeLog=join(directory,'claude.json');
   const plan=JSON.stringify({goal:'Read',steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false});
