@@ -29,7 +29,14 @@ export class PageCompressor {
       for(const element of ranked){const line=brief(element);if(used+line.length+1>controlBudget)continue;lines.push(line);used+=line.length+1;retained++;}
       if(retained<ranked.length)lines.push(`[${ranked.length-retained} controls omitted]`);
       if(state.dialogs.length)lines.push('DIALOGS',...state.dialogs);
-      if(state.tables.length)lines.push('TABLES',JSON.stringify(state.tables).slice(0,Math.floor(max*.2)));
+      if(state.tables.length){
+        const tableBudget=Math.floor(max*.2),tables=state.tables.map(table=>table.slice());let tableText=JSON.stringify(tables),partial=false;
+        // ponytail: Re-serialize at most 125 extracted rows; stream rows if the extractor limit grows.
+        while(tableText.length>tableBudget){const last=[...tables].reverse().find(table=>table.length>1);if(!last)break;last.pop();partial=true;tableText=JSON.stringify(tables);}
+        if(tableText.length>tableBudget){tableText='[]';partial=true;}
+        if(partial)metadataTruncated=true;
+        lines.push(partial?'TABLES [partial; trailing rows omitted]':'TABLES',tableText);
+      }
     } else lines.push(`INTERACTIVE COUNT ${elements.length}`,`REGIONS ${[...new Set(elements.map(e=>e.region).filter(Boolean))].join(' | ')}`);
     lines.push('VISIBLE TEXT',state.text);
     const full=lines.join('\n');

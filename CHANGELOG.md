@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.8 - 2026-09-27
+
+### Fixed
+
+- Keep compressed table summaries valid JSON, mark omitted rows and report
+  truncation instead of presenting partial tables as complete.
+
 ## 0.2.7 - 2026-09-27
 
 ### Fixed

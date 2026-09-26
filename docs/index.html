@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101612">
-  <meta name="description" content="Local-first browser automation with Playwright. Read pages without a model key, or connect a provider that keeps controls in bounded planner context.">
+  <meta name="description" content="Local-first browser automation with Playwright. Read pages without a model key, or connect a provider with bounded, clearly marked table context.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="FreeComputerUse">
   <meta property="og:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta property="og:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. Preserve current controls across bounded planning passes and inspect every check.">
+  <meta property="og:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. See when table context is partial and inspect every check.">
   <meta property="og:url" content="https://othmaneblial.github.io/FreeComputerUse/">
   <meta property="og:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
   <meta property="og:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta name="twitter:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. Bounded page context, visible controls and explicit site approval.">
+  <meta name="twitter:description" content="Read page text and links with no model key, or connect a provider for open-ended tasks. Bounded page context, marked partial tables and explicit site approval.">
   <meta name="twitter:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
   <meta name="twitter:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
   <title>FreeComputerUse — Local-first AI browser automation</title>
@@ -39,7 +39,7 @@
       <a href="#models">Models</a>
       <a href="#library">Task library</a>
       <a href="#faq">FAQ</a>
-      <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.7">Release v0.2.7 <span aria-hidden="true">↗</span></a>
+      <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.8">Release v0.2.8 <span aria-hidden="true">↗</span></a>
       <a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
     <a class="header-cta" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Get started <span aria-hidden="true">↗</span></a>
@@ -55,7 +55,7 @@
           <a class="button-primary" href="#library">Explore browser tasks <span aria-hidden="true">↓</span></a>
           <a class="button-quiet" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Read the quick start <span aria-hidden="true">↗</span></a>
         </div>
-        <p class="hero-caption"><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.7">v0.2.7 keeps oversized page titles from hiding controls in bounded planner context.</a></p>
+        <p class="hero-caption"><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.8">v0.2.8 marks shortened table context instead of presenting partial rows as complete.</a></p>
       </div>
 
       <div class="run-card" aria-label="Illustration of a local browser automation run">
@@ -80,7 +80,7 @@
 
     <section class="how-section page-section" id="keyless" aria-labelledby="keyless-title">
       <div class="section-heading">
-        <p class="eyebrow">V0.2.7 · NO PROVIDER REQUIRED</p>
+        <p class="eyebrow">V0.2.8 · NO PROVIDER REQUIRED</p>
         <h2 id="keyless-title">Useful browser work.<br><em>No model key needed.</em></h2>
         <p>Start with local, deterministic tasks. Add a model only when the job needs open-ended planning.</p>
       </div>
@@ -91,7 +91,7 @@
           <article><span>03 / BOUNDED LINKS</span><h3>Choose a limit</h3><p>Extract the first N visible links and verify the requested count. Goal: “Extract the first 5 links”.</p></article>
           <article><span>04 / PRACTICE DATA</span><h3>Try the sample table</h3><p>Extract three synthetic revenue rows from the <a href="lab/reports.html">practice page</a>.</p></article>
         </div>
-        <p class="how-note"><span aria-hidden="true">↳</span> These exact workflows make zero model calls. Goals longer than 4,000 characters are rejected before browser work starts. See the <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.7">v0.2.7 release notes</a> for planner improvements.</p>
+        <p class="how-note"><span aria-hidden="true">↳</span> These exact workflows make zero model calls. Goals longer than 4,000 characters are rejected before browser work starts. See the <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.8">v0.2.8 release notes</a> for planner improvements.</p>
       </div>
     </section>
 
@@ -214,14 +214,14 @@
     </section>
 
     <section class="start-section page-section" id="start" aria-labelledby="start-title">
-      <div class="start-copy"><p class="eyebrow">V0.2.7 · GET RUNNING LOCALLY</p><h2 id="start-title">Try it without a key.<br><em>Add a model when ready.</em></h2><p>Requires Node.js 22.13+, npm and an installed browser. Use an API or supported CLI sign-in for open-ended tasks. The verified setup selects system Chrome without a separate browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
-      <pre class="terminal"><span>01 / TERMINAL</span><code>npm install --global free-computer-use@0.2.7
+      <div class="start-copy"><p class="eyebrow">V0.2.8 · GET RUNNING LOCALLY</p><h2 id="start-title">Try it without a key.<br><em>Add a model when ready.</em></h2><p>Requires Node.js 22.13+, npm and an installed browser. Use an API or supported CLI sign-in for open-ended tasks. The verified setup selects system Chrome without a separate browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
+      <pre class="terminal"><span>01 / TERMINAL</span><code>npm install --global free-computer-use@0.2.8
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
     </section>
   </main>
 
-  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.7">Release v0.2.7 ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
+  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.8">Release v0.2.8 ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

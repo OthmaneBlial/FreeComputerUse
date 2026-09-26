@@ -24,16 +24,16 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.7: keep controls visible on busy pages
+## New in 0.2.8: show when table context is partial
 
-Long page titles and headings no longer push interactive controls out of the bounded planner context. Follow-up plans also retain unchanged controls and page text; the agent uses a compact diff only when it contains all current controls and relevant data.
+When a large table exceeds the planner's context budget, the agent keeps complete JSON rows and marks the summary as partial. It no longer cuts JSON mid-row and leaves a misleading result. Page metadata also stays bounded so controls remain visible, and follow-up plans retain unchanged controls and page text.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.7
+npm install --global free-computer-use@0.2.8
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -77,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.7
+npm install --global free-computer-use@0.2.8
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```

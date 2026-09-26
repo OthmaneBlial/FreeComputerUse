@@ -110,6 +110,15 @@ test('page compression retains controls when page metadata is oversized',()=>{
   assert(compressed.truncated);assert(compressed.text.length<=1200);assert(compressed.text.includes('[e0] button "Confirm reservation"'));
 });
 
+test('page compression marks partial table data and keeps it valid JSON',()=>{
+  const rows=Array.from({length:10},(_,index)=>[`Metric ${index}`,`Value ${'x'.repeat(80)}`]);
+  const state={url:'https://example.test/',title:'Report',headings:[],text:'Summary',elements:[],tables:[rows],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
+  const compressed=new PageCompressor().compress(state,{maxChars:1200}),lines=compressed.text.split('\n'),tableIndex=lines.findIndex(line=>line.startsWith('TABLES'));
+  assert.equal(lines[tableIndex],'TABLES [partial; trailing rows omitted]');
+  const partial=JSON.parse(lines[tableIndex+1]!) as string[][][];
+  assert(partial[0]!.length<rows.length);assert(compressed.truncated);
+});
+
 test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
   assert(ActionSchema.safeParse({type:'fill',target:'f0e1',value:'{{profile.email}}'}).success);
   assert(!ActionSchema.safeParse({type:'evaluate',code:'process.exit()'}).success);
