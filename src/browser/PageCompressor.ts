@@ -34,18 +34,18 @@ export class PageCompressor {
   }
 }
 export function diffPages(previous:PageState,current:PageState) {
-  const signature=(e:PageElement)=>JSON.stringify([e.role,e.name,e.required,e.disabled,e.hasValue,e.checked,e.error,e.options]);
+  const signature=(e:PageElement)=>JSON.stringify(e);
   const old=new Map(previous.elements.map(e=>[e.ref,e]));
   const fresh=new Map(current.elements.map(e=>[e.ref,e]));
   return {
     url:current.url,title:current.title,hash:current.hash,
     removed:previous.elements.filter(e=>!fresh.has(e.ref)).map(e=>e.ref),
-    added:current.elements.filter(e=>!old.has(e.ref)).map(e=>({ref:e.ref,role:e.role,name:e.name,type:e.type,required:e.required,options:e.options})),
-    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)).map(e=>({ref:e.ref,role:e.role,name:e.name,type:e.type,required:e.required,options:e.options,hasValue:e.hasValue,checked:e.checked,error:e.error})),
-    headings:current.headings.filter(h=>!previous.headings.includes(h)),
+    added:current.elements.filter(e=>!old.has(e.ref)),
+    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)),
+    headings:JSON.stringify(current.headings)===JSON.stringify(previous.headings)?undefined:current.headings,
     text:current.text===previous.text?undefined:current.text,
     tables:JSON.stringify(current.tables)===JSON.stringify(previous.tables)?undefined:current.tables,
     dialogs:JSON.stringify(current.dialogs)===JSON.stringify(previous.dialogs)?undefined:current.dialogs,
-    warnings:current.warnings,
+    warnings:current.warnings,frames:JSON.stringify(current.frames)===JSON.stringify(previous.frames)?undefined:current.frames,truncated:current.truncated,
   };
 }
