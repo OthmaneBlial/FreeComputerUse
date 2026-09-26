@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { z } from 'zod';
-import { PlanSchema,RepairSchema,type Plan,type Repair } from '../actions/schema.js';
+import { PlannerOutputSchema,RepairSchema,TaskGoalSchema,type Plan,type Repair } from '../actions/schema.js';
 import type { LLMProvider,PlanningContext,RepairContext,LLMCall } from './LLMProvider.js';
 import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js';
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
@@ -45,7 +45,7 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
     }catch{throw new Error('Claude Code is not signed in with a Claude subscription. Run `claude auth login` without `--console`.');}
     return version;
   }
-  plan(context:PlanningContext):Promise<Plan>{return this.request('PLAN',context,PlanSchema,PLAN_FORMAT);}
+  async plan(context:PlanningContext):Promise<Plan>{const goal=TaskGoalSchema.parse(context.goal),plan=await this.request('PLAN',context,PlannerOutputSchema,PLAN_FORMAT);return{...plan,goal};}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
   private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false):Promise<T>{

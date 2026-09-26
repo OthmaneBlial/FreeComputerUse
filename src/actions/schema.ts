@@ -57,6 +57,7 @@ export const PlanSchema = z.object({
   completion: z.array(ConditionSchema).min(1).max(12),
   continue: z.boolean().default(false),
 }).strict();
+export const PlannerOutputSchema = PlanSchema.omit({goal:true});
 export type Plan = z.infer<typeof PlanSchema>;
 export const RepairSchema = z.object({
   actions: z.array(ActionSchema).max(20),

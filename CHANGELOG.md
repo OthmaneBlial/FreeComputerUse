@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.2.5 - 2026-09-27
+
+### Changed
+
+- Planner responses no longer repeat the task goal. The runtime keeps the
+  validated original goal, preserving the 4,000-character limit while leaving
+  more output budget for steps, actions and checks.
+
 ## 0.2.4 - 2026-09-27
 
 ### Fixed
