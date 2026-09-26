@@ -230,6 +230,42 @@ test('text extraction applies substring and line limits',async()=>{
   }finally{await browser.close();}
 });
 
+test('array extraction limits avoid reading later rows in the browser',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    await browser.page.setContent('<table><tbody><tr><td>one</td></tr><tr><td>two</td></tr><tr><td>three</td></tr></tbody></table>');
+    await browser.page.locator('tr').nth(2).locator('td').evaluate(cell=>Object.defineProperty(cell,'innerText',{get(){throw new Error('read past limit');}}));
+    const table=await executor.run({type:'extract',target:{css:'table'},format:'table',key:'table',limit:2});
+    assert.equal(table.success,true,table.error??'Table extraction failed');
+    assert.deepEqual(browser.extractions.at(-1)?.value,[['one'],['two']]);
+    await browser.page.setContent('<table><tbody><tr><td>one</td></tr><tr><td>two</td></tr><tr><td>three</td></tr></tbody></table>');
+    const matchedTable=await executor.run({type:'extract',target:{css:'table'},format:'table',key:'matched-table',match:'THREE',limit:1});
+    assert.equal(matchedTable.success,true,matchedTable.error??'Matched table extraction failed');
+    assert.deepEqual(browser.extractions.at(-1)?.value,[['three']]);
+
+    await browser.page.setContent('<div class="links"><a href="/one">one</a><a href="/two">two</a><a href="/three">three</a></div>');
+    await browser.page.locator('a').nth(2).evaluate(link=>Object.defineProperty(link,'innerText',{get(){throw new Error('read past limit');}}));
+    const links=await executor.run({type:'extract',target:{css:'.links'},format:'links',key:'links',limit:2});
+    assert.equal(links.success,true,links.error??'Link extraction failed');
+    assert.equal((browser.extractions.at(-1)?.value as unknown[]).length,2);
+    await browser.page.setContent('<div class="links"><a href="https://example.test/one">one</a><a href="https://example.test/two">two</a><a href="https://example.test/three">three</a></div>');
+    const matchedLinks=await executor.run({type:'extract',target:{css:'.links'},format:'links',key:'matched-links',match:'THREE',limit:1});
+    assert.equal(matchedLinks.success,true,matchedLinks.error??'Matched link extraction failed');
+    assert.equal((browser.extractions.at(-1)?.value as {text:string}[])[0]?.text,'three');
+
+    await browser.page.setContent('<table><thead><tr><th>Item</th></tr></thead><tbody><tr><td>one</td></tr><tr><td>two</td></tr><tr><td>three</td></tr></tbody></table>');
+    await browser.page.locator('tbody tr').nth(2).locator('td').evaluate(cell=>Object.defineProperty(cell,'innerText',{get(){throw new Error('read past limit');}}));
+    const records=await executor.run({type:'extract',target:{css:'table'},format:'records',key:'records',limit:2,fields:{item:{css:'td',attribute:'text'}}});
+    assert.equal(records.success,true,records.error??'Record extraction failed');
+    assert.deepEqual(browser.extractions.at(-1)?.value,[{item:'one'},{item:'two'}]);
+    await browser.page.setContent('<table><thead><tr><th>Item</th></tr></thead><tbody><tr><td>one</td></tr><tr><td>two</td></tr><tr><td>three</td></tr></tbody></table>');
+    const matchedRecords=await executor.run({type:'extract',target:{css:'table'},format:'records',key:'matched-records',match:'THREE',limit:1,fields:{item:{css:'td',attribute:'text'}}});
+    assert.equal(matchedRecords.success,true,matchedRecords.error??'Matched record extraction failed');
+    assert.deepEqual(browser.extractions.at(-1)?.value,[{item:'three'}]);
+  }finally{await browser.close();}
+});
+
 test('text extraction excludes hidden descendants and blocked modal backgrounds',async()=>{
   const browser=await new Browser().launch();
   try{

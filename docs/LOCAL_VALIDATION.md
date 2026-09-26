@@ -38,6 +38,25 @@ scan counts vary with repository contents. Keep the terminal output with the
 commit hash and environment when recording a validation result; never record API
 keys, cookies, or user data.
 
+## Recent local gate results
+
+The working tree based on `main` commit `8bc55af` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 125/125
+tests in 177.40 seconds, type-check and build, security scan (263 worktree files,
+265 historical paths, 1,118 unique historical blobs; no recognized credentials
+or private-state paths), and npm audit with zero vulnerabilities. Environment:
+macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57`. Tests used local
+fixtures and provider contracts; no live model-provider request was made.
+GitHub Actions remained untouched.
+
+The working tree based on `main` commit `7263431` passed the same gate on
+26 September 2026: 124/124 tests in 216.20 seconds, type-check and build,
+security scan (263 worktree files, 265 historical paths, 1,114 unique historical
+blobs; no recognized credentials or private-state paths), and npm audit with
+zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
+Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
+model-provider request was made. GitHub Actions remained untouched.
+
 On 24 September 2026, a clean checkout completed `npm ci --offline
 --no-audit --no-fund` without a browser download, then passed the complete gate
 on macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57` at commit
@@ -174,14 +193,6 @@ model-provider request was made. GitHub Actions remained untouched.
 The working tree based on `main` commit `4a67ae7` passed the same gate on
 26 September 2026: 123/123 tests in 196.61 seconds, type-check and build,
 security scan (263 worktree files, 265 historical paths, 1,111 unique historical
-blobs; no recognized credentials or private-state paths), and npm audit with
-zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
-Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live
-model-provider request was made. GitHub Actions remained untouched.
-
-The working tree based on `main` commit `7263431` passed the same gate on
-26 September 2026: 124/124 tests in 216.20 seconds, type-check and build,
-security scan (263 worktree files, 265 historical paths, 1,114 unique historical
 blobs; no recognized credentials or private-state paths), and npm audit with
 zero vulnerabilities. Environment: macOS `26.6`, Node `25.9.0`, and system
 Chrome `154.0.8037.57`. Tests used local fixtures and provider contracts; no live

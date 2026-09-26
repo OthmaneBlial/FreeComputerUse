@@ -164,40 +164,56 @@ export class Executor {
         case 'extract':{
           interaction.cue('extract');
           const root=locator??page.locator('body');
-          if(action.format==='table')data=await root.evaluateAll(els=>[...new Set(els.flatMap(el=>el.matches('tr')?[el]:[...el.querySelectorAll('tr')]))].filter(row=>{const box=row.getBoundingClientRect();return box.width>0&&box.height>0&&getComputedStyle(row).visibility==='visible';}).map(row=>[...row.querySelectorAll('th,td')].map(cell=>{
-            for(let parent:Element|null=cell;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return '';}
-            return cell.closest('[hidden],[inert],[aria-hidden="true"]')?'':(cell as HTMLElement).innerText?.trim()??'';
-          })));
-          else if(action.format==='links')data=await root.evaluateAll(els=>[...new Set(els.flatMap(el=>el.matches('a[href]')?[el]:[...el.querySelectorAll('a[href]')]))].filter(a=>{
-            if(!a.getClientRects().length||a.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
-            for(let parent:Element|null=a;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.visibility!=='visible'||style.opacity==='0')return false;}
-            return true;
-          }).map(a=>({text:(a as HTMLElement).innerText?.trim(),url:(a as HTMLAnchorElement).href})));
+          if(action.format==='table')data=await root.evaluateAll((els,{match,limit})=>{
+            let rows=[...new Set(els.flatMap(el=>el.matches('tr')?[el]:[...el.querySelectorAll('tr')]))].filter(row=>{const box=row.getBoundingClientRect();return box.width>0&&box.height>0&&getComputedStyle(row).visibility==='visible';});
+            if(!match&&limit)rows=rows.slice(0,limit);
+            const values=rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>{
+              for(let parent:Element|null=cell;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return '';}
+              return cell.closest('[hidden],[inert],[aria-hidden="true"]')?'':(cell as HTMLElement).innerText?.trim()??'';
+            }));
+            return (match?values.filter(row=>JSON.stringify(row).toLowerCase().includes(match)):values).slice(0,limit);
+          },{match:action.match?.toLowerCase(),limit:action.limit});
+          else if(action.format==='links')data=await root.evaluateAll((els,{match,limit})=>{
+            let links=[...new Set(els.flatMap(el=>el.matches('a[href]')?[el]:[...el.querySelectorAll('a[href]')]))].filter(a=>{
+              if(!a.getClientRects().length||a.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
+              for(let parent:Element|null=a;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.visibility!=='visible'||style.opacity==='0')return false;}
+              return true;
+            });
+            if(!match&&limit)links=links.slice(0,limit);
+            const values=links.map(a=>({text:(a as HTMLElement).innerText?.trim(),url:(a as HTMLAnchorElement).href}));
+            return (match?values.filter(link=>JSON.stringify(link).toLowerCase().includes(match)):values).slice(0,limit);
+          },{match:action.match?.toLowerCase(),limit:action.limit});
           else if(action.format==='records'){
             if(!action.fields||!Object.keys(action.fields).length||Object.keys(action.fields).length>20)throw new Error('Records extraction requires 1..20 controlled CSS fields');
-            data=await root.filter({visible:true}).evaluateAll((els,fields)=>[...new Set(els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]))].map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
-              let node=el.querySelector(field.css);let value='';
-              // Resolve tabular fields from actual headers, rather than guessed cell indices.
-              if(el.tagName==='TR'&&field.attribute==='text'){
-                const headers=[...(el.closest('table')?.querySelectorAll('thead th,tr:first-child th')??[])];
-                const [normalize]=[(s:string)=>(s??'').toLowerCase().replace(/[^a-z]/g,'')];
-                const wanted=normalize(key),indices=headers.map((h,i)=>normalize(h.textContent??'')===wanted?i:-1).filter(i=>i>=0);
-                const cells=[...el.querySelectorAll(':scope > td')];
-                if(indices.length===1&&cells.length>=headers.length)node=cells[indices[0]!+cells.length-headers.length]??node;
-              }
-              if(node){
-                let hidden=!!node.closest('[hidden],[inert],[aria-hidden="true"]');
-                for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')hidden=true;}
-                const autocomplete=(node.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
-                const sensitiveInput=field.attribute==='value'&&node instanceof HTMLInputElement&&(node.type==='hidden'||node.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)));
-                if(hidden&&!sensitiveInput)value='';
-                else if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
-                else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
-                else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
-                else if(field.attribute==='value')value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
-                else value=node.getAttribute(field.attribute)??'';}
-              return[key,value];
-            }))),action.fields);
+            data=await root.filter({visible:true}).evaluateAll((els,{fields,match,limit})=>{
+              let rows=[...new Set(els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]))];
+              if(!match&&limit)rows=rows.slice(0,limit);
+              const records=rows.map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
+                let node=el.querySelector(field.css);let value='';
+                // Resolve tabular fields from actual headers, rather than guessed cell indices.
+                if(el.tagName==='TR'&&field.attribute==='text'){
+                  const headers=[...(el.closest('table')?.querySelectorAll('thead th,tr:first-child th')??[])];
+                  const [normalize]=[(s:string)=>(s??'').toLowerCase().replace(/[^a-z]/g,'')];
+                  const wanted=normalize(key),indices=headers.map((h,i)=>normalize(h.textContent??'')===wanted?i:-1).filter(i=>i>=0);
+                  const cells=[...el.querySelectorAll(':scope > td')];
+                  if(indices.length===1&&cells.length>=headers.length)node=cells[indices[0]!+cells.length-headers.length]??node;
+                }
+                if(node){
+                  let hidden=!!node.closest('[hidden],[inert],[aria-hidden="true"]');
+                  for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')hidden=true;}
+                  const autocomplete=(node.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
+                  const sensitiveInput=field.attribute==='value'&&node instanceof HTMLInputElement&&(node.type==='hidden'||node.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)));
+                  if(hidden&&!sensitiveInput)value='';
+                  else if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
+                  else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
+                  else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
+                  else if(field.attribute==='value')value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
+                  else value=node.getAttribute(field.attribute)??'';
+                }
+                return[key,value];
+              })));
+              return (match?records.filter(record=>JSON.stringify(record).toLowerCase().includes(match)):records).slice(0,limit);
+            },{fields:action.fields,match:action.match?.toLowerCase(),limit:action.limit});
           }
           else data=await root.filter({visible:true}).evaluateAll(els=>els.map(el=>{
             const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
@@ -226,10 +242,7 @@ export class Executor {
             return read(el).replace(/[ \t]*\n[ \t]*/g,'\n').replace(/\n+/g,'\n').trim();
           }).join('\n').slice(0,100000));
           const {match,limit}=action;
-          if(Array.isArray(data)){
-            if(match)data=data.filter(item=>JSON.stringify(item).toLowerCase().includes(match.toLowerCase()));
-            if(limit)data=(data as unknown[]).slice(0,limit);
-          }else if(typeof data==='string'&&(match||limit)){
+          if(typeof data==='string'&&(match||limit)){
             let lines=data.split(/\r?\n/);
             if(match)lines=lines.filter(line=>line.toLowerCase().includes(match.toLowerCase()));
             if(limit)lines=lines.slice(0,limit);
