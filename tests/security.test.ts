@@ -273,6 +273,53 @@ test('HTTP proxy retries a reused-socket reset for a bodyless GET',{timeout:1000
   }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 
+test('HTTP proxy does not start an upstream request after client cancellation during DNS resolution',{timeout:10000},async()=>{
+  let visits=0,resolveDNS!:(addresses:{address:string;family:number}[])=>void,markLookupStarted!:()=>void;
+  const lookupStarted=new Promise<void>(resolve=>{markLookupStarted=resolve;});
+  const target=createServer((_request,response)=>{visits++;response.end('Unexpected upstream request');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const destination=`http://cancel.test:${(target.address() as {port:number}).port}/`,proxy=new NetworkGuardProxy({allowPrivate:true,permits:()=>true,resolver:()=>{
+    markLookupStarted();return new Promise(resolve=>{resolveDNS=resolve;});
+  }});
+  let client:ClientRequest|undefined;
+  try{
+    const localProxy=new URL(await proxy.start());
+    client=httpRequest({hostname:localProxy.hostname,port:Number(localProxy.port),path:destination,headers:{host:new URL(destination).host},agent:false});
+    client.on('error',()=>{});client.end();await lookupStarted;
+    const downstream=(proxy as unknown as {sockets:Set<{once:(event:string,listener:()=>void)=>void}>}).sockets.values().next().value!;
+    const closed=new Promise<void>(resolve=>downstream.once('close',resolve));client.destroy();await closed;
+    resolveDNS([{address:'127.0.0.1',family:4}]);
+    await new Promise(resolve=>setTimeout(resolve,50));
+    assert.equal(visits,0,'Cancelled browser requests must not be sent upstream after DNS resolves');
+  }finally{
+    client?.destroy();resolveDNS?.([{address:'127.0.0.1',family:4}]);await proxy.close();
+    await new Promise<void>(resolve=>target.close(()=>resolve()));
+  }
+});
+
+test('HTTP proxy aborts an upstream response when the browser cancels it',{timeout:10000},async()=>{
+  let resolveClosed!:()=>void,finished=false;
+  const upstreamClosed=new Promise<void>(resolve=>{resolveClosed=resolve;});
+  const target=createServer((_request,response)=>{
+    response.write('Waiting for more data');
+    const timer=setTimeout(()=>response.end('late response'),5000);
+    response.once('finish',()=>{finished=true;});
+    response.once('close',()=>{clearTimeout(timer);if(!finished)resolveClosed();});
+  });
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const destination=`http://127.0.0.1:${(target.address() as {port:number}).port}/slow`,proxy=new NetworkGuardProxy({allowPrivate:true,permits:url=>url===destination});
+  let client:ClientRequest|undefined;
+  try{
+    const localProxy=new URL(await proxy.start());
+    client=httpRequest({hostname:localProxy.hostname,port:Number(localProxy.port),path:destination,headers:{host:new URL(destination).host},agent:false},response=>response.once('data',()=>client?.destroy()));
+    client.on('error',()=>{});client.end();
+    const stopped=await Promise.race([upstreamClosed.then(()=>true),new Promise<boolean>(resolve=>setTimeout(()=>resolve(false),1000))]);
+    assert.equal(stopped,true,'The proxy must stop consuming upstream data after the browser disconnects');
+  }finally{
+    client?.destroy();await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));
+  }
+});
+
 test('a persistent proxy reapplies the current private-network policy',{timeout:10000},async()=>{
   let visits=0,allowPrivate=true;
   const target=createServer((_req,res)=>{visits++;res.end('Local fixture');});

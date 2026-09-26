@@ -50,7 +50,10 @@ path. User restrictions and final completion criteria still apply.
   system-resolver's discovered NAT64 prefix are blocked, including when the
   hostname is allowlisted. Discovery uses `ipv4only.arpa`; if the resolver does
   not return synthesized AAAA records, network-specific prefixes cannot be
-  checked. Explicit IP destinations still use exact origin permissions. Ultra
+  checked. A browser disconnect during DNS lookup prevents later outbound
+  dispatch; disconnecting an active proxied HTTP request closes its upstream
+  connection, though the target may already have received it. Explicit IP
+  destinations still use exact origin permissions. Ultra
   mode and the low-level `allowExternal` option bypass
   origin and private-address checks. A synthetic public-to-loopback DNS change
   test confirms the proxy rejects the connection before the target receives it;

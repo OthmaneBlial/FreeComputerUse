@@ -159,6 +159,7 @@ export class NetworkGuardProxy {
       if(url.protocol!=='http:')throw new Error('HTTPS requests require a tunnel');
       if(!this.permitted(url))throw new Error('Origin blocked by local browser policy');
       const addresses=await this.destinations(url.hostname);
+      if(response.destroyed||request.socket.destroyed)return;
       const headers:Record<string,string|string[]|undefined>={...request.headers,host:url.host};
       delete headers['proxy-authorization'];delete headers['proxy-connection'];
       const options={hostname:url.hostname.replace(/^\[|\]$/g,''),...this.connectionOptions(url.hostname,addresses),port:Number(url.port)||80,method:request.method,path:`${url.pathname}${url.search}`,headers,agent:this.agent};
@@ -168,7 +169,12 @@ export class NetworkGuardProxy {
           response.writeHead(incoming.statusCode??502,incoming.statusMessage,incoming.headers);
           incoming.pipe(response);
         });
+        const abortIfClientClosed=()=>{if(!response.writableFinished)upstream.destroy();};
+        request.socket.once('close',abortIfClientClosed);
+        response.once('close',abortIfClientClosed);
+        upstream.once('close',()=>{request.socket.off('close',abortIfClientClosed);response.off('close',abortIfClientClosed);});
         upstream.on('error',error=>{
+          if(response.destroyed||request.socket.destroyed)return;
           if(!retried&&!response.headersSent&&retryableRead&&upstream.reusedSocket&&(error as NodeJS.ErrnoException).code==='ECONNRESET'){send(true);return;}
           this.deny(response,502);
         });
