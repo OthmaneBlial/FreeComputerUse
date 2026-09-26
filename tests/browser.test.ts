@@ -4,7 +4,7 @@ import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
 import { diffPages, PageCompressor, similarity } from '../src/browser/PageCompressor.js';
 import { stateHash } from '../src/browser/DomExtractor.js';
-import { ActionSchema, PlanSchema } from '../src/actions/schema.js';
+import { ActionSchema, ConditionSchema, PlanSchema } from '../src/actions/schema.js';
 
 test('rejects unsupported system browser channels before launch',async()=>{
   const previous=process.env.FCU_BROWSER_CHANNEL;process.env.FCU_BROWSER_CHANNEL='not-a-browser';
@@ -100,6 +100,8 @@ test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
   assert(!ActionSchema.safeParse({type:'click',target:'e1',code:'evil'}).success);
   assert(!ActionSchema.safeParse({type:'wait',condition:{type:'custom',value:'evil'}}).success);
   assert(!PlanSchema.safeParse({goal:'task',steps:['Fill'],actions:[],completion:[]}).success);
+  assert(!ConditionSchema.safeParse({type:'extraction_count',min:3,max:2}).success);
+  assert(ConditionSchema.safeParse({type:'extraction_count',min:2,max:3}).success);
   assert(similarity('apply to job','Apply job')>.5);
 });
 

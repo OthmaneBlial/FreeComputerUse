@@ -24,7 +24,9 @@ export const ConditionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('network_response'), value: text, status: z.number().int().min(100).max(599).optional() }).strict(),
   z.object({ type: z.literal('download_created'), value: text.optional() }).strict(),
   z.object({ type: z.literal('page_changed'), value: text }).strict(),
-]);
+]).superRefine((condition,context)=>{
+  if(condition.type==='extraction_count'&&condition.max!==undefined&&condition.max<condition.min)context.addIssue({code:'custom',path:['max'],message:'max must be greater than or equal to min'});
+});
 export type Condition = z.infer<typeof ConditionSchema>;
 const meta = {
   sensitive: z.boolean().optional(),
