@@ -61,6 +61,17 @@ test('state hash changes when observed headings, dialog labels, options or links
   }finally{await browser.close();}
 });
 
+test('page observation excludes visually hidden descendant text',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<h1>Visible heading <span style="display:none">hidden-heading-secret</span></h1><p>Visible text <span hidden>hidden-paragraph-injection</span><span style="opacity:0"><b>hidden-opacity-secret</b></span><span aria-hidden="true">hidden-aria-secret</span></p><table><tr><td>Public cell</td><td style="display:none">hidden-table-secret</td></tr></table><div role="dialog"><span style="display:none">hidden-dialog-secret</span>Visible dialog</div><a href="/safe"><span style="display:none">hidden-link-injection</span>Public link</a>');
+    const observer=new Observer(),state=await observer.inspect(browser.page);
+    const observed=JSON.stringify({headings:state.headings,text:state.text,tables:state.tables,dialogs:state.dialogs,names:state.elements.map(element=>element.name)});
+    assert(!observed.includes('hidden-'));assert(observed.includes('Visible heading'));assert(observed.includes('Visible text'));assert(observed.includes('Public cell'));assert(observed.includes('Visible dialog'));assert(observed.includes('Public link'));
+    assert(!(await observer.fragment(browser.page,'body')).includes('hidden-'));
+  }finally{await browser.close();}
+});
+
 test('ranked selector survives replacement and rejects ambiguous duplicate buttons',async()=>{
   const browser=await new Browser().launch();
   try {

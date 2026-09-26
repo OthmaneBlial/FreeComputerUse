@@ -187,6 +187,18 @@ test('record extraction omits hidden, password, payment and one-time-code input 
   }finally{await browser.close();}
 });
 
+test('table and link extraction excludes visually hidden descendant text',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<!doctype html><html><head><base href="https://example.test/"></head><body><table><tr><td>Public cell<span style="display:none">hidden-table-secret</span></td><td style="display:none">hidden-cell-secret</td></tr></table><a href="/safe"><span style="display:none">hidden-link-injection</span>Public link</a></body></html>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    assert((await executor.run({type:'extract',target:{css:'table'},format:'table',key:'table'})).success);
+    assert.deepEqual(browser.extractions[0]?.value,[['Public cell','']]);
+    assert((await executor.run({type:'extract',format:'links',key:'links'})).success);
+    assert.deepEqual(browser.extractions[1]?.value,[{text:'Public link',url:'https://example.test/safe'}]);
+  }finally{await browser.close();}
+});
+
 test('popup navigation waits for the new document before extraction and closing',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{

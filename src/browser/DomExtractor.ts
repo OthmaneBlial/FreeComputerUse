@@ -25,12 +25,21 @@ export class DomExtractor {
         const data = await evaluateWhilePageOpen(page,frame.evaluate(({ index, region,documentId }) => {
           // Array destructuring avoids tsx's named-function helper in browser serialization.
           const [clean] = [(s: string | null | undefined, max = 180) => (s ?? '').replace(/\s+/g,' ').trim().slice(0,max)];
+          const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
           const [visible] = [(el: Element) => {
             if (el.closest('[hidden],[inert],[aria-hidden="true"]')) return false;
-            const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]');
-            if(modal&&modal.getClientRects().length&&!modal.contains(el)&&modal!==el)return false;
-            const style = getComputedStyle(el);
-            return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' && el.getClientRects().length > 0;
+            if(modalVisible&&modal&&!modal.contains(el)&&modal!==el)return false;
+            let parent:Element|null=el;
+            while(parent){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;parent=parent.parentElement;}
+            return el.getClientRects().length>0;
+          }];
+          const [visibleText] = [(el:Element,max=180)=>{
+            if(!visible(el))return '';
+            const source=[...el.querySelectorAll('*')],hidden=source.map(node=>!visible(node));
+            if(!hidden.some(Boolean))return clean((el as HTMLElement).innerText??el.textContent,max);
+            const clone=el.cloneNode(true) as Element,copies=[...clone.querySelectorAll('*')];
+            for(let index=source.length-1;index>=0;index--)if(hidden[index])copies[index]!.remove();
+            return clean(clone.textContent,max);
           }];
           const roots: (Document|ShadowRoot)[] = [document];
           const all: Element[] = [];
@@ -56,9 +65,11 @@ export class DomExtractor {
               : type === 'checkbox' ? 'checkbox' : type === 'radio' ? 'radio'
               : type === 'file' ? 'upload' : type === 'number' ? 'spinbutton' : tag === 'summary' ? 'button' : 'textbox';
             const role = el.getAttribute('role') ?? implicit;
-            const labelled = (el.getAttribute('aria-labelledby') ?? '').split(/\s+/).map(id => el.getRootNode() instanceof Document ? document.getElementById(id)?.textContent : (el.getRootNode() as ShadowRoot).getElementById(id)?.textContent).join(' ');
-            const label = clean(el.getAttribute('aria-label') || labelled || (input.labels ? [...input.labels].map(l=>l.textContent).join(' ') : ''));
-            const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : el.textContent);
+            const root=el.getRootNode();
+            const labelled=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>{const label=root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id);return label?visibleText(label):'';}).join(' ');
+            const label = clean(el.getAttribute('aria-label') || labelled || (input.labels ? [...input.labels].map(l=>visibleText(l)).join(' ') : ''));
+            const content=['input','textarea','select'].includes(tag)?'':visibleText(el);
+            const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : content);
             let ref = registry.refs.get(el);
             if (!ref) { ref = `f${index}d${registry.documentId}e${registry.next++}`; registry.refs.set(el,ref); }
             el.setAttribute('data-fcu-ref',ref);
@@ -69,7 +80,7 @@ export class DomExtractor {
               parts.unshift(`${parent.tagName.toLowerCase()}${siblings.length > 1 ? `:nth-of-type(${siblings.indexOf(parent)+1})` : ''}`);
               parent = parent.parentElement;
             }
-            const errors = (el.getAttribute('aria-errormessage') || el.getAttribute('aria-describedby') || '').split(/\s+/).map(id=>document.getElementById(id)?.textContent).join(' ');
+            const errors = (el.getAttribute('aria-errormessage') || el.getAttribute('aria-describedby') || '').split(/\s+/).map(id=>{const error=document.getElementById(id);return error?visibleText(error):'';}).join(' ');
             const form = input.form;
             const section = el.closest('form,dialog,[role=dialog],nav,main,section');
             return {
@@ -88,15 +99,15 @@ export class DomExtractor {
                 label:label || undefined, placeholder:el.getAttribute('placeholder') || undefined,
                 testId:el.getAttribute('data-testid') || undefined,
                 id:el.id || undefined, attributeName:el.getAttribute('name') || undefined,
-                text: !['input','select','textarea'].includes(tag) ? clean(el.textContent) || undefined : undefined,
+                text: content || undefined,
                 frame:index,
               },
             };
           });
-          const headings = all.filter(el=>included(el)&&visible(el)&&el.matches('h1,h2,h3,[role=heading]')).slice(0,24).map(el=>clean(el.textContent));
-          const paragraphs = all.filter(el=>included(el)&&visible(el)&&el.matches('p,li,dt,dd,output,[role=status],[role=alert]')).sort((a,b)=>Number(!!b.closest('main,article,[role=main]'))-Number(!!a.closest('main,article,[role=main]'))).slice(0,100).map(el=>clean(el.textContent,300));
-          const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].filter(visible).slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>clean(cell.textContent))));
-          const dialogs = all.filter(el=>included(el)&&visible(el)&&el.matches('dialog,[role=dialog],[role=menu]')).map(el=>clean(el.getAttribute('aria-label') || el.textContent,250));
+          const headings = all.filter(el=>included(el)&&visible(el)&&el.matches('h1,h2,h3,[role=heading]')).slice(0,24).map(el=>visibleText(el));
+          const paragraphs = all.filter(el=>included(el)&&visible(el)&&el.matches('p,li,dt,dd,output,[role=status],[role=alert]')).sort((a,b)=>Number(!!b.closest('main,article,[role=main]'))-Number(!!a.closest('main,article,[role=main]'))).slice(0,100).map(el=>visibleText(el,300));
+          const tables = all.filter(el=>included(el)&&visible(el)&&el.matches('table')).slice(0,5).map(table=>[...table.querySelectorAll('tr')].filter(visible).slice(0,25).map(row=>[...row.querySelectorAll('th,td')].slice(0,12).map(cell=>visibleText(cell))));
+          const dialogs = all.filter(el=>included(el)&&visible(el)&&el.matches('dialog,[role=dialog],[role=menu]')).map(el=>clean(el.getAttribute('aria-label') || visibleText(el),250));
           return { elements,headings,text:[...new Set(paragraphs)].join('\n').slice(0,8000),tables,dialogs,htmlBytes,truncated:candidates.length>500 };
         }, { index, region,documentId:randomUUID().slice(0,8) }));
         pieces.push(data);

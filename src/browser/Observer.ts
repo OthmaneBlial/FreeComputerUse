@@ -16,7 +16,16 @@ export class Observer {
   }
   async fragment(page:Page,selector:string) {
     return page.locator(selector).evaluate(el=>{
-      const clone=el.cloneNode(true) as Element;
+      const sources=[el,...el.querySelectorAll('*')],clone=el.cloneNode(true) as Element,copies=[clone,...clone.querySelectorAll('*')];
+      const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+      const [visible]=[(node:Element)=>{
+        if(node.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
+        if(modalVisible&&modal&&!modal.contains(node)&&modal!==node&&!node.contains(modal))return false;
+        for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;}
+        return node.getClientRects().length>0;
+      }];
+      if(!visible(el))return '';
+      for(let index=sources.length-1;index>0;index--)if(!visible(sources[index]!))copies[index]!.remove();
       clone.querySelectorAll('script,style,svg').forEach(node=>node.remove());
       for(const node of [clone,...clone.querySelectorAll('*')]) {
         for(const a of [...node.attributes]) if(!['id','role','name','type','aria-label','aria-labelledby','placeholder','required','disabled','checked','data-testid','data-fcu-ref'].includes(a.name)) node.removeAttribute(a.name);
