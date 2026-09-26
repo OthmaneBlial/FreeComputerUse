@@ -2,8 +2,8 @@ import type { Page } from 'playwright';
 import { createHash,randomUUID } from 'node:crypto';
 import type { PageState } from './types.js';
 
-export const stateHash = (state: Pick<PageState, 'url'|'title'|'text'|'elements'> & Partial<Pick<PageState,'tables'>>) => createHash('sha256')
-  .update(JSON.stringify([state.url, state.title, state.text,state.tables??[], state.elements.map(e => [e.frame,e.role,e.name,e.hasValue,e.checked,e.disabled,e.error])])).digest('hex').slice(0,20);
+export const stateHash = (state: PageState) => createHash('sha256')
+  .update(JSON.stringify([state.url,state.title,state.headings,state.text,state.tables,state.dialogs,state.warnings,state.frames,state.truncated,state.elements])).digest('hex').slice(0,20);
 
 async function evaluateWhilePageOpen<T>(page:Page,evaluation:Promise<T>):Promise<T>{
   if(page.isClosed())throw new Error('Browser page closed during DOM inspection');

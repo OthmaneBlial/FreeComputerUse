@@ -44,6 +44,22 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
   }finally{await browser.close();}
 });
 
+test('state hash changes when observed headings, dialog labels, options or links change',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<h1>Before</h1><select id="country"><option>France</option><option>Germany</option></select><a href="/before">Details</a><div role="dialog" aria-label="Before dialog">Dialog</div>');
+    const observer=new Observer();let previous=await observer.inspect(browser.page);
+    await browser.page.locator('h1').evaluate(el=>el.textContent='After');
+    let current=await observer.inspect(browser.page);assert.notEqual(current.hash,previous.hash);previous=current;
+    await browser.page.locator('[role=dialog]').evaluate(el=>el.setAttribute('aria-label','After dialog'));
+    current=await observer.inspect(browser.page);assert.notEqual(current.hash,previous.hash);previous=current;
+    await browser.page.locator('#country').evaluate(el=>el.append(new Option('Spain','es')));
+    current=await observer.inspect(browser.page);assert.notEqual(current.hash,previous.hash);previous=current;
+    await browser.page.locator('a').evaluate(el=>el.setAttribute('href','/after'));
+    current=await observer.inspect(browser.page);assert.notEqual(current.hash,previous.hash);
+  }finally{await browser.close();}
+});
+
 test('ranked selector survives replacement and rejects ambiguous duplicate buttons',async()=>{
   const browser=await new Browser().launch();
   try {
