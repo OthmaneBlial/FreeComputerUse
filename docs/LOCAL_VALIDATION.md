@@ -40,6 +40,16 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.3 release-candidate working tree based on `main` at `7fcff07` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 136/136 tests
+in 182.55 seconds, type-check/build, security scan (266 worktree files, 268
+historical paths, 1,221 historical blobs; no recognized credentials or
+private-state paths), and npm audit with zero vulnerabilities. Environment:
+macOS `26.6`, Apple Silicon, Node `25.9.0`, and system Chrome `154.0.8037.57`.
+No live model-provider request was made. The v0.2.3 lab smoke passed 34 pages,
+758 accessible controls, eight practice cards, keyboard interaction, responsive
+widths 320/390/768/1440, and no console errors.
+
 The source and tests committed as `8d91e65` and tagged `v0.2.2`, based on `main`
 at `5a59f40`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26
 September 2026: 135/135 tests in 216.39 seconds, type-check/build, security scan

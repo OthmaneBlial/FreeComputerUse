@@ -24,16 +24,16 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.2: planner context stays bounded
+## New in 0.2.3: long task goals work end to end
 
-Longer tasks can collect large results across pages. The planner now receives the current page, recent tabs and extraction evidence inside one character cap, so prior results cannot silently inflate later prompts. Recent evidence remains available for planning, with bounded previews and a fixed recent-result window.
+Dashboard and MCP tasks allow goals up to 4,000 characters. The planner schema now accepts that same full limit, so a valid longer request is not rejected when the model repeats it in its plan. Version 0.2.2 also keeps page context and recent extraction evidence inside one character cap.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.2
+npm install --global free-computer-use@0.2.3
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -47,7 +47,7 @@ Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then ap
 | `Extract the first 5 links` | Return a bounded list of the first five links. |
 | `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
 
-These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. Release 0.2.2 passed the full local suite 135/135 on Node.js 25.9.0. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Both used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. Release 0.2.3 passed the full local suite 136/136 on Node.js 25.9.0; 0.2.2 passed 135/135. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Runs used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
 
 ## Watch a real run
 
@@ -77,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.2
+npm install --global free-computer-use@0.2.3
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```

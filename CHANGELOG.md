@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.3 - 2026-09-27
+
+### Fixed
+
+- Accept planner goals up to the same 4,000-character limit as the dashboard
+  and MCP task APIs.
+
 ## 0.2.2 - 2026-09-26
 
 ### Fixed

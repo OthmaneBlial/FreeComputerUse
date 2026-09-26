@@ -25,6 +25,12 @@ test('default model budget allows long tasks while explicit caps still work',()=
   assert.equal(budget.limits.maxInputTokens,null);
 });
 
+test('planner schema accepts the 4000-character goals supported by dashboard and MCP',()=>{
+  const goal='g'.repeat(4000);
+  const plan=PlanSchema.parse({goal,steps:['Read the page'],actions:[{type:'extract',format:'text'}],completion:[{type:'extraction_created'}],continue:false});
+  assert.equal(plan.goal,goal);
+});
+
 test('observe/plan/execute/verify learns semantic workflow and replays without a provider',async()=>{
   const fixture=await startFixtures();const store=new TraceStore(':memory:');const provider=new FixtureProvider();
   const vault={profile:{firstName:'Alex',lastName:'Example',email:'private@example.test',country:'France',message:'Synthetic message'},files:{}};
