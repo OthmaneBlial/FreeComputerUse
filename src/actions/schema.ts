@@ -16,7 +16,7 @@ export const ConditionSchema = z.discriminatedUnion('type', [
   z.object({type:z.literal('extraction_created'),key:text.optional()}).strict(),
   z.object({type:z.literal('extraction_contains'),key:text.optional(),value:text}).strict(),
   z.object({type:z.literal('tab_count'),count:z.number().int().min(1).max(100)}).strict(),
-  z.object({type:z.literal('extraction_count'),key:text.optional(),min:z.number().int().min(1).max(1000),max:z.number().int().min(1).max(1000).optional()}).strict(),
+  z.object({type:z.literal('extraction_count'),key:text.optional(),min:z.number().int().min(0).max(1000),max:z.number().int().min(0).max(1000).optional()}).strict(),
   ...(['element_exists', 'element_visible', 'element_not_visible', 'checkbox_checked', 'form_submitted'] as const)
     .map(type => z.object({ type: z.literal(type), target: TargetSchema }).strict()),
   ...(['url_equals', 'url_contains', 'text_exists', 'text_disappeared', 'title_changed'] as const)

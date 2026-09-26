@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- “First/top N links” tasks now accept any available count up to the requested
+  limit instead of failing when the page contains fewer links.
+
 ## 0.2.0 - 2026-09-26
 
 ### Added

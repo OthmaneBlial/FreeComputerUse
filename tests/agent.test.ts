@@ -136,6 +136,9 @@ test('generic adapter lists visible links without invoking a provider',async()=>
     const limited=await agent.run('List the first 3 links',fixture.url);
     assert.equal(limited.status,'completed',limited.error??'Task failed');assert.equal(limited.metrics.llmCalls,0);
     assert.equal((agent.browser.extractions[0]?.value as {text:string;url:string}[]).length,3);
+    const shorter=await agent.run('List the first 1000 links',fixture.url);
+    assert.equal(shorter.status,'completed',shorter.error??'Task failed');assert.equal(shorter.metrics.llmCalls,0);
+    assert((agent.browser.extractions[0]?.value as {text:string;url:string}[]).length<1000);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 

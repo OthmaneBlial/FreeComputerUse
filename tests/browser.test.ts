@@ -112,6 +112,8 @@ test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
   assert(!PlanSchema.safeParse({goal:'task',steps:['Fill'],actions:[],completion:[]}).success);
   assert(!ConditionSchema.safeParse({type:'extraction_count',min:3,max:2}).success);
   assert(ConditionSchema.safeParse({type:'extraction_count',min:2,max:3}).success);
+  assert(ConditionSchema.safeParse({type:'extraction_count',min:0,max:3}).success);
+  assert(!ConditionSchema.safeParse({type:'extraction_count',min:-1,max:3}).success);
   assert(similarity('apply to job','Apply job')>.5);
 });
 

@@ -18,7 +18,7 @@ export const genericAdapter:SiteAdapter={
     // Deliberately narrow intent parsing: zero LLM calls for fully specified tasks.
     if(/^(?:read|extract)(?: the| this)? (?:page|document)(?: text)?\.?$/i.test(goal))return PlanSchema.parse({goal,steps:['Extract visible page text'],actions:[{type:'extract',format:'text',key:'text'}],completion:[{type:'extraction_created',key:'text'}],continue:false});
     const firstLinks=goal.match(/^(?:extract|list)(?: the)? (?:first|top) (\d+) links?\.?$/i);
-    if(firstLinks){const limit=Number(firstLinks[1]);if(limit>=1&&limit<=1000)return PlanSchema.parse({goal,steps:[`Extract the first ${limit} visible links`],actions:[{type:'extract',format:'links',key:'links',limit}],completion:[{type:'extraction_created',key:'links'},{type:'extraction_count',key:'links',min:limit,max:limit}],continue:false});}
+    if(firstLinks){const limit=Number(firstLinks[1]);if(limit>=1&&limit<=1000)return PlanSchema.parse({goal,steps:[`Extract up to the first ${limit} visible links`],actions:[{type:'extract',format:'links',key:'links',limit}],completion:[{type:'extraction_created',key:'links'}],continue:false});}
     if(/^(?:extract|list)(?: the)? links?\.?$/i.test(goal))return PlanSchema.parse({goal,steps:['Extract visible links'],actions:[{type:'extract',format:'links',key:'links'}],completion:[{type:'extraction_created',key:'links'}],continue:false});
     if(/^(extract|read)( the)? table\.?$/i.test(goal)&&state.tables.length===1)return PlanSchema.parse({goal,steps:['Extract visible table'],actions:[{type:'extract',target:{css:'table'},format:'table',key:'table'}],completion:[{type:'element_visible',target:{css:'table'}}],continue:false});
     if(/^fill( the)?( contact)? form using( my)? profile\.?$/i.test(goal)){
