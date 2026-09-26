@@ -31,7 +31,6 @@ export class Agent extends EventEmitter {
   readonly variables:VariableResolver;readonly executor:Executor;readonly workflows:WorkflowEngine;
   budget:TokenBudget;state?:PageState;trace?:Trace;events:AgentEvent[]=[];
   active=false;
-  private cache=new Map<string,PageState>();
   private permittedSites=new Set<string>();
   private watchedContexts=new WeakSet<BrowserContext>();
   constructor(readonly options:AgentOptions){
@@ -78,7 +77,6 @@ export class Agent extends EventEmitter {
   async open(url:string){if(!this.browser.context)await this.browser.launch();await this.browser.navigate(url);return this.observe();}
   async observe(){
     const state=await this.observer.inspect(this.browser.page);this.state=state;
-    this.cache.set(state.hash,state);if(this.cache.size>30)this.cache.delete(this.cache.keys().next().value!);
     const compressed=this.observer.compressor.compress(state);
     this.event('OBSERVE',`DOM ${state.htmlBytes} bytes → ${compressed.bytes} bytes`,{url:state.url,title:state.title,hash:state.hash,reduction:compressed.reduction});
     return state;
@@ -194,7 +192,7 @@ export class Agent extends EventEmitter {
       const actions=trace.actions.filter(a=>a.success).length,calls=usage.llmCalls-usageStart.llmCalls;
       trace.metrics={durationMs:trace.durationMs,browserActions:actions,failedActions:trace.actions.filter(a=>!a.success).length,llmCalls:calls,inputTokens:usage.inputTokens-usageStart.inputTokens,outputTokens:usage.outputTokens-usageStart.outputTokens,
         estimatedCostUSD:usage.estimatedCostUSD===null?null:usage.estimatedCostUSD-(usageStart.estimatedCostUSD??0),actionsPerLLMCall:calls?actions/calls:null,tokensPerAction:actions?((usage.inputTokens-usageStart.inputTokens)+(usage.outputTokens-usageStart.outputTokens))/actions:null,
-        repairs,workflowCacheHits:cacheHits,pageCacheEntries:this.cache.size,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
+        repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
       this.active=false;
@@ -222,7 +220,7 @@ export class Agent extends EventEmitter {
     this.browser.options.allowExternal=this.options.mode==='ultra'||options.browser?.allowExternal===true;
     this.executor.options.confirmation=this.options.mode==='ultra'?'never':this.options.confirmation;
     this.executor.options.downloadDir=this.options.downloadDir;
-    this.state=undefined;this.trace=undefined;this.events=[];this.cache.clear();this.permittedSites.clear();
+    this.state=undefined;this.trace=undefined;this.events=[];this.permittedSites.clear();
     this.browser.downloads.length=0;this.browser.extractions.length=0;this.browser.responses.length=0;this.browser.formReceipts.length=0;
     await this.browser.prepareForNextRun();
   }
