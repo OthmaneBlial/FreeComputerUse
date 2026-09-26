@@ -40,6 +40,15 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The working tree based on `main` commit `79229c5` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 130/130
+tests in 193.59 seconds, type-check and build, security scan (263 worktree files,
+265 historical paths, 1,138 unique historical blobs; no recognized credentials
+or private-state paths), and npm audit with zero vulnerabilities. Environment:
+macOS `26.6`, Node `25.9.0`, and system Chrome `154.0.8037.57`. Tests used local
+fixtures and provider contracts; no live model-provider request was made.
+GitHub Actions remained untouched.
+
 The working tree based on `main` commit `1700fcd` passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 129/129
 tests in 207.75 seconds, type-check and build, security scan (263 worktree files,

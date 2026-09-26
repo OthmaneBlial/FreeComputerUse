@@ -126,6 +126,16 @@ test('generic adapter reads page text without invoking a provider',async()=>{
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('generic adapter lists visible links without invoking a provider',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');
+  const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  try{
+    const trace=await agent.run('Extract the links',fixture.url);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.metrics.llmCalls,0);assert.equal(trace.metrics.planBatches,0);
+    assert((agent.browser.extractions[0]?.value as {text:string;url:string}[]).some(link=>link.text==='Contact form'&&link.url===fixture.url+'/demo'));
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
 test('download goals cannot complete without creating a browser download',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');
   const agent=new Agent({store,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});

@@ -17,6 +17,7 @@ export const genericAdapter:SiteAdapter={
   plan(goal,state,variables){
     // Deliberately narrow intent parsing: zero LLM calls for fully specified tasks.
     if(/^(?:read|extract)(?: the| this)? (?:page|document)(?: text)?\.?$/i.test(goal))return PlanSchema.parse({goal,steps:['Extract visible page text'],actions:[{type:'extract',format:'text',key:'text'}],completion:[{type:'extraction_created',key:'text'}],continue:false});
+    if(/^(?:extract|list)(?: the)? links?\.?$/i.test(goal))return PlanSchema.parse({goal,steps:['Extract visible links'],actions:[{type:'extract',format:'links',key:'links'}],completion:[{type:'extraction_created',key:'links'}],continue:false});
     if(/^(extract|read)( the)? table\.?$/i.test(goal)&&state.tables.length===1)return PlanSchema.parse({goal,steps:['Extract visible table'],actions:[{type:'extract',target:{css:'table'},format:'table',key:'table'}],completion:[{type:'element_visible',target:{css:'table'}}],continue:false});
     if(/^fill( the)?( contact)? form using( my)? profile\.?$/i.test(goal)){
       const mappings=mapForm(state,variables);
