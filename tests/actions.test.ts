@@ -337,3 +337,13 @@ test('redaction masks credential query values and bearer tokens but keeps ordina
   assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('fragment-secret'));assert(!result.includes('oauth-secret'));assert(!result.includes('abcdefghijklmnop'));
   assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep',authorization:'Bearer [redacted]'});
 });
+
+test('redaction masks common GitHub, GitLab and Slack token prefixes',()=>{
+  const resolver=new VariableResolver(),tokens=[
+    `ghp_${'a'.repeat(24)}`,`github_pat_${'b'.repeat(24)}`,
+    `ghs_APPID_${'c'.repeat(32)}.${'d'.repeat(32)}`,
+    `glpat-${'e'.repeat(24)}`,`glrtr-${'f'.repeat(24)}`,`xoxb-${'g'.repeat(24)}`,
+  ];
+  assert.equal(resolver.redact(tokens.join('|')),tokens.map(()=> '[redacted key]').join('|'));
+  assert.equal(resolver.redact('ghp_short glpat-short xoxb-short'),'ghp_short glpat-short xoxb-short');
+});

@@ -11,6 +11,11 @@
 - The HTTP proxy drops requests canceled during DNS lookup and aborts in-flight
   upstream HTTP requests when the browser disconnects.
 
+### Security
+
+- Redact recognized GitHub, GitLab and Slack token prefixes from prompts, traces
+  and history output.
+
 ## 0.2.0 - 2026-09-26
 
 ### Added

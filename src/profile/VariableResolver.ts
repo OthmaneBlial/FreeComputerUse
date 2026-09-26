@@ -33,6 +33,7 @@ export class VariableResolver {
     return result
       .replace(/([?&#])([^=?&#\s"'<>()[\]]+)=([^&#\s"'<>),}\]]*)/g,(match,separator:string,name:string)=>sensitiveQueryParameter(name)?`${separator}${name}=REDACTED`:match)
       .replace(/\bBearer\s+[A-Za-z0-9._~+/-]{12,}={0,2}/gi,'Bearer [redacted]')
+      .replace(/(?:github_pat_[a-zA-Z0-9_-]{20,}|gh[pour]_[a-zA-Z0-9_-]{20,}|ghs_[a-zA-Z0-9_.-]{20,}|gl(?:pat|oas|dt|rtr|rt|cbt|ptt|ft|imt|agent|wt|soat|ffct)-[a-zA-Z0-9_-]{16,}|xox[a-z]-[a-zA-Z0-9_-]{10,}|x(?:app|wfp)-[a-zA-Z0-9_-]{10,})/g,'[redacted key]')
       .replace(/sk-[a-zA-Z0-9_-]{16,}/g,'[redacted key]');
   }
 }
