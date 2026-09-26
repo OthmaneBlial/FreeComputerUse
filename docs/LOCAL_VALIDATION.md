@@ -58,13 +58,13 @@ An earlier run had been stopped after 2
 minutes 30 seconds in the former per-file history scan; the batched object scan
 and deleted-secret regression test resolved that bottleneck.
 
-The latest full validation on `main`, commit `1bfb8f7` (24 September 2026),
-passed `FCU_BROWSER_CHANNEL=chrome npm run validate`: 106/106 tests in 158.82
-seconds, build, security scan (263 worktree files, 265 historical paths, 1,036
-unique historical blobs; no recognized credentials or private-state paths),
-and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Node
-`25.9.0`, and system Chrome `154.0.8037.57`. The tests use local fixtures and
-provider contracts; no live model-provider request was made. GitHub Actions
+The latest full validation on `main`, commit `7c1da12` (26 September 2026),
+passed `FCU_BROWSER_CHANNEL=chrome npm run validate`: 109/109 tests in 202.84
+seconds, type-check and build, security scan (263 worktree files, 265 historical
+paths, 1,046 unique historical blobs; no recognized credentials or private-state
+paths), and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`,
+Node `25.9.0`, and system Chrome `154.0.8037.57`. The tests use local fixtures
+and provider contracts; no live model-provider request was made. GitHub Actions
 remained untouched.
 
 The published npm tarball was fetched with `npm pack free-computer-use@0.1.0`
