@@ -61,6 +61,10 @@ test('element-not-visible verification distinguishes hidden, missing, ambiguous 
   try{
     await browser.page.setContent('<button>Visible match</button><button style="display:none">Hidden match</button><aside style="display:none">Hidden only</aside>');
     const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    assert.equal(await executor.verifier.one({type:'element_exists',target:{css:'button'}}),true);
+    assert.equal(await executor.verifier.one({type:'element_visible',target:{css:'button'}}),true);
+    assert.equal(await executor.verifier.one({type:'element_exists',target:{css:'aside'}}),true);
+    assert.equal(await executor.verifier.one({type:'element_visible',target:{css:'aside'}}),false);
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'button'}}),false);
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'aside'}}),true);
     assert.equal(await executor.verifier.one({type:'element_not_visible',target:{css:'#missing'}}),true);
