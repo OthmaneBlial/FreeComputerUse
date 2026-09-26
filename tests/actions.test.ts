@@ -194,8 +194,10 @@ test('table and link extraction excludes visually hidden descendant text',async(
     const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
     assert((await executor.run({type:'extract',target:{css:'table'},format:'table',key:'table'})).success);
     assert.deepEqual(browser.extractions[0]?.value,[['Public cell','']]);
+    assert((await executor.run({type:'extract',target:{css:'table tr'},format:'table',key:'row'})).success);
+    assert.deepEqual(browser.extractions[1]?.value,[['Public cell','']]);
     assert((await executor.run({type:'extract',format:'links',key:'links'})).success);
-    assert.deepEqual(browser.extractions[1]?.value,[{text:'Public link',url:'https://example.test/safe'}]);
+    assert.deepEqual(browser.extractions[2]?.value,[{text:'Public link',url:'https://example.test/safe'}]);
   }finally{await browser.close();}
 });
 

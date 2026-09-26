@@ -164,7 +164,7 @@ export class Executor {
         case 'extract':{
           interaction.cue('extract');
           const root=locator??page.locator('body');
-          if(action.format==='table')data=await root.locator('tr').filter({visible:true}).evaluateAll(rows=>rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>{
+          if(action.format==='table')data=await root.evaluateAll(els=>[...new Set(els.flatMap(el=>el.matches('tr')?[el]:[...el.querySelectorAll('tr')]))].filter(row=>{const box=row.getBoundingClientRect();return box.width>0&&box.height>0&&getComputedStyle(row).visibility==='visible';}).map(row=>[...row.querySelectorAll('th,td')].map(cell=>{
             for(let parent:Element|null=cell;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return '';}
             return cell.closest('[hidden],[inert],[aria-hidden="true"]')?'':(cell as HTMLElement).innerText?.trim()??'';
           })));
