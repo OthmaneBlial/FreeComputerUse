@@ -47,7 +47,7 @@ Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then ap
 | `Extract the first 5 links` | Return a bounded list of the first five links. |
 | `Extract the table` | Try the synthetic [practice revenue table](https://othmaneblial.github.io/FreeComputerUse/lab/reports.html). |
 
-These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. The 0.2.2 release candidate passed the full local suite 135/135 on Node.js 25.9.0. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Both used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
+These narrow workflows use local strategies and make zero model calls. General tasks need a configured provider. Release 0.2.2 passed the full local suite 135/135 on Node.js 25.9.0. The preceding Node.js 22.13.0 gate passed 133/133 after the proxy changes. Both used macOS 26.6/Apple Silicon with system Chrome 154.0.8037.57. Windows/Linux and other browser builds remain unverified. See the [support matrix](docs/SUPPORT_MATRIX.md).
 
 ## Watch a real run
 

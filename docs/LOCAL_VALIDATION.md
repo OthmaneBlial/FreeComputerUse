@@ -40,15 +40,24 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-The v0.2.2 release-candidate working tree based on `main` at `5a59f40` passed
-`FCU_BROWSER_CHANNEL=chrome npm run validate` on 26 September 2026: 135/135 tests
-in 216.39 seconds, type-check/build, security scan (265 worktree files, 267
-historical paths, 1,202 historical blobs; no recognized credentials or
-private-state paths), and npm audit with zero vulnerabilities. Environment:
+The source and tests committed as `8d91e65` and tagged `v0.2.2`, based on `main`
+at `5a59f40`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26
+September 2026: 135/135 tests in 216.39 seconds, type-check/build, security scan
+(265 worktree files, 267 historical paths, 1,202 historical blobs; no
+recognized credentials or private-state paths), and npm audit with zero
+vulnerabilities. Environment:
 macOS `26.6`, Apple Silicon, Node `25.9.0`, and system Chrome `154.0.8037.57`.
 No live model-provider request was made. `FCU_BROWSER_CHANNEL=chrome npm run
 lab:smoke` also passed: 34 pages, 755 accessible controls, eight practice cards,
 keyboard interaction, responsive widths 320/390/768/1440, and no console errors.
+
+npm reports `0.2.2` as `latest`. The registry tarball SHA-256 matches the
+validated candidate byte for byte; it installed in a fresh prefix and passed
+`agent doctor` plus the public practice-table workflow (three data rows, one
+browser action, zero model calls). The public GitHub release tarball matches
+the same bytes and passes `SHA256SUMS`. GitHub Pages reports a successful build
+at `8d91e65`; the updated homepage returns HTTP 200, its task tabs and filters
+work, and Playwright found no console errors or overflow at 320/390/768/1440 px.
 
 Commit `ea1ebae` passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 26
 September 2026: 134/134 tests in 180.99 seconds, type-check and build, security
