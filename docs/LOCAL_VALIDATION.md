@@ -40,6 +40,32 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.5 code passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27
+September 2026: 138/138 tests in 177.90 seconds, type-check/build, security
+scan (268 worktree files, 270 historical paths, 1,261 historical blobs; no
+recognized credentials or private-state paths), and npm audit with zero
+vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm
+`11.12.1`, and system Chrome `154.0.8037.57`. The planner test confirms a
+4,000-character non-English goal stays in trusted context, is restored to the
+internal plan, and is not repeated in provider output; a 4,001-character goal
+is rejected before another provider call. No live model request was made.
+
+The 1,157,706-byte package has SHA-256
+`d6021ee2748160060e8e998f6f3fb5fbee7ba677abec2dd3756ee73eb19fc20f` and npm
+integrity
+`sha512-Hbov0RLOwhQCAKLfpz2OuHq4L1qGCmCCz9YIycWdCRkVLyrjb/2HEcQL0VUOWtitlXMEsimdd5JNit31cWvUAw==`;
+it contains 135 files. npm reports `0.2.5` as `latest`. The downloaded npm
+registry tarball and GitHub release asset match the candidate byte for byte. A
+fresh npm prefix reports `agent --version` as `0.2.5`, `agent doctor` passes
+Chrome launch, and the public practice-table task returns three rows with one
+browser action, no failed actions and zero model calls. The GitHub release's
+downloaded checksum passes.
+
+The v0.2.5 GitHub Pages build completed at commit `871b6bbab955bded9f47eccd06f0bf3702a19211`;
+the homepage returned HTTP 200. Playwright confirmed the new release copy and
+four v0.2.5 links, no horizontal overflow at 320/390/768/1440 px, and no
+console errors. The published page screenshot was inspected.
+
 The v0.2.4 candidate committed as `0570fe9`, based on `main` at `5d38ae6`, passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 137/137
 tests in 223.73 seconds, type-check/build, security scan (267 worktree files,
