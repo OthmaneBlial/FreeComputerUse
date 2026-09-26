@@ -99,6 +99,17 @@ test('type verifies insertion at the focused input selection',async()=>{
   }finally{await browser.close();}
 });
 
+test('fill verifies contenteditable text controls',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div contenteditable="true" aria-label="Message"></div>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'fill',target:{css:'[contenteditable="true"]'},value:'Updated message'});
+    assert.equal(await browser.page.locator('[contenteditable="true"]').innerText(),'Updated message');
+    assert.equal(result.success,true);
+  }finally{await browser.close();}
+});
+
 test('download names stay inside the selected folder and support Unicode across platforms',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-download-path-')),downloadDir=join(dir,'downloads');await mkdir(downloadDir,{mode:0o755});
   const browser=await new Browser().launch();

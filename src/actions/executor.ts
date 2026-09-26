@@ -32,6 +32,9 @@ export class Executor {
   semanticCondition(condition:Condition):Condition {
     return 'target'in condition&&typeof condition.target==='string'?{...condition,target:this.observer.selectors.descriptor(condition.target)}:condition;
   }
+  private readTextValue(locator:Locator){
+    return locator.evaluate(el=>'value'in el?String((el as HTMLInputElement).value):el instanceof HTMLElement&&el.isContentEditable?el.innerText:undefined);
+  }
   private async storeDownload(download:Download,requestedName?:string){
     const folder=resolve(this.options.downloadDir??'.fcu/downloads');
     await mkdir(folder,{recursive:true,mode:0o700});
@@ -115,12 +118,11 @@ export class Executor {
         }
         case 'doubleClick':await interaction.perform(locator!,'doubleClick',()=>locator!.dblclick({timeout}),interactionOptions);break;
         case 'hover':await interaction.perform(locator!,'hover',()=>locator!.hover({timeout}),interactionOptions);break;
-        case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await locator!.inputValue()!==value)throw new Error('Fill postcondition failed');break;
+        case 'fill':await interaction.enter(locator!,value,true,interactionOptions);if(await this.readTextValue(locator!)!==value)throw new Error('Fill postcondition failed');break;
         case 'type':{
           if(!await locator!.isEditable())throw new Error('Type target is not editable');
-          const readValue=()=>locator!.evaluate(el=>'value'in el?String((el as HTMLInputElement).value):el instanceof HTMLElement&&el.isContentEditable?el.innerText:undefined);
           const {before,after,expected}=await interaction.enter(locator!,value,false,interactionOptions);
-          if(value&&(expected!==undefined?after!==expected:before!==undefined&&(after??await readValue())===before))throw new Error('Type postcondition failed');
+          if(value&&(expected!==undefined?after!==expected:before!==undefined&&(after??await this.readTextValue(locator!))===before))throw new Error('Type postcondition failed');
           break;
         }
         case 'select':{
