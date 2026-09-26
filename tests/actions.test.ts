@@ -170,9 +170,12 @@ test('record extraction expands table rows and maps actual headers over guessed 
   try{
     await browser.page.setContent('<table><thead><tr><th>Month</th><th>Revenue</th></tr></thead><tbody><tr><td><button>View</button></td><td>January</td><td>1200</td></tr><tr><td><button>View</button></td><td>February</td><td>1800</td></tr><tr><td><button>View</button></td><td>March</td><td>1500</td></tr></tbody></table>');
     const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
-    const result=await executor.run({type:'extract',target:{css:'table'},format:'records',key:'revenue',fields:{month:{css:'td:nth-child(1)',attribute:'text'},revenue:{css:'td:nth-child(2)',attribute:'text'}}});
+    const fields={month:{css:'td:nth-child(1)',attribute:'text' as const},revenue:{css:'td:nth-child(2)',attribute:'text' as const}};
+    const result=await executor.run({type:'extract',target:{css:'table'},format:'records',key:'revenue',fields});
     assert.equal(result.success,true,result.error??'Extraction failed');assert.deepEqual(browser.extractions[0]?.value,[{month:'January',revenue:'1200'},{month:'February',revenue:'1800'},{month:'March',revenue:'1500'}]);
     assert(await executor.verifier.one({type:'extraction_contains',value:'1800'}));
+    const nested=await executor.run({type:'extract',target:{css:'table, tbody'},format:'records',key:'nested',fields});
+    assert.equal(nested.success,true,nested.error??'Extraction failed');assert.deepEqual(browser.extractions[1]?.value,[{month:'January',revenue:'1200'},{month:'February',revenue:'1800'},{month:'March',revenue:'1500'}]);
   }finally{await browser.close();}
 });
 
@@ -209,6 +212,8 @@ test('table and link extraction excludes hidden cells, text and links',async()=>
     assert.deepEqual(browser.extractions[1]?.value,[['Public cell','']]);
     assert((await executor.run({type:'extract',format:'links',key:'links'})).success);
     assert.deepEqual(browser.extractions[2]?.value,[{text:'Public link',url:'https://example.test/safe'}]);
+    const overlap=await executor.run({type:'extract',target:{css:'body, a[href]'},format:'links',key:'overlap'});
+    assert.equal(overlap.success,true,overlap.error??'Extraction failed');assert.deepEqual(browser.extractions[3]?.value,[{text:'Public link',url:'https://example.test/safe'}]);
   }finally{await browser.close();}
 });
 

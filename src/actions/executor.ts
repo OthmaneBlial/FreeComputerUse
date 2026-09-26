@@ -168,14 +168,14 @@ export class Executor {
             for(let parent:Element|null=cell;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return '';}
             return cell.closest('[hidden],[inert],[aria-hidden="true"]')?'':(cell as HTMLElement).innerText?.trim()??'';
           })));
-          else if(action.format==='links')data=await root.evaluateAll(els=>els.flatMap(el=>[...(el.matches('a[href]')?[el]:el.querySelectorAll('a[href]'))].filter(a=>{
+          else if(action.format==='links')data=await root.evaluateAll(els=>[...new Set(els.flatMap(el=>el.matches('a[href]')?[el]:[...el.querySelectorAll('a[href]')]))].filter(a=>{
             if(!a.getClientRects().length||a.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
             for(let parent:Element|null=a;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.visibility!=='visible'||style.opacity==='0')return false;}
             return true;
-          }).map(a=>({text:(a as HTMLElement).innerText?.trim(),url:(a as HTMLAnchorElement).href}))));
+          }).map(a=>({text:(a as HTMLElement).innerText?.trim(),url:(a as HTMLAnchorElement).href})));
           else if(action.format==='records'){
             if(!action.fields||!Object.keys(action.fields).length||Object.keys(action.fields).length>20)throw new Error('Records extraction requires 1..20 controlled CSS fields');
-            data=await root.filter({visible:true}).evaluateAll((els,fields)=>els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]).map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
+            data=await root.filter({visible:true}).evaluateAll((els,fields)=>[...new Set(els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]))].map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
               let node=el.querySelector(field.css);let value='';
               // Resolve tabular fields from actual headers, rather than guessed cell indices.
               if(el.tagName==='TR'&&field.attribute==='text'){
