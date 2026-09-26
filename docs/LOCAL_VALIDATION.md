@@ -40,6 +40,32 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.6 source commit `c4aacf1` passed `FCU_BROWSER_CHANNEL=chrome npm run
+validate` on 27 September 2026: 139/139 tests in 220.32 seconds, type-check,
+build, security scan (269 worktree files, 271 historical paths, 1,279
+historical blobs; no recognized credentials or private-state paths), and npm
+audit with zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon,
+Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model
+request was made.
+
+The published 1,158,540-byte npm `0.2.6` package contains 135 files. Its
+registry tarball and GitHub release asset match the candidate byte for byte;
+SHA-256 is
+`48ec15c3f539822c6843db7883ae971614e233f97f39d0e08305baaa202962f5`, and npm
+integrity is
+`sha512-qM/pIBHpSzFeFqpRTkQhrn5LZCADQ3L2+BvMCXVqcf9ldlQYwK4Ax0YuO5PwGM2guQasZdS58eaVfMK2v3+KNQ==`.
+npm reports `0.2.6` as `latest`. A fresh-prefix install from the registry
+tarball reports `agent --version` as `0.2.6`; `agent doctor` passes Chrome
+launch. The read-only public practice-table task returns three rows with one
+browser action, no failed actions and zero model calls. The GitHub release
+checksum passes, and its two downloaded assets match the tested package and
+checksum file.
+
+GitHub Pages built the v0.2.6 site from commit `c4aacf1`; the homepage returned
+HTTP 200. Playwright confirmed the release copy and four v0.2.6 links, no
+horizontal overflow at 320/390/768/1440 px, and no console errors. No workflow
+was enabled or dispatched.
+
 The v0.2.5 code passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27
 September 2026: 138/138 tests in 177.90 seconds, type-check/build, security
 scan (268 worktree files, 270 historical paths, 1,261 historical blobs; no
