@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.1 - 2026-09-26
+
 ### Changed
 
 - “First/top N links” tasks now accept any available count up to the requested

@@ -31,7 +31,7 @@ untrusted host.
 Install the published package globally:
 
 ```sh
-npm install --global free-computer-use@0.2.0
+npm install --global free-computer-use@0.2.1
 ```
 
 Create a dedicated working directory for the MCP process and put provider

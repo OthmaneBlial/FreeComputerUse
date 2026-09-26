@@ -29,7 +29,7 @@ Use an API or a supported model CLI for open-ended tasks. For common page-readin
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.0
+npm install --global free-computer-use@0.2.1
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -73,7 +73,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.0
+npm install --global free-computer-use@0.2.1
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
