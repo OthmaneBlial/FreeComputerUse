@@ -6,6 +6,8 @@
 
 - “First/top N links” tasks now accept any available count up to the requested
   limit instead of failing when the page contains fewer links.
+- The local HTTP proxy retries one bodyless GET/HEAD after a reused-socket
+  reset; requests that could cause side effects are never replayed.
 
 ## 0.2.0 - 2026-09-26
 

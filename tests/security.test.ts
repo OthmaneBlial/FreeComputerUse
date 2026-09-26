@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {createSocket} from 'node:dgram';
-import {createServer,request as httpRequest} from 'node:http';
+import {createServer,request as httpRequest,type ClientRequest,type ClientRequestArgs} from 'node:http';
 import {createServer as createHTTPSServer} from 'node:https';
 import {connect as connectTLS} from 'node:tls';
 import {chmod,mkdir,mkdtemp,readFile,rm,stat,writeFile} from 'node:fs/promises';
@@ -55,14 +55,14 @@ import {Observer} from '../src/browser/Observer.js';
 import {Executor} from '../src/actions/executor.js';
 import {VariableResolver} from '../src/profile/VariableResolver.js';
 
-function requestThroughProxy(proxyURL:string,destination:string){
+function requestThroughProxy(proxyURL:string,destination:string,method='GET',body?:string){
   const proxy=new URL(proxyURL),url=new URL(destination);
   return new Promise<{status:number;body:string}>((resolve,reject)=>{
-    const request=httpRequest({hostname:proxy.hostname,port:Number(proxy.port),path:url.href,headers:{host:url.host},agent:false},response=>{
+    const request=httpRequest({hostname:proxy.hostname,port:Number(proxy.port),path:url.href,method,headers:{host:url.host,...(body===undefined?{}:{'content-length':String(Buffer.byteLength(body))})},agent:false},response=>{
       const chunks:Buffer[]=[];response.on('data',chunk=>chunks.push(Buffer.from(chunk)));
       response.on('end',()=>resolve({status:response.statusCode??0,body:Buffer.concat(chunks).toString('utf8')}));
     });
-    request.on('error',reject);request.end();
+    request.on('error',reject);request.end(body);
   });
 }
 
@@ -251,6 +251,25 @@ test('the proxy connects to its single vetted address without resolving the host
   try{
     const proxyURL=await proxy.start(),response=await requestThroughProxy(proxyURL,targetURL);
     assert.deepEqual(response,{status:200,body:'Pinned destination'});assert.equal(resolutions,1);assert.equal(visits,1);
+  }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
+});
+
+test('HTTP proxy retries a reused-socket reset for a bodyless GET',{timeout:10000},async()=>{
+  let visits=0;
+  const target=createServer((_req,res)=>{visits++;res.end('Recovered fixture');});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const targetURL=`http://127.0.0.1:${(target.address() as {port:number}).port}`,proxy=new NetworkGuardProxy({allowPrivate:true,permits:url=>url===`${targetURL}/`});
+  try{
+    const proxyURL=await proxy.start(),agent=(proxy as unknown as {agent:{addRequest:(request:ClientRequest,options:ClientRequestArgs)=>void}}).agent,addRequest=agent.addRequest.bind(agent);
+    let getAttempts=0,postAttempts=0;
+    agent.addRequest=(request,options)=>{
+      if(request.method==='GET'&&getAttempts++===0||request.method==='POST'&&postAttempts++===0){request.reusedSocket=true;queueMicrotask(()=>request.emit('error',Object.assign(new Error('socket hang up'),{code:'ECONNRESET'})));return;}
+      addRequest(request,options);
+    };
+    assert.deepEqual(await requestThroughProxy(proxyURL,targetURL+'/'),{status:200,body:'Recovered fixture'});
+    assert.equal(getAttempts,2);
+    assert.equal((await requestThroughProxy(proxyURL,targetURL+'/','POST','one side effect')).status,502);
+    assert.equal(postAttempts,1);assert.equal(visits,1,'The failed POST is never replayed');
   }finally{await proxy.close();await new Promise<void>(resolve=>target.close(()=>resolve()));}
 });
 

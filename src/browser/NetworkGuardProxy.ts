@@ -161,12 +161,20 @@ export class NetworkGuardProxy {
       const addresses=await this.destinations(url.hostname);
       const headers:Record<string,string|string[]|undefined>={...request.headers,host:url.host};
       delete headers['proxy-authorization'];delete headers['proxy-connection'];
-      const upstream=requestHttp({hostname:url.hostname.replace(/^\[|\]$/g,''),...this.connectionOptions(url.hostname,addresses),port:Number(url.port)||80,method:request.method,path:`${url.pathname}${url.search}`,headers,agent:this.agent},incoming=>{
-        response.writeHead(incoming.statusCode??502,incoming.statusMessage,incoming.headers);
-        incoming.pipe(response);
-      });
-      upstream.on('error',()=>this.deny(response,502));
-      request.pipe(upstream);
+      const options={hostname:url.hostname.replace(/^\[|\]$/g,''),...this.connectionOptions(url.hostname,addresses),port:Number(url.port)||80,method:request.method,path:`${url.pathname}${url.search}`,headers,agent:this.agent};
+      const retryableRead=['GET','HEAD'].includes(request.method??'')&&!headers['transfer-encoding']&&(!headers['content-length']||headers['content-length']==='0');
+      const send=(retried=false)=>{
+        const upstream=requestHttp(options,incoming=>{
+          response.writeHead(incoming.statusCode??502,incoming.statusMessage,incoming.headers);
+          incoming.pipe(response);
+        });
+        upstream.on('error',error=>{
+          if(!retried&&!response.headersSent&&retryableRead&&upstream.reusedSocket&&(error as NodeJS.ErrnoException).code==='ECONNRESET'){send(true);return;}
+          this.deny(response,502);
+        });
+        if(retryableRead)upstream.end();else request.pipe(upstream);
+      };
+      send();
     }catch{this.deny(response);}
   }
 
