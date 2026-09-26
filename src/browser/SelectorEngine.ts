@@ -36,7 +36,7 @@ export class SelectorEngine {
     const root=page.frames()[t.frame??0];
     if(!root)throw new Error('Target frame no longer exists');
     const deadline=Date.now()+timeoutMs;
-    do {
+    while(true) {
       for(const candidate of this.candidates(root,t)) {
         const count=await candidate.locator.count();
         if(count===1||allowMany&&count>1)return candidate;
@@ -47,8 +47,10 @@ export class SelectorEngine {
         const path=root.locator(observed.path);
         if(await path.count()===1 && await path.evaluate((el,name)=>(el.getAttribute('aria-label')||el.textContent||'').replace(/\s+/g,' ').trim()===name,observed.name))return{locator:path,strategy:'path'};
       }
-      await page.waitForTimeout(70);
-    }while(Date.now()<deadline);
+      const remaining=deadline-Date.now();
+      if(remaining<=0)break;
+      await page.waitForTimeout(Math.min(70,remaining));
+    }
     throw new Error(`Target missing or ambiguous: ${typeof target==='string'?target:JSON.stringify(target)}`);
   }
 }

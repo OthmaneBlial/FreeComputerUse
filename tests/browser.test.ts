@@ -86,6 +86,16 @@ test('ranked selector survives replacement and rejects ambiguous duplicate butto
   }finally{await browser.close();}
 });
 
+test('zero-time selector resolution does not sleep when a target is missing',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    const page=browser.page,wait=page.waitForTimeout.bind(page);let waits=0;
+    page.waitForTimeout=async duration=>{waits++;await wait(duration);};
+    await assert.rejects(new Observer().selectors.resolve(page,{css:'#missing'},0,true),/Target missing/);
+    assert.equal(waits,0);
+  }finally{await browser.close();}
+});
+
 test('page compression ranks relevant controls first and preserves tie order',()=>{
   const elements=['General action','Other action','Travel reservation'].map((name,index)=>({ref:`e${index}`,tag:'button',role:'button',name,frame:0,selectors:{role:'button',name},path:'body'}));
   const state={url:'https://example.test/',title:'Results',headings:[],text:'',elements,tables:[],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
