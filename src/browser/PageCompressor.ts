@@ -15,6 +15,7 @@ export class PageCompressor {
     const ranked=goal ? elements.map((element,index)=>({element,index,score:similarity(goal,[element.name,element.form,element.role].join(' '))}))
       .sort((a,b)=>b.score-a.score||a.index-b.index).map(item=>item.element) : elements;
     const lines=[`PAGE ${state.title}`,`URL ${state.url}`,`STATE ${state.hash}`,`HEADINGS ${state.headings.join(' | ')}`,`WARNINGS ${state.warnings.join(' | ')}`];
+    if(state.truncated)lines.push('[DOM control list truncated; additional controls may be missing]');
     if (options.level!==1) {
       // Reserve space for document data even when navigation contains hundreds
       // of links. Reading tasks must not lose all facts behind the nav list.

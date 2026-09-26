@@ -80,6 +80,7 @@ test('page compression ranks relevant controls first and preserves tie order',()
   const state={url:'https://example.test/',title:'Results',headings:[],text:'',elements,tables:[],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
   const text=new PageCompressor().compress(state,{goal:'travel reservation',maxChars:2000}).text;
   assert(text.indexOf('[e2]')<text.indexOf('[e0]'));assert(text.indexOf('[e0]')<text.indexOf('[e1]'));
+  const partial=new PageCompressor().compress({...state,truncated:true});assert(partial.truncated);assert(partial.text.includes('[DOM control list truncated; additional controls may be missing]'));
 });
 
 test('strict action DSL rejects code, unknown keys and unbounded plans',()=>{
