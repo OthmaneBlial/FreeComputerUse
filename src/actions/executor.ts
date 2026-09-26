@@ -181,7 +181,11 @@ export class Executor {
               if(node){if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
                 else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
                 else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
-                else if(field.attribute==='value')value=node.matches('input[type=password],input[autocomplete=cc-number],input[autocomplete=cc-csc]')?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
+                else if(field.attribute==='value'){
+                  const autocomplete=(node.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
+                  const sensitiveInput=node instanceof HTMLInputElement&&(node.type==='hidden'||node.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)));
+                  value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
+                }
                 else value=node.getAttribute(field.attribute)??'';}
               return[key,value];
             }))),action.fields);

@@ -176,6 +176,17 @@ test('record extraction expands table rows and maps actual headers over guessed 
   }finally{await browser.close();}
 });
 
+test('record extraction omits hidden, password, payment and one-time-code input values',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<form><input type="HIDDEN" name="csrf" value="csrf-secret"><input type="password" value="password-secret"><input autocomplete="cc-number" value="4111111111111111"><input autocomplete="cc-exp" value="12/35"><input autocomplete="current-password" value="saved-secret"><input autocomplete="one-time-code" value="123456"><input aria-label="Public value" value="visible-data"></form>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'extract',target:{css:'form'},format:'records',key:'fields',fields:{hidden:{css:'input[name=csrf]',attribute:'value'},password:{css:'input[type=password]',attribute:'value'},card:{css:'input[autocomplete=cc-number]',attribute:'value'},expiry:{css:'input[autocomplete=cc-exp]',attribute:'value'},savedPassword:{css:'input[autocomplete=current-password]',attribute:'value'},code:{css:'input[autocomplete=one-time-code]',attribute:'value'},publicValue:{css:'input[aria-label="Public value"]',attribute:'value'}}});
+    assert.equal(result.success,true,result.error??'Extraction failed');
+    assert.deepEqual(browser.extractions[0]?.value,[{hidden:'[sensitive value omitted]',password:'[sensitive value omitted]',card:'[sensitive value omitted]',expiry:'[sensitive value omitted]',savedPassword:'[sensitive value omitted]',code:'[sensitive value omitted]',publicValue:'visible-data'}]);
+  }finally{await browser.close();}
+});
+
 test('popup navigation waits for the new document before extraction and closing',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{
