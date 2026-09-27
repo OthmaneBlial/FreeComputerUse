@@ -2,8 +2,8 @@ export type Vault = { profile: Record<string,string>; files: Record<string,strin
 function sensitiveQueryParameter(value:string){
   let name=value;try{name=decodeURIComponent(value.replaceAll('+',' '));}catch{}
   const normalized=name.toLowerCase().replace(/[^a-z0-9]/g,'');
-  return /(?:token|secret|password|passwd|pwd|authorization|auth|session|sessionid|cookie|signature|sig|credential)$/.test(normalized)||
-    /^(?:key|apikey|accesskey|clientkey|privatekey|subscriptionkey|signingkey|code|oauthcode|authorizationcode|codeverifier)$/.test(normalized);
+  return /(?:token|secret|password|passwd|passcode|pwd|pin|authorization|auth|session|sessionid|cookie|signature|sig|credential|otp|cvv|cvc|csc|cardnumber|cardholder|securitycode|verificationcode|onetimecode|2facode|expiration|expiry|accountnumber|routingnumber|iban|swift|sortcode)$/.test(normalized)||
+    /^(?:key|apikey|accesskey|clientkey|privatekey|subscriptionkey|signingkey|code|oauthcode|authorizationcode|authenticationcode|authcode|codeverifier|passwordconfirmation|ccnumber|ccnum|creditcard|debitcard)$/.test(normalized);
 }
 function encodedPattern(value:string){
   const hex=(digit:string)=>digit.toLowerCase()===digit.toUpperCase()?digit:`[${digit.toLowerCase()}${digit.toUpperCase()}]`;

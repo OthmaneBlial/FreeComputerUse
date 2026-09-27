@@ -588,6 +588,16 @@ test('redaction masks credential query values and bearer tokens but keeps ordina
   assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep',authorization:'Bearer [redacted]'});
 });
 
+test('redaction masks common authentication and payment query parameters',()=>{
+  const resolver=new VariableResolver(),names=['auth_code','verification_code','otp','cvv','cvc','card_number','security_code','password_confirmation','account_number','routing_number','iban','swift'];
+  const input=`https://example.test/?${names.map((name,index)=>`${name}=private-${index}`).join('&')}&search=Paris&country_code=GB`;
+  const result=resolver.redact(input);
+  for(const name of names)assert.match(result,new RegExp(`${name}=REDACTED`));
+  for(let index=0;index<names.length;index++)assert(!result.includes(`private-${index}`));
+  assert(result.includes('search=Paris&country_code=GB'));
+  assert.equal(resolver.redact('https://example.test/?%76erification%5Fcode=private-encoded'),'https://example.test/?%76erification%5Fcode=REDACTED');
+});
+
 test('redaction masks common GitHub, GitLab and Slack token prefixes',()=>{
   const resolver=new VariableResolver(),tokens=[
     `ghp_${'a'.repeat(24)}`,`github_pat_${'b'.repeat(24)}`,

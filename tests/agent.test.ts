@@ -328,14 +328,16 @@ test('credential query and fragment values are redacted before trace save and pr
   const save=store.save.bind(store);store.save=trace=>{if(!firstSaved)firstSaved=JSON.stringify(trace);save(trace);};
   const provider:LLMProvider={name:'fixture',plan:async context=>{prompt=JSON.stringify(context);throw new Error('Synthetic provider failure');},repair:async()=>{throw new Error('Unexpected repair');}};
   const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
-  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist',fragmentToken='oauth-fragment-token-that-must-not-persist',oauthCode='oauth-code-that-must-not-persist';
+  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist',otp='otp-query-secret-that-must-not-persist',verificationCode='verification-code-secret-that-must-not-persist',fragmentToken='oauth-fragment-token-that-must-not-persist',oauthCode='oauth-code-that-must-not-persist';
   try{
-    const trace=await agent.run('Summarize the page',`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`);
-    assert.equal(trace.status,'failed');assert(!firstSaved.includes(accessToken));assert(!firstSaved.includes(apiKey));assert(!firstSaved.includes(fragmentToken));assert(!firstSaved.includes(oauthCode));
-    assert.equal((JSON.parse(firstSaved) as {url:string}).url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
-    assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!prompt.includes(fragmentToken));assert(!prompt.includes(oauthCode));
-    for(const secret of [accessToken,apiKey,fragmentToken,oauthCode])assert(!JSON.stringify(agent.events).includes(secret));
-    assert.equal(trace.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
+    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris&otp=${otp}&verification_code=${verificationCode}#access_token=${fragmentToken}&code=${oauthCode}&state=keep`,secrets=[accessToken,apiKey,otp,verificationCode,fragmentToken,oauthCode];
+    const trace=await agent.run('Summarize the page',url);
+    assert.equal(trace.status,'failed');for(const secret of secrets)assert(!firstSaved.includes(secret));
+    const safeURL=`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris&otp=REDACTED&verification_code=REDACTED#access_token=REDACTED&code=REDACTED&state=keep`;
+    assert.equal((JSON.parse(firstSaved) as {url:string}).url,safeURL);
+    for(const secret of secrets)assert(!prompt.includes(secret));
+    for(const secret of secrets)assert(!JSON.stringify(agent.events).includes(secret));
+    assert.equal(trace.url,safeURL);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
