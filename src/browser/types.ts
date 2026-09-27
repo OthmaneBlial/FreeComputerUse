@@ -2,7 +2,7 @@ import type { SemanticTarget } from '../actions/schema.js';
 export interface PageElement {
   ref: string; tag: string; role: string; name: string; label?: string;
   type?: string; required?: boolean; disabled?: boolean; hasValue?: boolean;
-  checked?: boolean; options?: string[]; error?: string; form?: string;
+  checked?: boolean; options?: string[]; error?: string; form?: string; formRef?: string;
   frame: number; selectors: SemanticTarget;
   path: string; region?: string; href?: string;
 }

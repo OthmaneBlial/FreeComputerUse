@@ -49,6 +49,7 @@ export class DomExtractor {
               if (el.shadowRoot) roots.push(el.shadowRoot);
             }
           }
+          const formRefs=new Map(all.filter(el=>el.tagName==='FORM').map((form,formIndex)=>[form,`${index}:${formIndex}`]));
           const scope = region ? all.find(el => el.id === region || el.getAttribute('aria-label') === region || el.tagName.toLowerCase() === region || el.getAttribute('role') === region) : undefined;
           if (region && !scope) return { elements: [], headings: [], text: '', tables: [], dialogs: [], htmlBytes: 0, truncated: false };
           const [included] = [(el: Element) => !scope || scope === el || scope.contains(el)];
@@ -99,6 +100,7 @@ export class DomExtractor {
               options: tag === 'select' ? [...(el as HTMLSelectElement).options].slice(0,40).map(o=>clean(o.text)) : undefined,
               error: clean(errors || (input.validity && !input.validity.valid && input.value ? input.validationMessage : '')) || undefined,
               form: form ? clean(form.getAttribute('aria-label') || form.id || 'form') : undefined,
+              formRef: form ? formRefs.get(form) : undefined,
               frame:index, region:section ? clean(section.getAttribute('aria-label') || section.id || section.tagName.toLowerCase()) : undefined,
               href: tag === 'a' ? (el as HTMLAnchorElement).href : undefined,
               path:parts.join(' > '), selectors: {

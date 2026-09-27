@@ -4,6 +4,7 @@ import { Agent } from '../src/agent/Agent.js';
 import { TraceStore } from '../src/history/TraceStore.js';
 import { TokenBudget } from '../src/agent/TokenBudget.js';
 import { PlanSchema } from '../src/actions/schema.js';
+import { genericAdapter } from '../src/adapters/generic.js';
 import { FixtureProvider } from '../fixtures/FixtureProvider.js';
 import { startFixtures } from '../fixtures/server.js';
 import type { LLMProvider } from '../src/llm/LLMProvider.js';
@@ -24,6 +25,29 @@ test('run history uses a descending index without a temporary sort',()=>{
     assert(plan.some(row=>row.detail.includes('USING INDEX runs_history')));
     assert(!plan.some(row=>row.detail.includes('TEMP B-TREE FOR ORDER BY')));
   }finally{store.close();}
+});
+
+test('local profile filling scopes required fields and rejects competing forms',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra',vault:{profile:{firstName:'Alex',email:'synthetic@example.test',message:'Synthetic message'},files:{}}});
+  try{
+    await agent.browser.launch();
+    await agent.browser.page.setContent('<form aria-label="Contact"><label for="firstName">First name</label><input id="firstName" required><label for="email">Email</label><input id="email" type="email" required><label for="message">Message</label><textarea id="message" required></textarea></form><form aria-label="Company details"><label for="company">Registration number</label><input id="company" required></form>');
+    let state=await agent.observer.inspect(agent.browser.page);
+    let plan=genericAdapter.plan('Fill the contact form using my profile.',state,agent.variables);
+    assert(plan,'An unrelated required field should not block the complete contact form');
+    assert.deepEqual(plan.actions.map(action=>'target'in action&&typeof action.target==='object'?action.target.id:undefined),['firstName','email','message']);
+
+    await agent.browser.page.setContent('<form><label for="firstName">First name</label><input id="firstName" required><label for="email1">Email</label><input id="email1" type="email" required></form><form><label for="email2">Email</label><input id="email2" type="email" required></form>');
+    state=await agent.observer.inspect(agent.browser.page);
+    assert.equal(new Set(state.elements.map(element=>element.formRef)).size,2,'Unlabeled forms need distinct internal identities');
+    plan=genericAdapter.plan('Fill the contact form using my profile.',state,agent.variables);
+    assert.equal(plan,undefined,'Do not choose between multiple profile-mappable forms');
+
+    await agent.browser.page.setContent('<form aria-label="Contact"><label for="firstName">First name</label><input id="firstName" required><label for="company">Registration number</label><input id="company" required></form><form aria-label="Newsletter"><label for="email">Email</label><input id="email" type="email" required></form>');
+    state=await agent.observer.inspect(agent.browser.page);
+    plan=genericAdapter.plan('Fill the contact form using my profile.',state,agent.variables);
+    assert.equal(plan,undefined,'Do not fall back to a smaller but unrelated form when the requested form has an unmapped field');
+  }finally{await agent.close();store.close();}
 });
 
 test('bounded token budget reserves calls/output and tracks cache-aware configured cost',()=>{
