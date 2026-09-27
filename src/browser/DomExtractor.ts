@@ -104,6 +104,7 @@ export class DomExtractor {
             }
             const errors = (el.getAttribute('aria-errormessage') || el.getAttribute('aria-describedby') || '').split(/\s+/).map(id=>{const error=root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id);return error?visibleText(error):'';}).join(' ');
             const form = input.form;
+            const options = tag === 'select' ? [...(el as HTMLSelectElement).options].slice(0,40) : undefined;
             const section = el.closest('form,dialog,[role=dialog],nav,main,section');
             return {
               ref,tag,role,name,label: label || undefined,type: type || undefined,
@@ -111,7 +112,8 @@ export class DomExtractor {
               disabled: input.disabled || el.getAttribute('aria-disabled') === 'true',
               hasValue: ['input','textarea','select'].includes(tag) ? !!input.value : undefined,
               checked: ['checkbox','radio'].includes(type) ? input.checked : undefined,
-              options: tag === 'select' ? [...(el as HTMLSelectElement).options].slice(0,40).map(o=>clean(o.text)) : undefined,
+              options: options?.map(o=>clean(o.text)),
+              optionValues: options?.map(o=>clean(o.value)),
               error: clean(errors || (input.validity && !input.validity.valid && input.value ? input.validationMessage : '')) || undefined,
               form: form ? clean(form.getAttribute('aria-label') || form.id || 'form') : undefined,
               formRef: form ? formRefs.get(form) : undefined,

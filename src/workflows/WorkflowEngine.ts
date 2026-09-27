@@ -3,7 +3,7 @@ import { PlanSchema,type Action,type Condition,type Plan } from '../actions/sche
 import type { PageState } from '../browser/types.js';
 import type { TraceStore,Trace } from '../history/TraceStore.js';
 export const normalizeIntent=(goal:string)=>goal.toLowerCase().replace(/\s+/g,' ').trim();
-export const structureHash=(state:PageState)=>createHash('sha256').update(JSON.stringify(state.elements.map(e=>[e.role,e.name,e.type,e.required]))).digest('hex').slice(0,20);
+export const structureHash=(state:PageState)=>createHash('sha256').update(JSON.stringify(state.elements.map(e=>[e.role,e.name,e.tag,e.type,e.required,e.form,e.region,e.href,e.options,e.optionValues]))).digest('hex').slice(0,20);
 export interface Workflow {id:string;origin:string;path:string;intent:string;structure:string;plan:Plan;learnedFrom:string;createdAt:number}
 export class WorkflowEngine {
   constructor(readonly store:TraceStore){}

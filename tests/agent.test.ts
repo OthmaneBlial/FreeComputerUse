@@ -9,6 +9,27 @@ import { FixtureProvider } from '../fixtures/FixtureProvider.js';
 import { startFixtures } from '../fixtures/server.js';
 import type { LLMProvider } from '../src/llm/LLMProvider.js';
 import { normalizeIntent,structureHash } from '../src/workflows/WorkflowEngine.js';
+import type { PageElement,PageState } from '../src/browser/types.js';
+
+test('workflow fingerprints track action-relevant structure but ignore transient form state',()=>{
+  const elements:PageElement[]=[
+    {ref:'select',tag:'select',role:'combobox',name:'Country',type:'select',options:['France','Germany'],optionValues:['fr','de'],frame:0,path:'select',selectors:{role:'combobox',name:'Country'}},
+    {ref:'link',tag:'a',role:'link',name:'Profile',href:'https://example.test/profile',frame:0,path:'a',selectors:{role:'link',name:'Profile'}},
+    {ref:'button',tag:'button',role:'button',name:'Continue',disabled:false,frame:0,path:'button',selectors:{role:'button',name:'Continue'}},
+    {ref:'checkbox',tag:'input',role:'checkbox',name:'Updates',type:'checkbox',checked:false,frame:0,path:'input',selectors:{role:'checkbox',name:'Updates'}},
+  ];
+  const fingerprint=(items:PageElement[])=>structureHash({url:'https://example.test/form',title:'',headings:[],text:'',elements:items,tables:[],dialogs:[],htmlBytes:0,hash:'',warnings:[],frames:[],truncated:false} satisfies PageState);
+  const baseline=fingerprint(elements);
+  for(const [index,change] of [
+    {optionValues:['fr','de-old']},
+    {href:'https://example.test/delete-profile'},
+    {form:'archive-form'},
+  ].entries()){
+    assert.notEqual(fingerprint(elements.map((element,position)=>position===index?{...element,...change}:element)),baseline);
+  }
+  assert.equal(fingerprint(elements.map((element,index)=>index===3?{...element,checked:true}:element)),baseline);
+  assert.equal(fingerprint(elements.map((element,index)=>index===2?{...element,disabled:true}:element)),baseline);
+});
 
 test('workflow lookup uses an index for origin, intent and page structure',()=>{
   const store=new TraceStore(':memory:');
@@ -207,6 +228,31 @@ test('provider-free workflow replay waits for its cached structure to hydrate',a
     assert.equal(cached.status,'completed',cached.error??'Task failed');
     assert.equal(cached.metrics.workflowCacheHits,1);assert.equal(cached.metrics.llmCalls,0);assert.equal(planCalls,1);
   }finally{await first.close();await replay.close();store.close();}
+});
+
+test('workflow cache misses when a same-name link points to a different destination',async()=>{
+  const store=new TraceStore(':memory:');let planCalls=0;
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    planCalls++;
+    return PlanSchema.parse({goal:context.goal,steps:['Open the profile'],actions:[{type:'click',target:{role:'link',name:'Profile'}}],completion:[{type:'text_exists',value:'Profile loaded'}],continue:false});
+  },repair:async()=>{throw new Error('Unexpected repair');}};
+  const installPage=async(agent:Agent,destination:string)=>{
+    await agent.browser.launch();
+    await agent.browser.page.setContent(`<main><a href="https://example.test/${destination}">Profile</a><p></p></main>`);
+    await agent.browser.page.getByRole('link',{name:'Profile'}).evaluate(link=>link.addEventListener('click',event=>{event.preventDefault();document.querySelector('p')!.textContent='Profile loaded';}));
+  };
+  const first=new Agent({store,provider,mode:'ultra',adapters:[]});
+  const second=new Agent({store,provider,mode:'ultra',adapters:[]});
+  try{
+    await installPage(first,'old');
+    const learned=await first.run('Open the profile');
+    assert.equal(learned.status,'completed',learned.error??'Task failed');
+    await installPage(second,'new');
+    const current=await second.run('Open the profile');
+    assert.equal(current.status,'completed',current.error??'Task failed');
+    assert.equal(current.metrics.workflowCacheHits,0,'Do not replay an action against a changed destination');
+    assert.equal(planCalls,2,'Replan against the current link destination');
+  }finally{await first.close();await second.close();store.close();}
 });
 
 test('learned workflow does not replay a checkbox toggle after its state changes',async()=>{
