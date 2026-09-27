@@ -84,15 +84,22 @@ tests in 262.31 seconds, type checks, lab/package builds, history scan (286
 worktree files, 288 historical paths, 1,679 blobs), and `npm audit` with zero
 vulnerabilities. No live model-provider request was made.
 
-Latest fully validated source commit `0df63d0` verifies successful
+Earlier validated source commit `0df63d0` verifies successful
 `method="dialog"` form submissions by checking that the associated dialog
 closed, without requiring a document response. Its full local gate passed
 192/192 tests in 251.63 seconds, type checks, lab/package builds, history scan
 (286 worktree files, 288 historical paths, 1,685 blobs), and `npm audit` with
-zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
-npm `11.12.1`, and system Chrome `154.0.8037.57`. This source is newer than
-published `v0.2.22`. No live model-provider request was made. The history
-pattern scan is not a complete security audit.
+zero vulnerabilities. No live model-provider request was made.
+
+Latest fully validated source commit `bfbb238` guarantees compressed text does
+not exceed `maxChars`, including limits shorter than its truncation marker. Its
+full local gate passed 193/193 tests in 254.85 seconds, type checks,
+lab/package builds, history scan (286 worktree files, 288 historical paths,
+1,690 blobs), and `npm audit` with zero vulnerabilities. Environment: macOS
+`26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome
+`154.0.8037.57`. This source is newer than published `v0.2.22`. No live
+model-provider request was made. The history pattern scan is not a complete
+security audit.
 
 The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
 preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
