@@ -40,6 +40,33 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.9 source commit `c3aebba` passed `FCU_BROWSER_CHANNEL=chrome npm run
+validate` on 27 September 2026: 143/143 tests in 223.69 seconds, type checks,
+build, security scan (272 worktree files, 274 historical paths, 1,326 blobs)
+and npm audit with zero vulnerabilities. Environment: macOS `26.6`, Apple
+Silicon, Node `25.9.0`, npm `11.12.1` and system Chrome `154.0.8037.57`. No
+live model request was made. A clean archive of the same commit passed the
+same test, type-check and build gates; its history-backed security scan passed
+with 273 worktree files, 275 historical paths and 1,334 blobs, and npm audit
+reported zero vulnerabilities.
+
+The published 1,160,807-byte npm `0.2.9` package contains 135 files. Its
+registry tarball and GitHub release asset match the tested candidate byte for
+byte; SHA-256 is
+`5a2a4f08ad0719edb4b00fcb3f35a54bdbeda4e075cad3e3f430e3efacdb4048`, and npm
+integrity is
+`sha512-OoLB7RP3sl86MbYJ+4N7gFwJJPhIwLOC9Vh1V2aTGQvxA/hK+UnwL+P3NH9dihET1u3yFskXWOkd5SRm1/lRdQ==`.
+npm reports `0.2.9` as `latest`. Fresh-prefix installs from both downloaded
+artifacts passed `agent --version`, `agent --help` and Chrome `agent doctor`;
+the read-only public practice-table task returned three rows with one browser
+action, zero failed actions and zero model calls in explicit `--ultra` mode.
+The GitHub release checksum passed.
+
+GitHub Pages built v0.2.9 from commit `c3aebba`; the homepage returned HTTP
+200. Playwright confirmed the release copy and four v0.2.9 links, no horizontal
+overflow at 320/390/768/1440 px, and no console errors. No workflow was enabled
+or dispatched.
+
 The v0.2.8 source commit `62db2c9` passed `FCU_BROWSER_CHANNEL=chrome npm run
 validate` on 27 September 2026: 141/141 tests in 193.06 seconds, type-check,
 build, security scan (271 worktree files, 273 historical paths, 1,307
