@@ -40,14 +40,15 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-The latest source commit `2dda301` redacts local profile values when URLs
-encode them with either percent escapes or form encoding. On 27 September
-2026, `FCU_BROWSER_CHANNEL=chrome npm run validate` passed with 181/181 tests
-in 274.73 seconds, TypeScript checks, lab and package builds, history scan (284
-worktree files, 286 historical paths and 1,603 blobs), and `npm audit` with
+The latest source commit `040743c` prevents a canceled TLS tunnel from
+opening an upstream connection after DNS resolution. On 27 September 2026,
+`FCU_BROWSER_CHANNEL=chrome npm run validate` passed with 182/182 tests in
+454.37 seconds, TypeScript checks, lab and package builds, history scan (284
+worktree files, 286 historical paths and 1,609 blobs), and `npm audit` with
 zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
 npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model-provider
-request was made.
+request was made. The preceding source commit `2dda301` redacts URL- and
+form-encoded local profile values.
 
 The preceding source commit `b93df0a` invalidates approvals queued by a stopped
 task, including when the dashboard resets the shared agent for a new task; its
