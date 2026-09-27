@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.11 - 2026-09-27
+
+### Fixed
+
+- Ignore malformed or incompatible learned workflows so tasks can fall back to
+  the planner instead of failing or replaying a mismatched cache record.
+
 ## 0.2.10 - 2026-09-27
 
 ### Fixed
