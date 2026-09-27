@@ -15,7 +15,7 @@ export class ProfileStore {
     }
     catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return{profile:{},files:{}};throw error;}
   }
-  async save(vault:Vault) {
+  async save(vault:unknown) {
     const data=VaultSchema.parse(vault);
     const folder=dirname(this.path);await mkdir(folder,{recursive:true,mode:0o700});
     try{

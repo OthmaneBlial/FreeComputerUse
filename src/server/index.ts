@@ -84,7 +84,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='POST'&&path==='/api/profile'){
         if(agent?.active)throw new Error('Finish or stop the current task before changing profile');
-        await profiles.save(await body(req) as never);send(200,{saved:true});return;
+        await profiles.save(await body(req));send(200,{saved:true});return;
       }
       if(req.method==='POST'&&['/api/run','/api/replay'].includes(path)){
         if(agent?.active||pending)throw new Error('A task is already running');

@@ -13,7 +13,7 @@ test('profile imports accept only vault fields and invalid imports preserve stor
   const valid={profile:{displayName:'Zoë'},files:{resume:'/users/me/resume.pdf'}};
   try{
     await store.save(valid);
-    await assert.rejects(store.save({...valid,provider:{apiKey:'must-not-be-stored'}} as never));
+    await assert.rejects(store.save({...valid,provider:{apiKey:'must-not-be-stored'}}));
     assert.deepEqual(await store.load(),valid);
     assert.deepEqual(JSON.parse(await readFile(store.path,'utf8')),valid);
     if(process.platform!=='win32')assert.equal((await stat(store.path)).mode&0o777,0o600);
