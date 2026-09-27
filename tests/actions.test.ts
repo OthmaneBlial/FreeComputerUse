@@ -270,6 +270,9 @@ test('text extraction applies substring and line limits',async()=>{
     await browser.page.setContent(`<main>${'x'.repeat(100001)}</main>`);
     const bounded=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'bounded'});
     assert.equal(bounded.success,true,bounded.error??'Extraction failed');assert.equal((browser.extractions[1]?.value as string).length,100000);
+    await browser.page.setContent(`<main><p>${'x'.repeat(100001)}</p><p>Late matching fact</p></main>`);
+    const lateMatch=await executor.run({type:'extract',target:{css:'main'},format:'text',key:'late',match:'matching fact'});
+    assert.equal(lateMatch.success,true,lateMatch.error??'Extraction failed');assert.equal(browser.extractions[2]?.value,'Late matching fact');
   }finally{await browser.close();}
 });
 
