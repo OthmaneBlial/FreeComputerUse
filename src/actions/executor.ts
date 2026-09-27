@@ -95,7 +95,7 @@ export class Executor {
       if(locator&&['click','press','submit'].includes(action.type)){
         const info=await locator.evaluate((el,type)=>{
           const f=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form;
-          const submitting=type==='submit'||type==='press'||el.matches('button:not([type=button]):not([type=reset]),input[type=submit]');
+          const submitting=type==='submit'||type==='press'||el.matches('button:not([type=button]):not([type=reset]),input[type=submit],input[type=image]');
           return f&&submitting&&f.checkValidity()?{actionURL:f.action,method:f.method.toUpperCase(),id:f.id,label:f.getAttribute('aria-label')??'',unique:document.forms.length===1}:null;
         },action.type);
         if(info&&('target'in receiptAction)&&receiptAction.target)this.browser.formReceipts.push({...info,target:this.observer.selectors.descriptor(receiptAction.target),time:Date.now()});

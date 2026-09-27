@@ -7,6 +7,7 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
   if((!fieldEntry&&!['click','doubleClick','press','check','uncheck'].includes(action.type))||!locator)return;
   const facts=await locator.evaluate(el=>{
     const input=el as HTMLInputElement,autocomplete=el.getAttribute('autocomplete')??'';
+    const type=(el.getAttribute('type')??'').toLowerCase();
     const labels=[...(input.labels??[])].map(label=>label.textContent??'');
     const referenced=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>document.getElementById(id)?.textContent??'');
     const hint=[autocomplete,el.getAttribute('name'),el.id,el.getAttribute('placeholder'),el.getAttribute('aria-label'),el.getAttribute('title'),...labels,...referenced]
@@ -16,7 +17,7 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
       type:el.getAttribute('type'),tag:el.tagName.toLowerCase(),
       sensitiveField:el.getAttribute('type')?.toLowerCase()==='password'||autocomplete.toLowerCase().split(/\s+/).some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token))||
         /\b(password|passwd|passcode|pin|otp|cvv|cvc|csc|card number|credit card|debit card|cardholder|one time code|verification code|security code|auth code|expiration|expiry)\b/.test(hint),
-      submit:!!input.form && (el.tagName==='BUTTON' ? el.getAttribute('type')!=='button' : el.getAttribute('type')==='submit'),
+      submit:!!input.form&&(el.tagName==='BUTTON'?!['button','reset'].includes(type):el.tagName==='INPUT'&&['submit','image'].includes(type)),
     };
   });
   if((fieldEntry||action.type==='press')&&facts.sensitiveField)return 'Sensitive field entry';

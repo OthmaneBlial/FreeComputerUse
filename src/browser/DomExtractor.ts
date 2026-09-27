@@ -65,8 +65,8 @@ export class DomExtractor {
           const elements = candidates.slice(0,500).map(el => {
             const tag = el.tagName.toLowerCase();
             const input = el as HTMLInputElement;
-            const type = el.getAttribute('type') ?? '';
-            const implicit = tag === 'button' || ['submit','button','reset'].includes(type) ? 'button'
+            const type = (el.getAttribute('type') ?? '').toLowerCase();
+            const implicit = tag === 'button' || ['submit','button','reset','image'].includes(type) ? 'button'
               : tag === 'a' ? 'link' : tag === 'select' ? 'combobox'
               : type === 'checkbox' ? 'checkbox' : type === 'radio' ? 'radio'
               : type === 'file' ? 'upload' : type === 'number' ? 'spinbutton' : tag === 'summary' ? 'button' : 'textbox';
@@ -75,7 +75,7 @@ export class DomExtractor {
             const labelled=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>{const label=root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id);return label?visibleText(label):'';}).join(' ');
             const label = clean(el.getAttribute('aria-label') || labelled || (input.labels ? [...input.labels].map(l=>visibleText(l)).join(' ') : ''));
             const content=['input','textarea','select'].includes(tag)?'':visibleText(el);
-            const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : content);
+            const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || (type==='image'?input.alt:undefined) || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : content);
             let ref:string|undefined;
             try { const saved=registry.refs.get(el);if(typeof saved==='string'&&/^f\d+d[a-f0-9]{8}e\d+$/.test(saved)&&!observedRefs.has(saved))ref=saved; } catch {}
             if(!ref){ref=`f${index}d${registry.documentId}e${registry.next++}`;if(!/^f\d+d[a-f0-9]{8}e\d+$/.test(ref)||observedRefs.has(ref)){do{ref=`f${index}d${documentId}e${fallbackSequence++}`;}while(observedRefs.has(ref));}try{registry.refs.set(el,ref);}catch{}}

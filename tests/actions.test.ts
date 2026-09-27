@@ -208,6 +208,25 @@ test('sensitive action waits for a human and rejection never clicks',async()=>{
   }finally{await browser.close();}
 });
 
+test('image submit controls are exposed as buttons and require approval',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<form onsubmit="event.preventDefault();document.body.dataset.submitted=\'yes\'"><input id="pay" name="payment" type="image" alt="Submit purchase" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="></form>');
+    const observer=new Observer(),element=(await observer.inspect(browser.page)).elements.find(item=>item.selectors.id==='pay');
+    assert.equal(element?.role,'button');assert.equal(element?.name,'Submit purchase');assert(element);
+    const control=new Control(),executor=new Executor(browser,observer,new VariableResolver(),control);
+    const waiting=new Promise<void>(resolve=>control.once('approval',resolve));
+    const execution=executor.run({type:'click',target:element.ref});await waiting;
+    assert.equal(await browser.page.locator('body').getAttribute('data-submitted'),null);
+    control.reject();assert.equal((await execution).success,false);
+    const approvedControl=new Control(),approved=new Executor(browser,observer,new VariableResolver(),approvedControl);
+    const approvedWaiting=new Promise<void>(resolve=>approvedControl.once('approval',resolve));
+    const approvedExecution=approved.run({type:'click',target:element.ref});await approvedWaiting;approvedControl.approve();
+    assert.equal((await approvedExecution).success,true);assert.equal(await browser.page.locator('body').getAttribute('data-submitted'),'yes');
+    assert.equal(browser.formReceipts.length,1);
+  }finally{await browser.close();}
+});
+
 test('password and payment fields require approval before page scripts receive values',async()=>{
   const browser=await new Browser().launch();
   try{
