@@ -210,19 +210,20 @@ export class Executor {
                 if(node){
                   let hidden=!!node.closest('[hidden],[inert],[aria-hidden="true"]');
                   for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')hidden=true;}
+                  const control=node instanceof HTMLInputElement||node instanceof HTMLTextAreaElement||node instanceof HTMLSelectElement?node:undefined;
                   const input=node instanceof HTMLInputElement?node:undefined;
-                  const autocomplete=(input?.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
-                  const labels=input?[...(input.labels??[])].map(label=>label.textContent??''):[];
+                  const autocomplete=(control?.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
+                  const labels=control?[...(control.labels??[])].map(label=>label.textContent??''):[];
                   const referenced=(node.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>document.getElementById(id)?.textContent??'');
-                  const hint=[input?.name,input?.id,input?.placeholder,input?.getAttribute('aria-label'),input?.title,...labels,...referenced]
+                  const hint=[control?.getAttribute('autocomplete'),control?.getAttribute('name'),control?.id,control?.getAttribute('placeholder'),control?.getAttribute('aria-label'),control?.title,...labels,...referenced]
                     .join(' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/[^a-z0-9]+/g,' ');
                   const namedSensitive=/\b(password|passwd|passcode|pin|otp|cvv|cvc|csc|card number|credit card|debit card|cardholder|one time code|verification code|security code|auth code|expiration|expiry)\b/.test(hint);
-                  const sensitiveInput=field.attribute==='value'&&!!input&&(input.type==='hidden'||input.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token))||namedSensitive);
+                  const sensitiveInput=field.attribute==='value'&&!!control&&(input?.type==='hidden'||input?.type==='password'||autocomplete.some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token))||namedSensitive);
                   if(hidden&&!sensitiveInput)value='';
                   else if(field.attribute==='text')value=(node as HTMLElement).innerText?.trim()??node.textContent?.trim()??'';
                   else if(field.attribute==='href')value=(node as HTMLAnchorElement).href??'';
                   else if(field.attribute==='src')value=(node as HTMLImageElement).src??'';
-                  else if(field.attribute==='value')value=sensitiveInput?'[sensitive value omitted]':(node as HTMLInputElement).value??'';
+                  else if(field.attribute==='value')value=sensitiveInput?'[sensitive value omitted]':control?.value??'';
                   else value=node.getAttribute(field.attribute)??'';
                 }
                 return[key,value];
