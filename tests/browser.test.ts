@@ -82,7 +82,57 @@ test('ranked selector survives replacement and rejects ambiguous duplicate butto
     assert.equal((await observer.selectors.resolve(browser.page,next.ref)).strategy,'testId');
     await assert.rejects(observer.selectors.resolve(browser.page,{role:'button',name:'Duplicate'},100),/ambiguous/);
     const duplicate=state.elements.filter(e=>e.name==='Duplicate')[1]!;
-    assert.equal((await observer.selectors.resolve(browser.page,duplicate.ref)).strategy,'reference');
+    assert.equal((await observer.selectors.resolve(browser.page,duplicate.ref)).strategy,'path');
+  }finally{await browser.close();}
+});
+
+test('path fallback rechecks associated labels for duplicate form controls',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<label>Email<input></label><label>Email<input></label>');
+    const observer=new Observer(),state=await observer.inspect(browser.page),target=state.elements.filter(element=>element.name==='Email')[1]!;
+    const resolved=await observer.selectors.resolve(browser.page,target.ref,100);
+    assert.equal(resolved.strategy,'path');
+    assert.equal(await resolved.locator.evaluate(element=>element===document.querySelectorAll('input')[1]),true);
+  }finally{await browser.close();}
+});
+
+test('page cannot redirect a saved semantic reference by copying its DOM marker',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>Save draft</button><button>Delete account</button>');
+    const observer=new Observer(),state=await observer.inspect(browser.page),target=state.elements.find(element=>element.name==='Save draft')!;
+    await browser.page.evaluate(ref=>{
+      const buttons=document.querySelectorAll('button');
+      buttons[0]!.textContent='Changed label';buttons[0]!.removeAttribute('data-fcu-ref');buttons[1]!.setAttribute('data-fcu-ref',ref);
+    },target.ref);
+    await assert.rejects(observer.selectors.resolve(browser.page,target.ref,100),/Target missing or ambiguous/);
+  }finally{await browser.close();}
+});
+
+test('page-provided duplicate references stay unique in the observed state',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>First</button><button>Second</button>');
+    const observer=new Observer();await observer.inspect(browser.page);
+    await browser.page.evaluate(()=>{
+      const registry=(window as unknown as {__fcuRegistry:{refs:WeakMap<Element,string>}}).__fcuRegistry;
+      const buttons=document.querySelectorAll('button');registry.refs.set(buttons[0]!,'f0ddeadbeefe1');registry.refs.set(buttons[1]!,'f0ddeadbeefe1');
+    });
+    const state=await observer.inspect(browser.page),first=state.elements.find(element=>element.name==='First')!,second=state.elements.find(element=>element.name==='Second')!;
+    assert.notEqual(first.ref,second.ref);assert.equal(stateHash(state),state.hash);
+    assert.equal(observer.selectors.element(first.ref)?.name,'First');assert.equal(observer.selectors.element(second.ref)?.name,'Second');
+  }finally{await browser.close();}
+});
+
+test('malformed page-owned reference state cannot break observation',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>Try again</button>');
+    const observer=new Observer();await observer.inspect(browser.page);
+    await browser.page.evaluate(()=>{(window as unknown as {__fcuRegistry:unknown}).__fcuRegistry={};});
+    const state=await observer.inspect(browser.page);
+    assert.equal(state.elements[0]?.name,'Try again');
   }finally{await browser.close();}
 });
 

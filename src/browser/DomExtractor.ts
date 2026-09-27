@@ -53,9 +53,15 @@ export class DomExtractor {
           if (region && !scope) return { elements: [], headings: [], text: '', tables: [], dialogs: [], htmlBytes: 0, truncated: false };
           const [included] = [(el: Element) => !scope || scope === el || scope.contains(el)];
           const global = window as unknown as { __fcuRegistry?: { refs: WeakMap<Element,string>; next: number;documentId:string } };
-          const registry = global.__fcuRegistry ??= { refs: new WeakMap(), next: 1,documentId };
+          let registry: typeof global.__fcuRegistry;
+          try {
+            const existing=global.__fcuRegistry;
+            if(existing?.refs instanceof WeakMap&&Number.isSafeInteger(existing.next)&&existing.next>0&&/^[a-f0-9]{8}$/.test(existing.documentId))registry=existing;
+          } catch {}
+          if(!registry){registry={refs:new WeakMap(),next:1,documentId};try{global.__fcuRegistry=registry;}catch{}}
           const htmlBytes = new TextEncoder().encode(document.documentElement.outerHTML).length;
           const candidates = all.filter(el => included(el) && visible(el) && el.matches('button,a[href],input:not([type=hidden]),textarea,select,summary,[contenteditable=true],[role=button],[role=link],[role=textbox],[role=checkbox],[role=radio],[role=combobox],[role=menuitem],[role=tab],[role=switch],[role=slider]'));
+          const observedRefs=new Set<string>();let fallbackSequence=1;
           const elements = candidates.slice(0,500).map(el => {
             const tag = el.tagName.toLowerCase();
             const input = el as HTMLInputElement;
@@ -70,9 +76,10 @@ export class DomExtractor {
             const label = clean(el.getAttribute('aria-label') || labelled || (input.labels ? [...input.labels].map(l=>visibleText(l)).join(' ') : ''));
             const content=['input','textarea','select'].includes(tag)?'':visibleText(el);
             const name = label || clean(['input','textarea','select'].includes(tag) ? el.getAttribute('placeholder') || el.getAttribute('name') || (['submit','button'].includes(type) ? input.value : '') : content);
-            let ref = registry.refs.get(el);
-            if (!ref) { ref = `f${index}d${registry.documentId}e${registry.next++}`; registry.refs.set(el,ref); }
-            el.setAttribute('data-fcu-ref',ref);
+            let ref:string|undefined;
+            try { const saved=registry.refs.get(el);if(typeof saved==='string'&&/^f\d+d[a-f0-9]{8}e\d+$/.test(saved)&&!observedRefs.has(saved))ref=saved; } catch {}
+            if(!ref){ref=`f${index}d${registry.documentId}e${registry.next++}`;if(!/^f\d+d[a-f0-9]{8}e\d+$/.test(ref)||observedRefs.has(ref)){do{ref=`f${index}d${documentId}e${fallbackSequence++}`;}while(observedRefs.has(ref));}try{registry.refs.set(el,ref);}catch{}}
+            observedRefs.add(ref);
             const parts: string[] = [];
             let parent: Element | null = el;
             while (parent && parts.length < 9) {
@@ -123,6 +130,13 @@ export class DomExtractor {
       htmlBytes:pieces.reduce((sum,p)=>sum+p.htmlBytes,0),hash:'',
       warnings:[],frames:frames.map((f,index)=>({index,url:f.url()})),truncated:pieces.some(p=>p.truncated),
     };
+    const references=new Set<string>();
+    for(const element of state.elements){
+      if(!/^f\d+d[a-f0-9]{8}e\d+$/.test(element.ref)||references.has(element.ref)){
+        do{element.ref=`f${element.frame}d${randomUUID().slice(0,8)}e${Number.parseInt(randomUUID().slice(0,8),16)}`;}while(references.has(element.ref));
+      }
+      references.add(element.ref);
+    }
     if (pieces.length < frames.length) state.warnings.push('Some frames could not be inspected');
     if (/ignore (all |your |previous )?instructions|send (all |user )?data|system prompt/i.test(state.text)) state.warnings.push('Possible prompt injection in untrusted page content');
     if (/captcha|verify you are human|sign in to continue/i.test([state.title,state.text,...state.elements.map(e=>e.name)].join(' '))) state.warnings.push('Human authentication or security challenge may be required');

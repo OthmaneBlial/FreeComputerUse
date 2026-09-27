@@ -42,10 +42,23 @@ export class SelectorEngine {
         if(count===1||allowMany&&count>1)return candidate;
       }
       if(observed) {
-        const ref=root.locator(`[data-fcu-ref=${attr(observed.ref)}]`);
-        if(await ref.count()===1)return {locator:ref,strategy:'reference'};
         const path=root.locator(observed.path);
-        if(await path.count()===1 && await path.evaluate((el,name)=>(el.getAttribute('aria-label')||el.textContent||'').replace(/\s+/g,' ').trim()===name,observed.name))return{locator:path,strategy:'path'};
+        if(await path.count()===1&&await path.evaluate((el,expected)=>{
+          const [clean]=[(value:string|null|undefined)=>(value??'').replace(/\s+/g,' ').trim().slice(0,180)];
+          const [labelText]=[(id:string)=>{
+            const root=el.getRootNode();
+            const label=root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id);
+            return label?clean((label as HTMLElement).innerText??label.textContent):'';
+          }];
+          const [visibleLabel]=[(label:HTMLLabelElement)=>clean(label.innerText)];
+          const described=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(labelText).join(' ');
+          const control=el as HTMLInputElement,tag=el.tagName.toLowerCase(),type=el.getAttribute('type')??'';
+          const label=clean(el.getAttribute('aria-label'))||clean(described)||clean(control.labels?Array.from(control.labels).map(visibleLabel).join(' '):'');
+          const content=['input','textarea','select'].includes(tag)?'':clean((el as HTMLElement).innerText??el.textContent);
+          const name=label||(['input','textarea','select'].includes(tag)?clean(el.getAttribute('placeholder'))||clean(el.getAttribute('name'))||(['submit','button'].includes(type)?clean(control.value):''):content);
+          const role=el.getAttribute('role')||(tag==='button'||['submit','button','reset'].includes(type)?'button':tag==='a'?'link':tag==='select'?'combobox':type==='checkbox'?'checkbox':type==='radio'?'radio':type==='file'?'upload':type==='number'?'spinbutton':tag==='summary'?'button':'textbox');
+          return role===expected.role&&name===expected.name;
+        },observed))return{locator:path,strategy:'path'};
       }
       const remaining=deadline-Date.now();
       if(remaining<=0)break;

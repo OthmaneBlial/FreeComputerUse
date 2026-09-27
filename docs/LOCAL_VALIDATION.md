@@ -40,6 +40,14 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The post-release browser-reference hardening, on the working tree based on main
+commit `4add090`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27
+September 2026: 149/149 tests in 189.83 seconds, type checks, build, security
+scan (275 worktree files, 277 historical paths, 1,386 blobs), and npm audit
+with zero vulnerabilities. This source follow-up is not included in the
+published v0.2.11 package. Environment: macOS `26.6`, Apple Silicon, Node
+`25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`.
+
 The v0.2.11 release candidate, based on main commit `e502c08`, passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 145/145
 tests in 190.03 seconds, type checks, build, security scan (274 worktree files,

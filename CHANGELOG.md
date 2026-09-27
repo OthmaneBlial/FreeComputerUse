@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Ignore page-controlled or duplicate DOM references during browser target
+  resolution, and recover when page-owned reference state is malformed.
+
 ## 0.2.11 - 2026-09-27
 
 ### Fixed
