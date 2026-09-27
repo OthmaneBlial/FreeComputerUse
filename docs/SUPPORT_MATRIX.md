@@ -40,7 +40,7 @@ parameters, endpoint and terms before use.
 | npm package | The ESM package exposes a library and global `agent` command. | Published `free-computer-use@0.2.18` is `latest`; its registry integrity and shasum match the tested candidate, and the downloaded registry tarball is byte-identical. Fresh-prefix CLI, doctor, public table task, and MCP checks are recorded in [v0.2.18 release notes](https://github.com/OthmaneBlial/FreeComputerUse/blob/main/release-notes/0.2.18.md). | Package task and runtime were checked on macOS `26.6`/Apple Silicon with system Chrome `154.0.8037.57`; other OS/browser combinations remain unverified. |
 | GitHub release / archive | Public releases provide a versioned npm tarball and `.sha256` checksum sidecar; no standalone native executable is offered. | Public release `v0.2.18` tag resolves to validated commit `edd0cab`; its downloaded tarball passes its SHA-256 check and matches the tested candidate byte for byte. See the [v0.2.18 release notes](https://github.com/OthmaneBlial/FreeComputerUse/blob/main/release-notes/0.2.18.md). | Archive requires Node.js, npm and a supported installed browser. |
 | GitHub Pages site | Static product homepage, lab and scenario library are served from `main /docs`. | The public homepage displays `v0.2.18`, returns HTTP 200, and passes 320/390/768/1440 px overflow checks with no browser console errors. See the v0.2.18 release notes. | This verifies one desktop Chromium environment. Windows/Linux, other browsers and assistive-technology hardware remain unverified. |
-| GitHub Actions | No project workflow files are tracked in the checkout. | Repository-level GitHub Actions are disabled. Before disablement, the only listed workflow was GitHub's Pages branch deployment; Pages uses the `main /docs` source and its tracked `.nojekyll` file. | The Pages deployment path must be checked after future pushes while Actions remain disabled. |
+| GitHub Actions | No project CI workflow files are tracked in the checkout. | Repository-level GitHub Actions are disabled. Before disablement, the only listed workflow was GitHub's Pages branch deployment. A later push made the updated support matrix available from the `main /docs` source at the Pages URL (HTTP 200); `docs/.nojekyll` is tracked. | Actions run history stops at the last pre-disable Pages workflow, so hosted build logs are no longer available. |
 
 ## Validation snapshot for this implementation session
 
@@ -64,10 +64,12 @@ parameters, endpoint and terms before use.
   Chrome doctor and the three-row public table task with one browser action,
   zero failed actions and zero model calls; candidate and registry MCP servers
   report version `0.2.18` and all four tools. The release asset passes its SHA-256
-  sidecar check. Pages built the release commit; the
-  public homepage returns HTTP 200, displays `v0.2.18`, passes 320/390/768/1440
-  px overflow checks, and has no browser console errors. No live model request
-  was made. The history pattern scan is not a complete security audit.
+  sidecar check. Pages built the release commit; the public homepage returns
+  HTTP 200, displays `v0.2.18`, passes 320/390/768/1440 px overflow checks, and
+  has no browser console errors. After Actions were disabled, a later `main`
+  push made the updated support matrix available from the branch Pages source;
+  GitHub's workflow history remains at the earlier Pages build. No live model
+  request was made. The history pattern scan is not a complete security audit.
 - Release `v0.2.17` includes accurate DOM byte metrics for nested open shadow
   roots and UTF-8 text. Its clean detached commit
   `25ebff9a9ecdcc22764c18a7873e4a442f57086f` passed
