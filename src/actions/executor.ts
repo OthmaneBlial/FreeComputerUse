@@ -93,17 +93,19 @@ export class Executor {
       const interaction=this.browser.interaction,interactionOptions={timeout,checkpoint:()=>this.control.checkpoint(),beforeEffect:assertApproved};
       const value='value'in action?this.variables.resolve(action.value):'';
       if(locator&&['click','press','submit'].includes(action.type)){
-        const info=await locator.evaluate((el,type)=>{
+        const info=await locator.evaluate((el,{type,key})=>{
           const f=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form;
-          const submitting=type==='submit'||type==='press'||el.matches('button:not([type=button]):not([type=reset]),input[type=submit],input[type=image]');
+          const implicitSubmit=type==='press'&&key?.toLowerCase()==='enter'&&el instanceof HTMLInputElement&&!['button','submit','reset','image','checkbox','radio','file','hidden'].includes(el.type);
+          const submitting=type==='submit'||implicitSubmit||el.matches('button:not([type=button]):not([type=reset]),input[type=submit],input[type=image]');
           if(!f||!submitting||!f.checkValidity())return null;
-          const submitter=el instanceof HTMLButtonElement||el instanceof HTMLInputElement?el:undefined;
+          const directSubmitter=el instanceof HTMLButtonElement&&el.type==='submit'||el instanceof HTMLInputElement&&['submit','image'].includes(el.type)?el:undefined;
+          const submitter=directSubmitter?.form===f?directSubmitter:implicitSubmit?[...f.elements].find((control):control is HTMLButtonElement|HTMLInputElement=>control instanceof HTMLButtonElement&&control.type==='submit'||control instanceof HTMLInputElement&&['submit','image'].includes(control.type)):undefined;
           const actionOverride=submitter?.form===f?submitter.getAttribute('formaction'):null;
           const methodOverride=submitter?.form===f?submitter.getAttribute('formmethod'):null;
           const actionURL=actionOverride===null?f.action:new URL(actionOverride,document.baseURI).href;
           const rawMethod=(methodOverride??f.method).toUpperCase(),method=rawMethod==='POST'?'POST':rawMethod==='DIALOG'?'DIALOG':'GET';
           return{actionURL,method,id:f.id,label:f.getAttribute('aria-label')??'',unique:document.forms.length===1};
-        },action.type);
+        },{type:action.type,key:value});
         if(info&&('target'in receiptAction)&&receiptAction.target)this.browser.formReceipts.push({...info,target:this.observer.selectors.descriptor(receiptAction.target),time:Date.now()});
       }
       executed=true;

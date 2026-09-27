@@ -228,12 +228,12 @@ test('image submit controls are exposed as buttons and require approval',async()
   }finally{await browser.close();}
 });
 
-test('form submission verification honors submitter action and method overrides',async()=>{
+test('form submission verification honors explicit and implicit submitter overrides',async()=>{
   const requests:{method:string;url:string}[]=[];
   const server=createServer((request,response)=>{
     requests.push({method:request.method??'',url:request.url??''});
     response.writeHead(200,{'Content-Type':'text/html'});
-    response.end(request.url==='/form'?'<form id="submission" action="/default" method="post"><button type="submit" formaction="/override" formmethod="get">Submit</button></form>':'<h1>Submitted</h1>');
+    response.end(request.url==='/form'?'<form id="submission" action="/default" method="post"><input id="email" name="email"><button type="submit" formaction="/override" formmethod="get">Submit</button></form>':'<h1>Submitted</h1>');
   });
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
   const address=server.address() as {port:number},url=`http://127.0.0.1:${address.port}`,browser=await new Browser({allowedOrigins:[url]}).launch();
@@ -243,8 +243,15 @@ test('form submission verification honors submitter action and method overrides'
     const startedAt=Date.now(),result=await executor.run({type:'click',target:{role:'button',name:'Submit'}});
     assert.equal(result.success,true,result.error??'Submit click failed');
     await browser.page.waitForLoadState('domcontentloaded');
-    assert.deepEqual(requests.find(request=>request.url==='/override'),{method:'GET',url:'/override'});
+    assert.deepEqual(requests.find(request=>request.url.startsWith('/override')),{method:'GET',url:'/override?email='});
     assert.equal(await executor.verifier.one({type:'form_submitted',target:{css:'form#submission'}},startedAt),true);
+
+    await browser.navigate(`${url}/form`);
+    const enterStartedAt=Date.now(),enterResult=await executor.run({type:'press',target:{css:'#email'},value:'Enter'});
+    assert.equal(enterResult.success,true,enterResult.error??'Implicit form submit failed');
+    await browser.page.waitForLoadState('domcontentloaded');
+    assert.deepEqual(requests.filter(request=>request.url.startsWith('/override')).at(-1),{method:'GET',url:'/override?email='});
+    assert.equal(await executor.verifier.one({type:'form_submitted',target:{css:'form#submission'}},enterStartedAt),true);
   }finally{await browser.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
