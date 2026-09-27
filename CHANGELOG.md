@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.19 - 2026-09-27
+
+### Reliability
+
+- Keep browser tasks running when an event subscriber throws, and continue
+  delivering the event to other listeners.
+
 ## 0.2.18 - 2026-09-27
 
 ### Security
