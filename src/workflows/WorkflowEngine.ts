@@ -20,6 +20,17 @@ export class WorkflowEngine {
       this.store.db.prepare('UPDATE workflows SET hits=hits+1 WHERE id=?').run(row.id);return workflow;
     }return;
   }
+  hasHydrationCandidate(goal:string,state:PageState){
+    const url=new URL(state.url),intent=normalizeIntent(goal),structure=structureHash(state);
+    const rows=this.store.db.prepare('SELECT id,workflow FROM workflows WHERE domain=? AND intent=?').all(url.origin,intent);
+    return rows.some(row=>{
+      try{
+        const workflow=JSON.parse(row.workflow as string) as Workflow;
+        if(workflow.id!==row.id||workflow.origin!==url.origin||workflow.path!==url.pathname||workflow.intent!==intent||workflow.structure===structure)return false;
+        PlanSchema.parse(workflow.plan);return true;
+      }catch{return false;}
+    });
+  }
   learn(trace:Trace,initial:PageState){
     if(trace.status!=='completed'||!trace.actions.length)return;
     const actions=trace.actions.filter(result=>result.success).map(result=>result.action);

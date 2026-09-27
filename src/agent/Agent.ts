@@ -134,7 +134,15 @@ export class Agent extends EventEmitter {
         this.control.pause();this.event('HUMAN','Take control to complete authentication/security checks, then resume');
         await this.control.checkpoint();initial=await this.observe();revision=this.control.revision;
       }
-      const learned=this.options.useWorkflows!==false&&!providedPlan?this.workflows.match(goal,initial):undefined;
+      let learned=this.options.useWorkflows!==false&&!providedPlan?this.workflows.match(goal,initial):undefined;
+      if(!learned&&this.options.useWorkflows!==false&&!providedPlan&&this.workflows.hasHydrationCandidate(goal,initial)){
+        this.event('CACHE','Waiting briefly for a compatible workflow page to hydrate');
+        for(const delay of [100,200,400,800]){
+          await this.control.checkpoint();await this.browser.page.waitForTimeout(delay);await this.control.checkpoint();
+          initial=await this.observe();trace.url=this.variables.redact(initial.url);learned=this.workflows.match(goal,initial);
+          if(learned||!this.workflows.hasHydrationCandidate(goal,initial))break;
+        }
+      }
       let plan=providedPlan??learned?.plan;
       if(learned){cacheHits++;this.event('CACHE',`Reusing learned workflow ${learned.id}`);}
       if(!plan)for(const adapter of this.options.adapters??[genericAdapter]){

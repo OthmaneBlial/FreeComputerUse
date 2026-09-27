@@ -54,7 +54,9 @@ known values are redacted from serialized prompts/traces. SQLite stores private
 run metadata, plans, actions, timing, provider usage and compatible workflows.
 Successful actions are converted to semantic descriptors. Matching uses exact
 origin/path, normalized intent and an initial control fingerprint. Changed tasks
-or incompatible structures are not assumed to be the same workflow.
+or incompatible structures are not assumed to be the same workflow. When an
+exact candidate exists but its controls have not hydrated yet, the agent
+re-observes for at most 1.5 seconds before local or model planning.
 
 Replay disables the provider even if one is configured. It stops on failure.
 Site and sensitive-action approvals still apply. Persistent browser contexts retain
