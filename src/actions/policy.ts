@@ -9,7 +9,7 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
     const input=el as HTMLInputElement,autocomplete=el.getAttribute('autocomplete')??'';
     const type=(el.getAttribute('type')??'').toLowerCase();
     const labels=[...(input.labels??[])].map(label=>label.textContent??'');
-    const referenced=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>document.getElementById(id)?.textContent??'');
+    const root=el.getRootNode(),referenced=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>(root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id))?.textContent??'');
     const hint=[autocomplete,el.getAttribute('name'),el.id,el.getAttribute('placeholder'),el.getAttribute('aria-label'),el.getAttribute('title'),...labels,...referenced]
       .join(' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/[^a-z0-9]+/g,' ');
     return {

@@ -16,13 +16,15 @@ export interface ActionResult {
   action:Action;startedAt:number;durationMs:number;success:boolean;
   strategy?:string;data?:unknown;error?:string;uncertain?:boolean;
 }
-const approvalFingerprint=(el:Element)=>JSON.stringify({
-  tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),autocomplete:el.getAttribute('autocomplete'),
-  name:el.getAttribute('name'),id:el.id,placeholder:el.getAttribute('placeholder'),title:el.getAttribute('title'),
-  labels:[...((el as HTMLInputElement).labels??[])].map(label=>label.textContent),
-  labelledBy:(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>document.getElementById(id)?.textContent??''),
-  href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method,
-});
+const approvalFingerprint=(el:Element)=>{
+  const root=el.getRootNode(),labelledBy=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>(root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id))?.textContent??'');
+  return JSON.stringify({
+    tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),autocomplete:el.getAttribute('autocomplete'),
+    name:el.getAttribute('name'),id:el.id,placeholder:el.getAttribute('placeholder'),title:el.getAttribute('title'),
+    labels:[...((el as HTMLInputElement).labels??[])].map(label=>label.textContent),labelledBy,
+    href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method,
+  });
+};
 export class Executor {
   readonly compiler=new ActionCompiler();
   readonly verifier:Verifier;
@@ -182,19 +184,22 @@ export class Executor {
           interaction.cue('extract');
           const root=locator??page.locator('body');
           if(action.format==='table')data=await root.evaluateAll((els,{match,limit})=>{
-            let rows=[...new Set(els.flatMap(el=>el.matches('tr')?[el]:[...el.querySelectorAll('tr')]))].filter(row=>{const box=row.getBoundingClientRect();return box.width>0&&box.height>0&&getComputedStyle(row).visibility==='visible';});
+            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+            const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
+            const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+            const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
+            let rows=[...new Set(els.flatMap(el=>el.matches('tr')?[el]:[...el.querySelectorAll('tr')]))].filter(row=>{const box=row.getBoundingClientRect();return !excluded(row)&&box.width>0&&box.height>0;});
             if(!match&&limit)rows=rows.slice(0,limit);
-            const values=rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>{
-              for(let parent:Element|null=cell;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return '';}
-              return cell.closest('[hidden],[inert],[aria-hidden="true"]')?'':(cell as HTMLElement).innerText?.trim()??'';
-            }));
+            const values=rows.map(row=>[...row.querySelectorAll('th,td')].map(cell=>excluded(cell)?'':(cell as HTMLElement).innerText?.trim()??''));
             return (match?values.filter(row=>JSON.stringify(row).toLowerCase().includes(match)):values).slice(0,limit);
           },{match:action.match?.toLowerCase(),limit:action.limit});
           else if(action.format==='links')data=await root.evaluateAll((els,{match,limit})=>{
+            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+            const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
+            const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+            const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
             let links=[...new Set(els.flatMap(el=>el.matches('a[href]')?[el]:[...el.querySelectorAll('a[href]')]))].filter(a=>{
-              if(!a.getClientRects().length||a.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
-              for(let parent:Element|null=a;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.visibility!=='visible'||style.opacity==='0')return false;}
-              return true;
+              return !excluded(a);
             });
             if(!match&&limit)links=links.slice(0,limit);
             const values=links.map(a=>({text:(a as HTMLElement).innerText?.trim(),url:(a as HTMLAnchorElement).href}));
@@ -203,6 +208,10 @@ export class Executor {
           else if(action.format==='records'){
             if(!action.fields||!Object.keys(action.fields).length||Object.keys(action.fields).length>20)throw new Error('Records extraction requires 1..20 controlled CSS fields');
             data=await root.filter({visible:true}).evaluateAll((els,{fields,match,limit})=>{
+              const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;){if(parent===ancestor)return true;const root=parent.getRootNode();parent=parent.parentElement??(root instanceof ShadowRoot?root.host:null);}return false;}];
+              const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+              const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+              const [hiddenByAncestor]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
               let rows=[...new Set(els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]))];
               if(!match&&limit)rows=rows.slice(0,limit);
               const records=rows.map(el=>Object.fromEntries(Object.entries(fields).map(([key,field])=>{
@@ -216,13 +225,12 @@ export class Executor {
                   if(indices.length===1&&cells.length>=headers.length)node=cells[indices[0]!+cells.length-headers.length]??node;
                 }
                 if(node){
-                  let hidden=!!node.closest('[hidden],[inert],[aria-hidden="true"]');
-                  for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')hidden=true;}
+                  const hidden=hiddenByAncestor(node),root=node.getRootNode();
                   const control=node instanceof HTMLInputElement||node instanceof HTMLTextAreaElement||node instanceof HTMLSelectElement?node:undefined;
                   const input=node instanceof HTMLInputElement?node:undefined;
                   const autocomplete=(control?.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/);
                   const labels=control?[...(control.labels??[])].map(label=>label.textContent??''):[];
-                  const referenced=(node.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>document.getElementById(id)?.textContent??'');
+                  const referenced=(node.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>(root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id))?.textContent??'');
                   const hint=[control?.getAttribute('autocomplete'),control?.getAttribute('name'),control?.id,control?.getAttribute('placeholder'),control?.getAttribute('aria-label'),control?.title,...labels,...referenced]
                     .join(' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/[^a-z0-9]+/g,' ');
                   const namedSensitive=/\b(password|passwd|passcode|pin|otp|cvv|cvc|csc|card number|credit card|debit card|cardholder|one time code|verification code|security code|auth code|expiration|expiry)\b/.test(hint);
@@ -243,16 +251,16 @@ export class Executor {
           else data=await root.filter({visible:true}).evaluateAll((els,{match,limit})=>{
             let lines=els.map(el=>{
               const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
-              const [excluded]=[(node:Element)=>{
-                if(node.matches('[hidden],[inert],[aria-hidden="true"]')||modalVisible&&modal&&!modal.contains(node)&&modal!==node&&!node.contains(modal))return true;
-                const style=getComputedStyle(node);return style.display==='none'||style.visibility!=='visible'||style.opacity==='0';
-              }];
+              const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+              const [composedContains]=[(ancestor:Element,node:Element)=>{for(let parent:Element|null=node;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
+              const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node)&&!composedContains(node,modal))return true;if(node.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(node);return style.display==='none'||style.visibility!=='visible'||style.opacity==='0';}];
               let hiddenParent=false;
-              for(let parent:Element|null=el.parentElement;parent;parent=parent.parentElement)if(excluded(parent)){hiddenParent=true;break;}
+              for(let parent:Element|null=composedParent(el);parent;parent=composedParent(parent))if(excluded(parent)){hiddenParent=true;break;}
               const omitted=new Set<Element>(),dirty=new Set<Element>();
+              const [composedChildren]=[(node:Element)=>node.shadowRoot?[...node.shadowRoot.children]:node instanceof HTMLSlotElement?[...node.assignedElements({flatten:true})]:[...node.children]];
               const [inspect]=[(node:Element,hidden=false)=>{
-                if(hidden||excluded(node)){omitted.add(node);for(let parent:Element|null=node;parent;parent=parent.parentElement){dirty.add(parent);if(parent===el)break;}return;}
-                for(const child of node.children)inspect(child);
+                if(hidden||excluded(node)){omitted.add(node);for(let parent:Element|null=node;parent;parent=composedParent(parent)){dirty.add(parent);if(parent===el)break;}return;}
+                for(const child of composedChildren(node))inspect(child);
               }];
               inspect(el,hiddenParent);
               const [read]=[(node:Node):string=>{
@@ -262,7 +270,8 @@ export class Executor {
                 if(omitted.has(element))return '';
                 if(!dirty.has(element))return element.innerText??element.textContent??'';
                 if(element.tagName==='BR')return '\n';
-                const content=[...element.childNodes].map(read).join('');
+                const children=element.shadowRoot?.childNodes??(element instanceof HTMLSlotElement&&element.assignedNodes({flatten:true}).length?element.assignedNodes({flatten:true}):element.childNodes);
+                const content=[...children].map(read).join('');
                 return /^(block|flex|grid|flow-root|list-item|table)/.test(getComputedStyle(element).display)?`\n${content}\n`:content;
               }];
               return read(el).replace(/[ \t]*\n[ \t]*/g,'\n').replace(/\n+/g,'\n').trim();

@@ -312,6 +312,55 @@ test('payment and verification fields use label hints when autocomplete is missi
   }finally{await browser.close();}
 });
 
+test('shadow-root sensitive labels require approval and remain fingerprinted',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div id="payment-widget"></div>');
+    await browser.page.locator('#payment-widget').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<span id="field-label">Card number</span><input id="payment" aria-labelledby="field-label" oninput="document.body.dataset.sent=this.value">';});
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    const waiting=new Promise<'approval'>(resolve=>control.once('approval',()=>resolve('approval')));
+    const execution=executor.run({type:'fill',target:{css:'#payment'},value:'synthetic-secret'});
+    assert.equal(await Promise.race([waiting,execution.then(()=>'finished' as const)]),'approval');
+    await browser.page.locator('#payment-widget').evaluate(host=>{host.shadowRoot!.querySelector('#field-label')!.textContent='Public field';});
+    control.approve();const result=await execution;
+    assert.equal(result.success,false);assert.match(result.error??'',/Approved target changed/);
+    assert.equal(await browser.page.locator('#payment').inputValue(),'');
+    assert.equal(await browser.page.locator('body').getAttribute('data-sent'),null);
+  }finally{await browser.close();}
+});
+
+test('record extraction redacts shadow-root payment values and hidden hosts',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div id="payment-widget"></div><div id="hidden-widget" aria-hidden="true"></div>');
+    await browser.page.locator('#payment-widget').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<form><span id="card-label">Card number</span><input aria-labelledby="card-label" value="4111111111111111"></form>';});
+    await browser.page.locator('#hidden-widget').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<form><input aria-label="Public value" value="hidden-widget-secret"></form>';});
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    const result=await executor.run({type:'extract',target:{css:'form'},format:'records',key:'values',fields:{value:{css:'input',attribute:'value'}}});
+    assert.equal(result.success,true,result.error??'Extraction failed');
+    assert.deepEqual(browser.extractions[0]?.value,[{value:'[sensitive value omitted]'}, {value:''}]);
+  }finally{await browser.close();}
+});
+
+test('text, table and link extraction exclude content hidden by a shadow host',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div id="hidden-widget" aria-hidden="true"></div>');
+    await browser.page.locator('#hidden-widget').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<p id="private-text">Private account number</p><table id="private-table"><tr><td>Private transaction</td></tr></table><a id="private-link" href="/private">Private destination</a>';});
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    for(const [target,format] of [['#private-text','text'],['#private-table','table'],['#private-link','links']] as const){
+      const result=await executor.run({type:'extract',target:{css:target},format,key:format});
+      assert.equal(result.success,true,result.error??`${format} extraction failed`);
+      assert.deepEqual(browser.extractions.at(-1)?.value,format==='text'?'':[]);
+    }
+    await browser.page.locator('#hidden-widget').evaluate(host=>{host.removeAttribute('aria-hidden');host.shadowRoot!.innerHTML='<p>Visible account status</p><section aria-hidden="true"><p>Private nested account number</p></section>';});
+    const result=await executor.run({type:'extract',target:{css:'body'},format:'text',key:'page-text'});
+    assert.equal(result.success,true,result.error??'Text extraction failed');
+    assert.match(String(browser.extractions.at(-1)?.value),/Visible account status/);
+    assert.doesNotMatch(String(browser.extractions.at(-1)?.value),/Private nested account number/);
+  }finally{await browser.close();}
+});
+
 test('changing a sensitive field classification while approval waits cancels entry',async()=>{
   const browser=await new Browser().launch();
   try{
