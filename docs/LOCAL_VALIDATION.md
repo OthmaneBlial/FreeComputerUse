@@ -71,16 +71,21 @@ lab/package builds, history scan (286 worktree files, 288 historical paths,
 1,666 blobs), and `npm audit` with zero vulnerabilities. No live model-provider
 request was made.
 
-Latest fully validated source commit `b799222` on post-release `main` makes the
+Earlier validated source commit `b799222` on post-release `main` makes the
 DOM-path selector fallback reject a same-name target if its tag, type,
 associated form name, or link URL changed since observation. Its full local gate
-passed 190/190 tests in 294.78
-seconds, type checks, lab/package builds, history scan (286 worktree files, 288
-historical paths, 1,673 blobs), and `npm audit` with zero vulnerabilities.
-Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
-system Chrome `154.0.8037.57`. This source change is newer than published
-`v0.2.22`. No live model-provider request was made. The history pattern scan is
-not a complete security audit.
+passed 190/190 tests in 294.78 seconds, type checks, lab/package builds, history
+scan (286 worktree files, 288 historical paths, 1,673 blobs), and `npm audit`
+with zero vulnerabilities. No live model-provider request was made.
+
+Latest fully validated source commit `0cf3dab` also rejects a same-name fallback
+target when its observed region changes. Its full local gate passed 191/191
+tests in 262.31 seconds, type checks, lab/package builds, history scan (286
+worktree files, 288 historical paths, 1,679 blobs), and `npm audit` with zero
+vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm
+`11.12.1`, and system Chrome `154.0.8037.57`. This source is newer than
+published `v0.2.22`. No live model-provider request was made. The history
+pattern scan is not a complete security audit.
 
 The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
 preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
