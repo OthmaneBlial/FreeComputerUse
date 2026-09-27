@@ -41,6 +41,20 @@ test('API provider rejects output usage above the reserved token cap',async()=>{
   }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('API provider rejects malformed cache usage and keeps estimated cost finite',async()=>{
+  const output={steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false};let requestIndex=0;
+  const usages=[{prompt_tokens:40,completion_tokens:1,prompt_cache_hit_tokens:1.5},{prompt_tokens:40,completion_tokens:1,prompt_cache_miss_tokens:-1}];
+  const server=createServer((_req,res)=>{res.end(JSON.stringify({usage:usages[requestIndex++]!,choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}]}));});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const budget=new TokenBudget({maxLLMCalls:null,maxInputTokens:null,maxOutputTokens:null},{input:1,output:1,cachedInput:.1}),provider=new FlashProvider({key:'test-only',model:'fixture',baseURL:`http://127.0.0.1:${(server.address() as {port:number}).port}`},budget);
+    const context={goal:'Read',page:'Fixture',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]};
+    await assert.rejects(provider.plan(context),/Invalid provider token usage/);await assert.rejects(provider.plan(context),/Invalid provider token usage/);
+    assert.equal(requestIndex,2);assert(provider.calls.every(call=>!call.success&&call.usage.estimated));
+    assert(Number.isFinite(budget.cost));assert.equal(budget.pendingInput,0);assert.equal(budget.pendingOutput,0);
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
 test('planner output omits echoed goals while retaining the full trusted task context',async()=>{
   const goal='é'.repeat(4000);let request:Record<string,unknown>|undefined;
   const output={steps:['Read the page'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false};

@@ -19,7 +19,7 @@ export class TokenBudget {
     const reservation={id:this.calls,maxOutput,inputBound};this.reservations.set(reservation.id,reservation);return reservation;
   }
   record(usage:Usage,reservationId?:number){
-    if(!Number.isSafeInteger(usage.input)||usage.input<0||!Number.isSafeInteger(usage.output)||usage.output<0||usage.cacheHit!==undefined&&(usage.cacheHit<0||usage.cacheHit>usage.input))throw new Error('Invalid provider token usage');
+    if(!Number.isSafeInteger(usage.input)||usage.input<0||!Number.isSafeInteger(usage.output)||usage.output<0||usage.cacheHit!==undefined&&(!Number.isSafeInteger(usage.cacheHit)||usage.cacheHit<0||usage.cacheHit>usage.input)||usage.cacheMiss!==undefined&&(!Number.isSafeInteger(usage.cacheMiss)||usage.cacheMiss<0||usage.cacheMiss>usage.input))throw new Error('Invalid provider token usage');
     const id=reservationId??this.reservations.keys().next().value;
     if(id!==undefined)this.reservations.delete(id);
     this.input+=usage.input;this.output+=usage.output;
