@@ -25,6 +25,18 @@ test('default model budget allows long tasks while explicit caps still work',()=
   assert.equal(budget.limits.maxInputTokens,null);
 });
 
+test('first-N extraction fails instead of completing with an empty result',async()=>{
+  const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra'});
+  try{
+    await agent.browser.launch();
+    await agent.browser.page.setContent('<main><h1>Empty page</h1></main>');
+    const trace=await agent.run('Extract the first 5 links');
+    assert.equal(trace.status,'failed');
+    assert.match(trace.error??'',/completion could not be verified/i);
+    assert.deepEqual(agent.browser.extractions[0]?.value,[]);
+  }finally{await agent.close();store.close();}
+});
+
 test('planner schema accepts the 4000-character goals supported by dashboard and MCP',()=>{
   const goal='g'.repeat(4000);
   const plan=PlanSchema.parse({goal,steps:['Read the page'],actions:[{type:'extract',format:'text'}],completion:[{type:'extraction_created'}],continue:false});
