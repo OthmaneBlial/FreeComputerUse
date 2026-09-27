@@ -41,7 +41,7 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 
-test('dashboard preserves UTF-8 characters split across request chunks',{timeout:10000},async()=>{
+test('dashboard decodes split UTF-8 and rejects malformed request bytes',{timeout:10000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-utf8-request-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true});
   try{
@@ -55,6 +55,11 @@ test('dashboard preserves UTF-8 characters split across request chunks',{timeout
     assert.equal(status,200);
     const saved=await fetch(dashboard.url+'/api/profile',{headers:{Cookie:cookie}});
     assert.deepEqual(await saved.json(),profile);
+    const invalid=Buffer.concat([Buffer.from('{"profile":{"firstName":"A'),Buffer.from([0xc3,0x28]),Buffer.from('B"},"files":{}}')]);
+    const rejected=await fetch(dashboard.url+'/api/profile',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:invalid});
+    assert.equal(rejected.status,400);
+    const after=await fetch(dashboard.url+'/api/profile',{headers:{Cookie:cookie}});
+    assert.deepEqual(await after.json(),profile);
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 

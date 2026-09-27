@@ -25,7 +25,7 @@ const Manual=z.discriminatedUnion('type',[
 ]);
 async function body(req:IncomingMessage):Promise<unknown>{
   const chunks:Buffer[]=[];let bytes=0;for await(const chunk of req){const part=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);bytes+=part.length;if(bytes>65536)throw new Error('Request too large');chunks.push(part);}
-  try{return JSON.parse(Buffer.concat(chunks,bytes).toString('utf8'));}catch{throw new Error('Invalid JSON request');}
+  try{return JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks,bytes)));}catch{throw new Error('Invalid JSON request');}
 }
 const same=(a:string,b:string)=>{const aa=Buffer.from(a),bb=Buffer.from(b);return aa.length===bb.length&&timingSafeEqual(aa,bb);};
 export async function startServer(options:{port?:number;headed?:boolean;quiet?:boolean;provider?:LLMProvider}={}){
