@@ -199,6 +199,7 @@ export class NetworkGuardProxy {
         return;
       }
       const addresses=await this.destinations(url.hostname);
+      if(client.destroyed)return;
       const upstream=this.track(createConnection({...this.connectionOptions(url.hostname,addresses),port}));
       upstream.once('connect',()=>{
         if(client.destroyed){upstream.destroy();return;}

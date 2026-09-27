@@ -306,6 +306,36 @@ test('HTTP proxy does not start an upstream request after client cancellation du
   }
 });
 
+test('TLS proxy does not connect upstream after tunnel cancellation during DNS resolution',{timeout:10000},async()=>{
+  let connections=0,resolveDNS!:(addresses:{address:string;family:number}[])=>void,markLookupStarted!:()=>void;
+  const lookupStarted=new Promise<void>(resolve=>{markLookupStarted=resolve;});
+  const target=createServer();target.on('connection',()=>{connections++;});
+  await new Promise<void>(resolve=>target.listen(0,'127.0.0.1',resolve));
+  const port=(target.address() as {port:number}).port,proxy=new NetworkGuardProxy({allowPrivate:true,permits:()=>true,resolver:()=>{
+    markLookupStarted();return new Promise(resolve=>{resolveDNS=resolve;});
+  }});
+  let tunnel:{destroy:()=>void}|undefined;
+  try{
+    const address=new URL(await proxy.start());
+    await new Promise<void>((resolve,reject)=>{
+      const request=httpRequest({hostname:address.hostname,port:Number(address.port),method:'CONNECT',path:`cancel-tls.test:${port}`,agent:false});
+      request.once('connect',(response,socket)=>{
+        if(response.statusCode!==200){reject(new Error(`CONNECT returned ${response.statusCode}`));return;}
+        tunnel=socket;socket.write(Buffer.from([0x16,0x03,0x01,0,0]));resolve();
+      });
+      request.once('error',reject);request.end();
+    });
+    await lookupStarted;
+    const downstream=(proxy as unknown as {sockets:Set<{once:(event:string,listener:()=>void)=>void}>}).sockets.values().next().value!;
+    const closed=new Promise<void>(resolve=>downstream.once('close',resolve));tunnel!.destroy();await closed;
+    resolveDNS([{address:'127.0.0.1',family:4}]);await new Promise(resolve=>setTimeout(resolve,50));
+    assert.equal(connections,0,'A cancelled TLS tunnel must not establish an upstream connection after DNS resolves');
+  }finally{
+    tunnel?.destroy();resolveDNS?.([{address:'127.0.0.1',family:4}]);await proxy.close();
+    await new Promise<void>(resolve=>target.close(()=>resolve()));
+  }
+});
+
 test('HTTP proxy aborts an upstream response when the browser cancels it',{timeout:10000},async()=>{
   let resolveClosed!:()=>void,finished=false;
   const upstreamClosed=new Promise<void>(resolve=>{resolveClosed=resolve;});
