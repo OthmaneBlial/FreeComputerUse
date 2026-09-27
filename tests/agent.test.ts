@@ -7,6 +7,7 @@ import { PlanSchema } from '../src/actions/schema.js';
 import { FixtureProvider } from '../fixtures/FixtureProvider.js';
 import { startFixtures } from '../fixtures/server.js';
 import type { LLMProvider } from '../src/llm/LLMProvider.js';
+import { normalizeIntent,structureHash } from '../src/workflows/WorkflowEngine.js';
 
 test('bounded token budget reserves calls/output and tracks cache-aware configured cost',()=>{
   const budget=new TokenBudget({maxLLMCalls:2,maxInputTokens:100,maxOutputTokens:1000},{input:1,output:2,cachedInput:.1});
@@ -67,6 +68,26 @@ test('observe/plan/execute/verify learns semantic workflow and replays without a
       assert.equal(cached.metrics.workflowCacheHits,1);assert.equal(cached.metrics.llmCalls,0);
       const replay=await second.replay(trace);assert.equal(replay.status,'completed',replay.error??'Task failed');assert.equal(replay.metrics.llmCalls,0);
     }finally{await second.close();}
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
+test('invalid learned workflows fall back to the planner',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');let planCalls=0;
+  const goal='Summarize the page',url=`${fixture.url}/demo`;
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    planCalls++;
+    return PlanSchema.parse({goal:context.goal,steps:['Extract visible text'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'extraction_created',key:'text'}],continue:false});
+  },repair:async()=>{throw new Error('Unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra',adapters:[],browser:{allowedOrigins:[fixture.url]}});
+  try{
+    await agent.browser.launch();await agent.browser.navigate(url);
+    const initial=await agent.observer.inspect(agent.browser.page),identity=[new URL(url).origin,normalizeIntent(goal),structureHash(initial)];
+    const insert=store.db.prepare('INSERT INTO workflows(id,domain,intent,structure,workflow) VALUES(?,?,?,?,?)');
+    insert.run('broken-json',...identity,'{invalid');
+    insert.run('stale-plan',...identity,JSON.stringify({path:'/demo',plan:{}}));
+    const trace=await agent.run(goal,url);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
+    assert.equal(planCalls,1);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 

@@ -10,9 +10,15 @@ export class WorkflowEngine {
   match(goal:string,state:PageState):Workflow|undefined{
     const url=new URL(state.url);const intent=normalizeIntent(goal),structure=structureHash(state);
     const rows=this.store.db.prepare('SELECT workflow FROM workflows WHERE domain=? AND intent=? AND structure=?').all(url.origin,intent,structure);
-    for(const row of rows){const workflow=JSON.parse(row.workflow as string) as Workflow;if(workflow.path===url.pathname){
-      PlanSchema.parse(workflow.plan);this.store.db.prepare('UPDATE workflows SET hits=hits+1 WHERE id=?').run(workflow.id);return workflow;
-    }}return;
+    for(const row of rows){
+      let workflow:Workflow;
+      try{
+        workflow=JSON.parse(row.workflow as string) as Workflow;
+        if(workflow.path!==url.pathname)continue;
+        PlanSchema.parse(workflow.plan);
+      }catch{continue;}
+      this.store.db.prepare('UPDATE workflows SET hits=hits+1 WHERE id=?').run(workflow.id);return workflow;
+    }return;
   }
   learn(trace:Trace,initial:PageState){
     if(trace.status!=='completed'||!trace.actions.length)return;
