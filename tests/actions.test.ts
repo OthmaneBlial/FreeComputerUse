@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp,mkdir,writeFile,readFile,readdir,rm,stat,symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname,join } from 'node:path';
+import { createServer } from 'node:http';
 import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
 import { Executor } from '../src/actions/executor.js';
@@ -225,6 +226,26 @@ test('image submit controls are exposed as buttons and require approval',async()
     assert.equal((await approvedExecution).success,true);assert.equal(await browser.page.locator('body').getAttribute('data-submitted'),'yes');
     assert.equal(browser.formReceipts.length,1);
   }finally{await browser.close();}
+});
+
+test('form submission verification honors submitter action and method overrides',async()=>{
+  const requests:{method:string;url:string}[]=[];
+  const server=createServer((request,response)=>{
+    requests.push({method:request.method??'',url:request.url??''});
+    response.writeHead(200,{'Content-Type':'text/html'});
+    response.end(request.url==='/form'?'<form id="submission" action="/default" method="post"><button type="submit" formaction="/override" formmethod="get">Submit</button></form>':'<h1>Submitted</h1>');
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const address=server.address() as {port:number},url=`http://127.0.0.1:${address.port}`,browser=await new Browser({allowedOrigins:[url]}).launch();
+  try{
+    await browser.navigate(`${url}/form`);
+    const observer=new Observer(),executor=new Executor(browser,observer,new VariableResolver(),new Control(),{confirmation:'never'});
+    const startedAt=Date.now(),result=await executor.run({type:'click',target:{role:'button',name:'Submit'}});
+    assert.equal(result.success,true,result.error??'Submit click failed');
+    await browser.page.waitForLoadState('domcontentloaded');
+    assert.deepEqual(requests.find(request=>request.url==='/override'),{method:'GET',url:'/override'});
+    assert.equal(await executor.verifier.one({type:'form_submitted',target:{css:'form#submission'}},startedAt),true);
+  }finally{await browser.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
 test('password and payment fields require approval before page scripts receive values',async()=>{

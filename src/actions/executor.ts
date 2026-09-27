@@ -96,7 +96,13 @@ export class Executor {
         const info=await locator.evaluate((el,type)=>{
           const f=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form;
           const submitting=type==='submit'||type==='press'||el.matches('button:not([type=button]):not([type=reset]),input[type=submit],input[type=image]');
-          return f&&submitting&&f.checkValidity()?{actionURL:f.action,method:f.method.toUpperCase(),id:f.id,label:f.getAttribute('aria-label')??'',unique:document.forms.length===1}:null;
+          if(!f||!submitting||!f.checkValidity())return null;
+          const submitter=el instanceof HTMLButtonElement||el instanceof HTMLInputElement?el:undefined;
+          const actionOverride=submitter?.form===f?submitter.getAttribute('formaction'):null;
+          const methodOverride=submitter?.form===f?submitter.getAttribute('formmethod'):null;
+          const actionURL=actionOverride===null?f.action:new URL(actionOverride,document.baseURI).href;
+          const rawMethod=(methodOverride??f.method).toUpperCase(),method=rawMethod==='POST'?'POST':rawMethod==='DIALOG'?'DIALOG':'GET';
+          return{actionURL,method,id:f.id,label:f.getAttribute('aria-label')??'',unique:document.forms.length===1};
         },action.type);
         if(info&&('target'in receiptAction)&&receiptAction.target)this.browser.formReceipts.push({...info,target:this.observer.selectors.descriptor(receiptAction.target),time:Date.now()});
       }
