@@ -36,6 +36,14 @@ test('concurrent token reservations cannot oversubscribe the input/output budget
   budget.record({input:50,output:180},first.id);assert.equal(budget.pendingInput,0);
   assert.throws(()=>budget.record({input:-1,output:0}),/Invalid/);
 });
+test('provider input usage cannot exceed its token reservation',()=>{
+  const budget=new TokenBudget({maxLLMCalls:1,maxInputTokens:100,maxOutputTokens:100});
+  const reservation=budget.reserve(50,100);
+  assert.throws(()=>budget.record({input:51,output:10},reservation.id),/exceeded reserved token budget/);
+  assert.equal(budget.input,0);assert.equal(budget.pendingInput,50);
+  budget.record({input:50,output:10},reservation.id);
+  assert.equal(budget.input,50);assert.equal(budget.pendingInput,0);
+});
 test('trusted extraction criteria derive from the original goal',()=>{
   assert.deepEqual(goalCriteria('Extract the first five stories'),[{type:'extraction_created'},{type:'extraction_count',min:0,max:5}]);
   assert.deepEqual(goalCriteria('Fill the form using my profile'),[]);
