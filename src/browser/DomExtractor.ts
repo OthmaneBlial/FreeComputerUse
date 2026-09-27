@@ -53,7 +53,7 @@ export class DomExtractor {
           const formRefs=new Map(all.filter(el=>el.tagName==='FORM').map((form,formIndex)=>[form,`${index}:${formIndex}`]));
           const scope = region ? all.find(el => el.id === region || el.getAttribute('aria-label') === region || el.tagName.toLowerCase() === region || el.getAttribute('role') === region) : undefined;
           if (region && !scope) return { elements: [], headings: [], text: '', tables: [], dialogs: [], htmlBytes: 0, truncated: false };
-          const [included] = [(el: Element) => !scope || scope === el || scope.contains(el)];
+          const [included] = [(el: Element) => !scope || composedContains(scope,el)];
           const global = window as unknown as { __fcuRegistry?: { refs: WeakMap<Element,string>; next: number;documentId:string } };
           let registry: typeof global.__fcuRegistry;
           try {

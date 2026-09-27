@@ -68,6 +68,17 @@ test('shadow DOM respects hidden hosts and visible modal ancestry',async()=>{
   }finally{await browser.close();}
 });
 
+test('region inspection follows composed shadow ancestry',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<main><div id="inside"></div></main><aside><div id="outside"></div></aside>');
+    await browser.page.locator('#inside').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<button>Inside region</button>';});
+    await browser.page.locator('#outside').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<button>Outside region</button>';});
+    const state=await new Observer().inspect(browser.page,'main'),names=state.elements.map(element=>element.name);
+    assert(names.includes('Inside region'));assert(!names.includes('Outside region'));
+  }finally{await browser.close();}
+});
+
 test('accessibility snapshots retain labels but omit current form values',async()=>{
   const browser=await new Browser().launch();
   try{
