@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.20 - 2026-09-27
+
+### Reliability
+
+- Contain synchronous event-listener exceptions and async listener rejections
+  so browser tasks continue and other listeners still receive events.
+
 ## 0.2.19 - 2026-09-27
 
 ### Reliability
