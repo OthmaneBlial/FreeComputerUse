@@ -39,7 +39,7 @@ parameters, endpoint and terms before use.
 | Vision and canvas | Local screenshots/preview exist. | Screenshot paths are documented as local. | Images are not sent to the model; model vision and visual-only/canvas control are not implemented. |
 | npm package | The ESM package exposes a library and global `agent` command. | Published `free-computer-use@0.2.20` is `latest`; registry integrity and shasum match the tested candidate, and candidate, registry and GitHub release tarballs are byte-identical. Fresh-prefix CLI, doctor, public table task and MCP checks are recorded in [v0.2.20 release notes](https://github.com/OthmaneBlial/FreeComputerUse/blob/main/release-notes/0.2.20.md). | Package task and runtime were checked on macOS `26.6`/Apple Silicon with system Chrome `154.0.8037.57`; other OS/browser combinations remain unverified. |
 | GitHub release / archive | Public releases provide a versioned npm tarball and `.sha256` checksum sidecar; no standalone native executable is offered. | Public release `v0.2.20` tag resolves to validated commit `d7e800e`; its downloaded tarball passes its SHA-256 check and matches the tested candidate and npm copy byte for byte. See the [v0.2.20 release notes](https://github.com/OthmaneBlial/FreeComputerUse/blob/main/release-notes/0.2.20.md). | Archive requires Node.js, npm and a supported installed browser. |
-| GitHub Pages site | Static product homepage, lab and scenario library are served from `main /docs`. | The public homepage displays `v0.2.20`, returns HTTP 200, and passes 320/390/768/1440 px overflow checks with no browser console errors. The branch source serves the release after Actions were disabled; workflow history remains at the earlier build. See the v0.2.20 release notes. | This verifies one desktop Chromium environment. Windows/Linux, other browsers and assistive-technology hardware remain unverified. |
+| GitHub Pages site | Static product homepage, lab and scenario library are served from `main /docs`. | The public homepage displays `v0.2.20`, returns HTTP 200, and passes 320/390/768/1440 px overflow checks with no browser console errors. The public support matrix is byte-identical to the pushed `main` file. The site serves the updated branch content after Actions were disabled. | GitHub's latest Pages build record still names pre-disable commit `edd0cab`; current live content is verified directly, not through a current hosted Actions build. Windows/Linux, other browsers and assistive-technology hardware remain unverified. |
 | GitHub Actions | No project CI workflow files are tracked in the checkout. | Repository-level GitHub Actions are disabled. Before disablement, the only listed workflow was GitHub's Pages branch deployment. The `main /docs` source serves the updated `v0.2.20` homepage and support matrix; `docs/.nojekyll` is tracked. | Actions run history stops at the last pre-disable Pages workflow (`edd0cab`), so hosted build logs are no longer available. |
 
 ## Validation snapshot for this implementation session
@@ -63,10 +63,11 @@ parameters, endpoint and terms before use.
   actions and zero model calls. Its MCP server reports version `0.2.20` and
   all four tools. The release asset passes its SHA-256 sidecar check. The Pages
   homepage serves v0.2.20 with HTTP 200, passes 320/390/768/1440 px overflow
-  checks and has no browser console errors. Repository Actions are disabled;
-  hosted run history remains at the earlier Pages build `edd0cab`. No live
-  model request was made. The history pattern scan is not a complete security
-  audit.
+  checks and has no browser console errors. The public support matrix matches
+  the pushed `main` file byte for byte. Repository Actions are disabled; the
+  latest Pages build record still names the pre-disable commit `edd0cab`, so
+  no current hosted Actions build is claimed. No live model request was made.
+  The history pattern scan is not a complete security audit.
 - Release `v0.2.19` isolates event-listener exceptions from local task execution.
   Its clean detached commit `cb10dbc57911ffb7acb296166f8948fd1e38fa8e` passed
   `FCU_BROWSER_CHANNEL=chrome npm run validate` with 178/178 tests in 327.53
