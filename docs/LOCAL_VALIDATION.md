@@ -40,14 +40,16 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-Post-release main commit `5dfe985` fixes the MCP initialization version. Its
-`FCU_BROWSER_CHANNEL=chrome npm run validate` passed on 27 September 2026:
-143/143 tests in 184.06 seconds, type checks, build, security scan (273
-worktree files, 275 historical paths, 1,339 blobs) and npm audit with zero
-vulnerabilities. A separate smoke test against the compiled distribution
-confirmed the server handshake reports the package manifest version. This
-commit is newer than the published v0.2.9 artifacts; no package or release was
-published for this change. Environment: macOS `26.6`, Apple Silicon, Node
+Post-release main commits `5dfe985` and `2451f50` fix the MCP initialization
+version and reject empty first-N extraction results. The
+`FCU_BROWSER_CHANNEL=chrome npm run validate` gate passed on 27 September 2026:
+144/144 tests in 186.04 seconds, type checks, build, security scan (273
+worktree files, 275 historical paths, 1,345 blobs) and npm audit with zero
+vulnerabilities. The end-to-end regression confirms an empty first-N link result
+fails verification. A smoke test against the compiled distribution confirmed
+the MCP server handshake reports the package manifest version. These commits
+are newer than the published v0.2.9 artifacts; no package or release was
+published for these changes. Environment: macOS `26.6`, Apple Silicon, Node
 `25.9.0`, npm `11.12.1`, system Chrome `154.0.8037.57`; no live model request
 was made.
 
