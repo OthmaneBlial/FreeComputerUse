@@ -44,13 +44,14 @@ parameters, endpoint and terms before use.
 
 ## Validation snapshot for this implementation session
 
-- Post-release main commit `195949e` adds form-scoped profile filling, skips
+- Post-release main commit `e0f8a2a` adds form-scoped profile filling, skips
   replay when a learned task's completion is already true, keeps the agent
-  reusable after trace persistence errors, rejects API output above its
-  reserved token budget, and checks visible labels alongside ARIA labels for
-  destructive controls. `FCU_BROWSER_CHANNEL=chrome npm run validate` passed
-  165/165 tests, type checks, build, history scan (277 worktree files, 279
-  historical paths and 1,473 blobs), and `npm audit` with zero vulnerabilities on 27 September
+  reusable after trace persistence and approval-listener errors, rejects API
+  output above its reserved token budget, and checks visible labels alongside
+  ARIA labels for destructive controls. `FCU_BROWSER_CHANNEL=chrome npm run
+  validate` passed 166/166 tests, type checks, build, history scan (277
+  worktree files, 279 historical paths and 1,477 blobs), and `npm audit` with
+  zero vulnerabilities on 27 September
   2026. Environment: macOS `26.6`, Node `25.9.0`, system Chrome
   `154.0.8037.57`. This verifies the source on `main`; the published npm
   artifact remains v0.2.13. The pattern scan is not a complete security audit.
