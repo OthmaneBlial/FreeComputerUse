@@ -208,6 +208,35 @@ test('sensitive action waits for a human and rejection never clicks',async()=>{
   }finally{await browser.close();}
 });
 
+test('password and payment fields require approval before page scripts receive values',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input id="password" type="password" oninput="document.body.dataset.sent=this.value"><input id="card" autocomplete="cc-number" oninput="document.body.dataset.sent=this.value">');
+    for(const [selector,approve] of [['#password',false],['#card',true]] as const){
+      const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+      const waiting=new Promise<'approval'>(resolve=>control.once('approval',()=>resolve('approval')));
+      const execution=executor.run({type:'fill',target:{css:selector},value:'synthetic-secret'});
+      assert.equal(await Promise.race([waiting,execution.then(()=>'finished' as const)]),'approval');
+      assert.equal(await browser.page.locator(selector).inputValue(),'');
+      if(approve){control.approve();assert.equal((await execution).success,true);assert.equal(await browser.page.locator('body').getAttribute('data-sent'),'synthetic-secret');}
+      else{control.reject();assert.equal((await execution).success,false);assert.equal(await browser.page.locator('body').getAttribute('data-sent'),null);}
+    }
+  }finally{await browser.close();}
+});
+
+test('changing a sensitive field classification while approval waits cancels entry',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input id="card" autocomplete="cc-number" oninput="document.body.dataset.sent=this.value">');
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    const waiting=new Promise<void>(resolve=>control.once('approval',resolve));
+    const execution=executor.run({type:'fill',target:{css:'#card'},value:'synthetic-secret'});
+    await waiting;await browser.page.locator('#card').evaluate(el=>el.setAttribute('autocomplete','off'));control.approve();
+    const result=await execution;assert.equal(result.success,false);assert.match(result.error??'',/Approved target changed/);
+    assert.equal(await browser.page.locator('#card').inputValue(),'');assert.equal(await browser.page.locator('body').getAttribute('data-sent'),null);
+  }finally{await browser.close();}
+});
+
 test('record extraction expands table rows and maps actual headers over guessed indices',async()=>{
   const browser=await new Browser().launch();
   try{

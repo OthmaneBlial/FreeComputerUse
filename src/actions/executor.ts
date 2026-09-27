@@ -69,12 +69,12 @@ export class Executor {
         const approvedPage=this.browser.page,approvedURL=approvedPage.url();
         const approvedElement=await locator?.elementHandle();
         disposeApproved=async()=>{await approvedElement?.dispose();};
-        const fingerprint=locator?await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method})):undefined;
+        const fingerprint=locator?await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),autocomplete:el.getAttribute('autocomplete'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method})):undefined;
         assertApproved=async()=>{
           if(this.browser.page!==approvedPage||approvedPage.url()!==approvedURL)throw new Error('Browser page changed while awaiting approval; review a new plan');
           if(locator&&approvedElement){
             const same=await locator.evaluate((el,approved)=>el===approved&&el.isConnected,approvedElement);
-            const current=await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method}));
+            const current=await locator.evaluate(el=>JSON.stringify({tag:el.tagName,text:el.textContent,aria:el.getAttribute('aria-label'),type:el.getAttribute('type'),autocomplete:el.getAttribute('autocomplete'),href:el.getAttribute('href'),form:(el as HTMLInputElement).form?.action,method:(el as HTMLInputElement).form?.method}));
             if(!same||current!==fingerprint)throw new Error('Approved target changed while awaiting approval; review a new action');
           }
         };
