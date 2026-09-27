@@ -238,6 +238,21 @@ test('keyboard input into sensitive fields requires approval',async()=>{
   }finally{await browser.close();}
 });
 
+test('payment and verification fields use label hints when autocomplete is missing',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<label for="card">Card number</label><input id="card"><label for="code">Verification code</label><input id="code">');
+    for(const selector of ['#card','#code']){
+      const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+      const waiting=new Promise<'approval'>(resolve=>control.once('approval',()=>resolve('approval')));
+      const execution=executor.run({type:'fill',target:{css:selector},value:'synthetic-secret'});
+      assert.equal(await Promise.race([waiting,execution.then(()=>'finished' as const)]),'approval');
+      assert.equal(await browser.page.locator(selector).inputValue(),'');
+      control.reject();assert.equal((await execution).success,false);
+    }
+  }finally{await browser.close();}
+});
+
 test('changing a sensitive field classification while approval waits cancels entry',async()=>{
   const browser=await new Browser().launch();
   try{
@@ -248,6 +263,19 @@ test('changing a sensitive field classification while approval waits cancels ent
     await waiting;await browser.page.locator('#card').evaluate(el=>el.setAttribute('autocomplete','off'));control.approve();
     const result=await execution;assert.equal(result.success,false);assert.match(result.error??'',/Approved target changed/);
     assert.equal(await browser.page.locator('#card').inputValue(),'');assert.equal(await browser.page.locator('body').getAttribute('data-sent'),null);
+  }finally{await browser.close();}
+});
+
+test('changing a sensitive field label while approval waits cancels entry',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<label id="label" for="card">Card number</label><input id="card">');
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    const waiting=new Promise<void>(resolve=>control.once('approval',resolve));
+    const execution=executor.run({type:'fill',target:{css:'#card'},value:'synthetic-secret'});
+    await waiting;await browser.page.locator('#label').evaluate(el=>el.textContent='Public field');control.approve();
+    const result=await execution;assert.equal(result.success,false);assert.match(result.error??'',/Approved target changed/);
+    assert.equal(await browser.page.locator('#card').inputValue(),'');
   }finally{await browser.close();}
 });
 

@@ -16,10 +16,11 @@ and replay do not bypass site grants or sensitive-action policy.
 
 With the default `sensitive` policy, explicit submit actions, controls marked
 sensitive, and entry into password, payment-card or one-time-code fields are
-gated separately; label and form heuristics catch some additional high-impact
-actions. Detection cannot identify every ambiguously named or adversarial
-control. Use `--confirmation always` in normal mode when every action needs
-review. `--confirmation never` and Ultra mode skip action prompts.
+gated separately. Field detection uses browser autofill metadata and common
+labels, names and placeholders; label and form heuristics also catch some other
+high-impact actions. Detection cannot identify every ambiguously named or
+adversarial control. Use `--confirmation always` in normal mode when every
+action needs review. `--confirmation never` and Ultra mode skip action prompts.
 
 **Ultra mode is explicit, off by default.** It skips website/action approvals and
 allows external HTTP(S) destinations. It does not add shell access, arbitrary
