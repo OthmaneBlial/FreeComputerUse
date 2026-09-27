@@ -146,6 +146,40 @@ test('observe/plan/execute/verify learns semantic workflow and replays without a
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('provider-free workflow replay resolves controls replaced by SPA hydration',async()=>{
+  const store=new TraceStore(':memory:');let planCalls=0;
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    planCalls++;
+    return PlanSchema.parse({goal:context.goal,steps:['Reveal and finish'],actions:[
+      {type:'click',target:{role:'button',name:'Reveal'}},
+      {type:'click',target:{role:'button',name:'Finish'}},
+    ],completion:[{type:'text_exists',value:'Workflow finished'}],continue:false});
+  },repair:async()=>{throw new Error('Unexpected repair');}};
+  const installPage=async(agent:Agent)=>{
+    await agent.browser.launch();
+    await agent.browser.page.setContent('<main><button id="reveal">Reveal</button><button id="finish">Finish</button><p id="result"></p></main>');
+    await agent.browser.page.evaluate(()=>document.querySelector('#reveal')!.addEventListener('click',()=>{
+      const replacement=document.createElement('button');replacement.id='finish';replacement.textContent='Finish';
+      replacement.addEventListener('click',()=>document.querySelector('#result')!.textContent='Workflow finished');
+      document.querySelector('#finish')!.replaceWith(replacement);
+    }));
+  };
+  const first=new Agent({store,provider,mode:'ultra',useWorkflows:false,adapters:[]});
+  const replay=new Agent({store,mode:'ultra',adapters:[]});
+  try{
+    await installPage(first);
+    const learned=await first.run('Complete the hydrated workflow');
+    assert.equal(learned.status,'completed',learned.error??'Task failed');assert.equal(planCalls,1);
+    assert.equal(learned.actions[1]?.strategy,'role');
+
+    await installPage(replay);
+    const cached=await replay.run('Complete the hydrated workflow');
+    assert.equal(cached.status,'completed',cached.error??'Task failed');
+    assert.equal(cached.metrics.workflowCacheHits,1);assert.equal(cached.metrics.llmCalls,0);
+    assert.equal(cached.actions[1]?.strategy,'role');assert.equal(planCalls,1);
+  }finally{await first.close();await replay.close();store.close();}
+});
+
 test('learned workflow does not replay a checkbox toggle after its state changes',async()=>{
   const store=new TraceStore(':memory:');let planCalls=0;
   const provider:LLMProvider={name:'fixture',plan:async context=>{
