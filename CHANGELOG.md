@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.2.23 - 2026-09-27
+
+### Security
+
+- Redact OAuth `state`, OpenID Connect `nonce`, and common CSRF/XSRF and session
+  identifier query values from traces, provider prompts, and history output.
+- Apply the same protection to URL fragments and older saved traces displayed by
+  the CLI or dashboard.
+
 ## 0.2.22 - 2026-09-27
 
 ### Reliability

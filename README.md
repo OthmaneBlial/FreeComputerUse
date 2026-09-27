@@ -24,7 +24,7 @@
 Requires Node.js 22.13+, npm, and an installed browser. This verified setup uses system Chrome and does not download a separate browser.
 
 ```bash
-npm install --global free-computer-use@0.2.22
+npm install --global free-computer-use@0.2.23
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -59,14 +59,14 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 
 The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
 
-## New in 0.2.22
+## New in 0.2.23
 
-Cached workflows now wait briefly for known single-page-app controls to
-hydrate, avoiding a needless planning call. Traces report whether each action
-changed the observed page. Dashboard requests reject malformed UTF-8, and
-zero-timeout checks return without an unnecessary sleep.
+URL query and fragment values named `state`, `nonce`, `csrf`, `xsrf` or `sid` are
+now redacted before provider prompts, saved traces, and CLI/dashboard history
+output. The browser still opens the original URL; ordinary values such as search
+terms remain visible.
 
-[Read the full 0.2.22 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.22).
+[Read the full 0.2.23 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.23).
 
 ## Choose a model
 
