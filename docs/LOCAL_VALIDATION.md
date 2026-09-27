@@ -91,16 +91,23 @@ closed, without requiring a document response. Its full local gate passed
 (286 worktree files, 288 historical paths, 1,685 blobs), and `npm audit` with
 zero vulnerabilities. No live model-provider request was made.
 
-Latest fully validated source commit `08abee2` normalizes default input and
-button types during DOM-path fallback, so equivalent hydration such as an
-explicit default `type="text"` remains usable while changed target identity is
-rejected. Its full local gate passed 194/194 tests in 326.18 seconds, type
-checks, lab/package builds, history scan (286 worktree files, 288 historical
-paths, 1,695 blobs), and `npm audit` with zero vulnerabilities. Environment:
-macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome
-`154.0.8037.57`. This source is newer than published `v0.2.22`. No live
-model-provider request was made. The history pattern scan is not a complete
-security audit.
+Latest fully validated source commit `6b90308` preserves configured browser
+origin allowlists across `prepareForNextRun`, while clearing run-scoped approvals
+and revocations. Its full local gate passed 195/195 tests in 268.10 seconds,
+type checks, lab/package builds, history scan (286 worktree files, 288
+historical paths, 1,700 blobs), and `npm audit` with zero vulnerabilities.
+Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
+system Chrome `154.0.8037.57`. This source is newer than published `v0.2.22`.
+No live model-provider request was made. The history pattern scan is not a
+complete security audit.
+
+Earlier validated source commit `08abee2` normalizes default input and button
+types during DOM-path fallback, so equivalent hydration such as an explicit
+default `type="text"` remains usable while changed target identity is rejected.
+Its full local gate passed 194/194 tests in 326.18 seconds, type checks,
+lab/package builds, history scan (286 worktree files, 288 historical paths,
+1,695 blobs), and `npm audit` with zero vulnerabilities. No live model-provider
+request was made.
 
 Earlier validated source commit `bfbb238` guarantees compressed text does not
 exceed `maxChars`, including limits shorter than its truncation marker. Its
