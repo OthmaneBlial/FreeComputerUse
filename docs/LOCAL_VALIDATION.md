@@ -40,6 +40,31 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The published v0.2.16 release commit
+`43b481495bb6ea452365791e25c7e7bc0822f616` passed `npm ci` and
+`FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean detached Git
+worktree on 27 September 2026: 176/176 tests in 208.46 seconds, type checks,
+build, security scan (280 worktree files, 282 historical paths, 1,540 blobs),
+and npm audit with zero vulnerabilities. Environment: macOS `26.6`, Apple
+Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No
+live model-provider request was made.
+
+The tested package has 135 files and is 1,168,490 bytes. SHA-256:
+`09a56870a3efe140d7a967c0896806f754493f1171fa18f97b2d0576f7b3e616`.
+npm shasum: `1f13ec278f18f92a12664c9b9dbcfb36cff2ae88`; integrity:
+`sha512-NFgeJDhdogr0Fx8IBdykkFb9jlQ4MwvPVSHCnDj676SnfgsH3PPywut0H+UAZ5VQnaEF0FyCth+kbuuWpofbBA==`.
+The npm registry and GitHub release tarballs match the candidate byte for byte;
+the downloaded release asset passes its portable `.sha256` sidecar. Fresh-prefix
+installs from the candidate, registry, and release asset passed CLI
+version/help, Chrome `agent doctor`, the public three-row practice table (one
+browser action, zero model calls in explicit `--ultra` mode), and MCP `stdio`
+initialization with version `0.2.16` and all four tools. npm serves `0.2.16` as
+`latest`.
+
+GitHub Pages built the release commit from `main/docs`; the public homepage
+returns HTTP 200 and displays `v0.2.16`. Playwright checked widths 320, 390,
+768, and 1440 pixels with no horizontal overflow or browser console errors.
+
 The published v0.2.15 release commit `fa705fe4a2792c8f91037e29e8d9431e135ef432`
 passed `npm ci` and `FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean
 detached Git worktree on 27 September 2026: 174/174 tests in 234.42 seconds,
