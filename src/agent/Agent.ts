@@ -73,7 +73,10 @@ export class Agent extends EventEmitter {
   event(phase:string,message:string,data?:unknown){
     const event:AgentEvent={phase,message:this.variables.redact(message),time:Date.now(),data:data===undefined?undefined:JSON.parse(this.variables.redact(JSON.stringify(data)))};
     this.events.push(event);if(this.events.length>500)this.events.shift();
-    for(const listener of this.rawListeners('event'))try{listener.call(this,event);}catch{/* Event observers must not fail browser work. */}
+    for(const listener of this.rawListeners('event'))try{
+      const result=Reflect.apply(listener,this,[event]) as unknown;
+      if(result!==null&&result!==undefined&&typeof (result as PromiseLike<unknown>).then==='function')void Promise.resolve(result).catch(()=>{});
+    }catch{/* Event observers must not fail browser work. */}
   }
   async open(url:string){if(!this.browser.context)await this.browser.launch();await this.browser.navigate(url);return this.observe();}
   async observe(){

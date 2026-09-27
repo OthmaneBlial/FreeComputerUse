@@ -44,18 +44,21 @@ test('trace persistence failures do not strand an agent as active',async()=>{
   }finally{await agent.close();store.close();}
 });
 
-test('event listener failures do not stop a browser task or other listeners',async()=>{
-  const store=new TraceStore(':memory:');let observations=0;
+test('sync and async event listener failures do not stop tasks or other listeners',async()=>{
+  const store=new TraceStore(':memory:');let observations=0;const unhandled:unknown[]=[],captureUnhandled=(reason:unknown)=>unhandled.push(reason);
   const provider:LLMProvider={name:'fixture',plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Extract page text'],actions:[{type:'extract',key:'page',format:'text'}],completion:[{type:'extraction_created',key:'page'}],continue:false}),repair:async()=>{throw new Error('Unexpected repair');}};
   const agent=new Agent({store,provider,mode:'ultra',useWorkflows:false,adapters:[]});
   agent.on('event',event=>{if(event.phase==='OBSERVE')throw new Error('Synthetic subscriber failure');});
+  agent.on('event',async event=>{if(event.phase==='OBSERVE')throw new Error('Synthetic async subscriber failure');});
   agent.on('event',event=>{if(event.phase==='OBSERVE')observations++;});
+  process.on('unhandledRejection',captureUnhandled);
   try{
     await agent.browser.launch();await agent.browser.page.setContent('<main>Safe local content</main>');
     const first=await agent.run('Extract page text');assert.equal(first.status,'completed',first.error??'Task failed');
     assert(observations>0,'a failing listener must not block other listeners');
     const second=await agent.run('Extract page text');assert.equal(second.status,'completed',second.error??'Task failed');
-  }finally{await agent.close();store.close();}
+    await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(unhandled,[],'async listener rejections must be handled');
+  }finally{process.off('unhandledRejection',captureUnhandled);await agent.close();store.close();}
 });
 
 test('local profile filling scopes required fields and rejects competing forms',async()=>{
