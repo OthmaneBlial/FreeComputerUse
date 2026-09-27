@@ -40,6 +40,29 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The published v0.2.15 release commit `fa705fe4a2792c8f91037e29e8d9431e135ef432`
+passed `npm ci` and `FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean
+detached Git worktree on 27 September 2026: 174/174 tests in 234.42 seconds,
+type checks, build, security scan (278 worktree files, 280 historical paths,
+1,524 blobs), and npm audit with zero vulnerabilities. Environment: macOS
+`26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome
+`154.0.8037.57`. No live model-provider request was made.
+
+The tested package has 135 files and is 1,167,926 bytes. SHA-256:
+`e7b877504571b28d37d454910cc3c6a6a3c7834a4d68a8147d2b70d1cc5ca177`.
+npm shasum: `3772db0bd49c5e289a76867f4148fb94ddb18e18`; integrity:
+`sha512-CG96TPuKajlsAJKpRmdwPZ+ipQczZe+mrb3n4uAd5kZ+uZH1j4VrqH7at+47rHsS26ekOAuHmrK9kVJOAwGxLg==`.
+The npm registry tarball and GitHub release asset match the candidate byte for
+byte; the downloaded release asset passes its `.sha256` sidecar. Fresh-prefix
+installs from the candidate and registry passed CLI version/help, Chrome
+`agent doctor`, the public three-row practice table (one browser action, zero
+model calls in explicit `--ultra` mode), and MCP `stdio` initialization with
+version `0.2.15` and all four tools.
+
+GitHub Pages built the same commit from `main/docs` and returned HTTP 200. The
+homepage passed 320, 390, 768, and 1440 px overflow checks with no browser
+console errors; the release link names `v0.2.15`.
+
 The v0.2.14 candidate working tree based on main commit `c480e65` passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 167/167
 tests in 213.15 seconds, type checks, build, security scan (277 worktree files,
