@@ -9,6 +9,14 @@ import { startFixtures } from '../fixtures/server.js';
 import type { LLMProvider } from '../src/llm/LLMProvider.js';
 import { normalizeIntent,structureHash } from '../src/workflows/WorkflowEngine.js';
 
+test('workflow lookup uses an index for origin, intent and page structure',()=>{
+  const store=new TraceStore(':memory:');
+  try{
+    const plan=store.db.prepare('EXPLAIN QUERY PLAN SELECT id,workflow FROM workflows WHERE domain=? AND intent=? AND structure=?').all('https://example.test','read','shape') as {detail:string}[];
+    assert(plan.some(row=>row.detail.includes('USING INDEX workflows_match')));
+  }finally{store.close();}
+});
+
 test('bounded token budget reserves calls/output and tracks cache-aware configured cost',()=>{
   const budget=new TokenBudget({maxLLMCalls:2,maxInputTokens:100,maxOutputTokens:1000},{input:1,output:2,cachedInput:.1});
   assert.equal(budget.reserve(30,500).maxOutput,500);budget.record({input:30,output:500,cacheHit:10});
