@@ -54,6 +54,16 @@ discovery. Package checksums, install details, and live Pages checks are in the
 [v0.2.22 release notes](../release-notes/0.2.22.md). No live model-provider
 request was made. The history pattern scan is not a complete security audit.
 
+The post-release `main` commit `05705df` tightens learned workflow matching:
+cache fingerprints include control destinations, form/region identity, select
+labels and option values while ignoring transient checked/disabled state. Its
+full local gate passed 188/188 tests in 281.85 seconds, type checks, lab/package
+builds, history scan (286 worktree files, 288 historical paths, 1,658 blobs),
+and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Apple
+Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. This
+source change is newer than `v0.2.22` and is not in the published package. No
+live model-provider request was made.
+
 The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
 preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
 network chunk boundary. From a clean detached worktree on 27 September 2026,
