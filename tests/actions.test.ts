@@ -279,6 +279,19 @@ test('form submission verification honors explicit and implicit submitter overri
   }finally{await browser.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('form submission verification accepts a successful method-dialog close without a network response',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<dialog open><form id="confirmation" method="dialog"><button>Confirm</button></form></dialog>');
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control(),{confirmation:'never'});
+    const condition={type:'form_submitted' as const,target:{css:'form#confirmation'}};
+    const startedAt=Date.now(),result=await executor.run({type:'click',target:{role:'button',name:'Confirm'},verify:[condition]});
+    assert.equal(result.success,true,result.error??'Dialog form submission failed');
+    assert.equal(await browser.page.locator('dialog').evaluate(element=>(element as HTMLDialogElement).open),false);
+    assert.equal(await executor.verifier.one(condition,startedAt),true);
+  }finally{await browser.close();}
+});
+
 test('password and payment fields require approval before page scripts receive values',async()=>{
   const browser=await new Browser().launch();
   try{

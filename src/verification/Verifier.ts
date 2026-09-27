@@ -8,11 +8,21 @@ export class Verifier {
     const page=this.browser.page;
     if(condition.type==='form_submitted'){
       const target=this.observer.selectors.descriptor(condition.target);
-      return this.browser.formReceipts.some(f=>{
+      for(const f of this.browser.formReceipts){
         const matches=JSON.stringify(f.target)===JSON.stringify(target)||(f.id&&(target.id===f.id||target.css===`#${f.id}`||target.css===`form#${f.id}`))||(f.label&&(target.label===f.label||target.role==='form'&&target.name===f.label))||(f.unique&&target.css==='form');
+        if(!matches||f.time<since)continue;
+        if(f.method==='DIALOG'){
+          const locator=(await this.observer.selectors.resolve(page,condition.target,0,true)).locator;
+          if(await locator.evaluate(el=>{
+            const form=el instanceof HTMLFormElement?el:(el as HTMLInputElement).form,dialog=form?.closest('dialog');
+            return !!dialog&&!dialog.open;
+          }))return true;
+          continue;
+        }
         const action=new URL(f.actionURL);
-        return matches&&f.time>=since&&this.browser.responses.some(r=>{const url=new URL(r.url);return r.time>=f.time&&r.status>=200&&r.status<400&&r.method===f.method&&r.resource==='document'&&url.origin===action.origin&&url.pathname===action.pathname;});
-      });
+        if(this.browser.responses.some(r=>{const url=new URL(r.url);return r.time>=f.time&&r.status>=200&&r.status<400&&r.method===f.method&&r.resource==='document'&&url.origin===action.origin&&url.pathname===action.pathname;}))return true;
+      }
+      return false;
     }
     if('target' in condition) {
       let locator;
