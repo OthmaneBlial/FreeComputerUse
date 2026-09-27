@@ -40,14 +40,21 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-The latest source commit `040743c` prevents a canceled TLS tunnel from
-opening an upstream connection after DNS resolution. On 27 September 2026,
-`FCU_BROWSER_CHANNEL=chrome npm run validate` passed with 182/182 tests in
-454.37 seconds, TypeScript checks, lab and package builds, history scan (284
-worktree files, 286 historical paths and 1,609 blobs), and `npm audit` with
-zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
-npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model-provider
-request was made. The preceding source commit `2dda301` redacts URL- and
+The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
+preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
+network chunk boundary. From a clean detached worktree on 27 September 2026,
+`FCU_BROWSER_CHANNEL=chrome npm run validate` passed 183/183 tests in 280.28
+seconds, TypeScript checks, lab and package builds, history scan (285 worktree
+files, 287 historical paths and 1,623 blobs), and `npm audit` with zero
+vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
+npm `11.12.1`, and system Chrome `154.0.8037.57`. Release artifact and
+publication checks are recorded in [v0.2.21 release notes](../release-notes/0.2.21.md).
+No live model-provider request was made. The history pattern scan is not a
+complete security audit.
+
+The preceding source commit `040743c` prevents a canceled TLS tunnel from
+opening an upstream connection after DNS resolution. Its full validation passed
+182/182 tests. The preceding source commit `2dda301` redacts URL- and
 form-encoded local profile values.
 
 The preceding source commit `b93df0a` invalidates approvals queued by a stopped
