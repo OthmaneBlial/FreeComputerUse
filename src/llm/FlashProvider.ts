@@ -69,6 +69,7 @@ export class FlashProvider implements LLMProvider {
       const data=await responseJSON(response) as {usage?:{prompt_tokens?:number;completion_tokens?:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number;input_tokens?:number;output_tokens?:number;cache_read_input_tokens?:number;cache_creation_input_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[];stop_reason?:string;content?:{type:string;text?:string}[]};
       const reported=data.usage?anthropic?{input:(data.usage.input_tokens??0)+(data.usage.cache_read_input_tokens??0)+(data.usage.cache_creation_input_tokens??0),output:data.usage.output_tokens??0,cacheHit:data.usage.cache_read_input_tokens,cacheMiss:(data.usage.input_tokens??0)+(data.usage.cache_creation_input_tokens??0)}:{input:data.usage.prompt_tokens??0,output:data.usage.completion_tokens??0,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
       this.budget.record(reported,reservation.id);usage=reported;
+      if(reported.output>reservation.maxOutput)throw new Error('LLM response exceeded the reserved output-token budget');
       const choice=data.choices?.[0],content=anthropic?data.content?.filter(block=>block.type==='text').map(block=>block.text??'').join(''):choice?.message.content;
       if(choice?.finish_reason==='length'||data.stop_reason==='max_tokens')throw new Error('LLM JSON was truncated by the output limit');
       if(!content)throw new Error('LLM returned empty JSON');
