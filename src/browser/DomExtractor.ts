@@ -61,7 +61,7 @@ export class DomExtractor {
             if(existing?.refs instanceof WeakMap&&Number.isSafeInteger(existing.next)&&existing.next>0&&/^[a-f0-9]{8}$/.test(existing.documentId))registry=existing;
           } catch {}
           if(!registry){registry={refs:new WeakMap(),next:1,documentId};try{global.__fcuRegistry=registry;}catch{}}
-          const htmlBytes = new TextEncoder().encode(document.documentElement.outerHTML).length;
+          const encoder=new TextEncoder(),htmlBytes=roots.reduce((sum,root)=>sum+encoder.encode(root instanceof Document?root.documentElement.outerHTML:root.innerHTML).length,0);
           const candidates = all.filter(el => included(el) && visible(el) && el.matches('button,a[href],input:not([type=hidden]),textarea,select,summary,[contenteditable=true],[role=button],[role=link],[role=textbox],[role=checkbox],[role=radio],[role=combobox],[role=menuitem],[role=tab],[role=switch],[role=slider]'));
           const observedRefs=new Set<string>();let fallbackSequence=1;
           const elements = candidates.slice(0,500).map(el => {

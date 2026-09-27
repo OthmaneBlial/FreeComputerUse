@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
 import { diffPages, PageCompressor, similarity } from '../src/browser/PageCompressor.js';
-import { stateHash } from '../src/browser/DomExtractor.js';
+import { DomExtractor,stateHash } from '../src/browser/DomExtractor.js';
 import { ActionSchema, ConditionSchema, PlanSchema } from '../src/actions/schema.js';
 
 test('rejects unsupported system browser channels before launch',async()=>{
@@ -42,6 +42,21 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
     assert(small.text.length<=300);assert(small.truncated);
     const region=await observer.inspect(browser.page,'application');
     assert.equal(region.elements.length,3);
+  }finally{await browser.close();}
+});
+
+test('DOM byte accounting includes nested open shadow roots',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div id="host"></div>');
+    const extractor=new DomExtractor(),before=await extractor.extract(browser.page);
+    const outer='<section><div id="nested"></div></section>',inner='<p>Shadow content 🌐</p>';
+    await browser.page.locator('#host').evaluate((host,{outer,inner})=>{
+      const root=host.attachShadow({mode:'open'});root.innerHTML=outer;
+      root.querySelector('#nested')!.attachShadow({mode:'open'}).innerHTML=inner;
+    },{outer,inner});
+    const after=await extractor.extract(browser.page);
+    assert.equal(after.htmlBytes,before.htmlBytes+new TextEncoder().encode(outer).length+new TextEncoder().encode(inner).length);
   }finally{await browser.close();}
 });
 
