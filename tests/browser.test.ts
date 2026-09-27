@@ -246,6 +246,16 @@ test('path fallback rejects a same-name control after its region changes',async(
   }finally{await browser.close();}
 });
 
+test('path fallback accepts an explicit default text type after observation',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<label>Email<input></label><label>Email<input></label>');
+    const observer=new Observer(),state=await observer.inspect(browser.page),target=state.elements[1]!;
+    await browser.page.locator('input').nth(1).evaluate(element=>element.setAttribute('type','text'));
+    assert.equal((await observer.selectors.resolve(browser.page,target.ref,100)).strategy,'path');
+  }finally{await browser.close();}
+});
+
 test('page cannot redirect a saved semantic reference by copying its DOM marker',async()=>{
   const browser=await new Browser().launch();
   try{
