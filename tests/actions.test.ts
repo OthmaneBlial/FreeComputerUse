@@ -87,6 +87,18 @@ test('completion conditions are checked concurrently',async()=>{
   }finally{await browser.close();}
 });
 
+test('zero-timeout verification checks once without waiting',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    let checks=0,waits=0;
+    executor.verifier.one=async()=>{checks++;return false;};
+    browser.page.waitForTimeout=async()=>{waits++;};
+    const result=await executor.verifier.check([{type:'text_exists',value:'Missing'}],0);
+    assert.equal(result.success,false);assert.equal(checks,1);assert.equal(waits,0);
+  }finally{await browser.close();}
+});
+
 test('tab changes report uncertain failures only when they may have happened',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{

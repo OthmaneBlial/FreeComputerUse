@@ -57,7 +57,9 @@ export class Verifier {
       const passed=await Promise.all(conditions.map(async condition=>{try{return await this.one(condition,since);}catch{return false;}}));
       failed=conditions.filter((_condition,index)=>!passed[index]);
       if(!failed.length)return{success:true,failed};
-      await this.browser.page.waitForTimeout(60);
+      const remaining=deadline-Date.now();
+      if(remaining<=0)return{success:false,failed};
+      await this.browser.page.waitForTimeout(Math.min(60,remaining));
     }while(Date.now()<deadline);
     return{success:false,failed};
   }
