@@ -38,6 +38,8 @@ FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
 
+If npm has not finished serving the package yet, [download the verified 0.2.10 release tarball](https://github.com/OthmaneBlial/FreeComputerUse/releases/download/v0.2.10/free-computer-use-0.2.10.tgz), then run `npm install --global ./free-computer-use-0.2.10.tgz`.
+
 Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then approve access to that website:
 
 | Goal | Result |
