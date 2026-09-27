@@ -4,6 +4,7 @@ import { Browser } from '../src/browser/Browser.js';
 import { Observer } from '../src/browser/Observer.js';
 import { diffPages, PageCompressor, similarity } from '../src/browser/PageCompressor.js';
 import { DomExtractor,stateHash } from '../src/browser/DomExtractor.js';
+import type { PageState } from '../src/browser/types.js';
 import { ActionSchema, ConditionSchema, PlanSchema } from '../src/actions/schema.js';
 
 test('rejects unsupported system browser channels before launch',async()=>{
@@ -146,6 +147,19 @@ test('state hash changes when observed headings, dialog labels, options or links
     current=await observer.inspect(browser.page);assert.notEqual(current.hash,previous.hash);
     assert.equal(diffPages(previous,current).changed[0]?.href,'https://example.test/after');
   }finally{await browser.close();}
+});
+
+test('planner page diffs omit raw select option values',()=>{
+  const select={ref:'country',tag:'select',role:'combobox',name:'Country',options:['France'],optionValues:['private-option-token'],frame:0,path:'select',selectors:{role:'combobox',name:'Country'}};
+  const state=(elements:PageState['elements']):PageState=>({url:'https://example.test/form',title:'Form',headings:[],text:'',elements,tables:[],dialogs:[],htmlBytes:0,hash:'',warnings:[],frames:[],truncated:false});
+  const changed=diffPages(state([{...select,optionValues:['old-value']}]),state([select]));
+  const added=diffPages(state([]),state([select]));
+  for(const diff of [changed,added]){
+    assert(!JSON.stringify(diff).includes('private-option-token'));
+    assert(!JSON.stringify(new PageCompressor().compress(state([select]))).includes('private-option-token'));
+  }
+  assert.equal(changed.changed.length,1);
+  assert.equal(added.added.length,1);
 });
 
 test('page observation excludes visually hidden descendant text',async()=>{

@@ -48,13 +48,14 @@ export class PageCompressor {
 }
 export function diffPages(previous:PageState,current:PageState) {
   const signature=(e:PageElement)=>JSON.stringify(e);
+  const withoutOptionValues=(element:PageElement)=>{const safe={...element};delete safe.optionValues;return safe;};
   const old=new Map(previous.elements.map(e=>[e.ref,e]));
   const fresh=new Map(current.elements.map(e=>[e.ref,e]));
   return {
     url:current.url,title:current.title,hash:current.hash,
     removed:previous.elements.filter(e=>!fresh.has(e.ref)).map(e=>e.ref),
-    added:current.elements.filter(e=>!old.has(e.ref)),
-    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)),
+    added:current.elements.filter(e=>!old.has(e.ref)).map(withoutOptionValues),
+    changed:current.elements.filter(e=>old.has(e.ref)&&signature(old.get(e.ref)!)!==signature(e)).map(withoutOptionValues),
     headings:JSON.stringify(current.headings)===JSON.stringify(previous.headings)?undefined:current.headings,
     text:current.text===previous.text?undefined:current.text,
     tables:JSON.stringify(current.tables)===JSON.stringify(previous.tables)?undefined:current.tables,
