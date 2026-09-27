@@ -28,7 +28,15 @@ export class Observer {
   }
   async fragment(page:Page,selector:string) {
     return page.locator(selector).evaluate(el=>{
-      const sources=[el,...el.querySelectorAll('*')],clone=el.cloneNode(true) as Element,copies=[clone,...clone.querySelectorAll('*')];
+      const sources=[el,...el.querySelectorAll('*')],clone=el.cloneNode(true) as Element,copies=[clone,...clone.querySelectorAll('*')],shadowCopies=new Map<Element,Element>();
+      for(let index=0;index<sources.length;index++){
+        const root=sources[index]!.shadowRoot;if(!root)continue;
+        const wrapper=document.createElement('div');wrapper.setAttribute('data-shadow-root','open');copies[index]!.append(wrapper);
+        for(const child of root.childNodes)wrapper.append(child.cloneNode(true));
+        shadowCopies.set(sources[index]!,wrapper);
+        const originals=[...root.querySelectorAll('*')],clones=[...wrapper.querySelectorAll('*')];
+        for(let child=0;child<originals.length;child++){sources.push(originals[child]!);copies.push(clones[child]!);}
+      }
       const roots:(Document|ShadowRoot)[]=[document];
       for(let index=0;index<roots.length;index++)for(const host of roots[index]!.querySelectorAll('*'))if(host.shadowRoot)roots.push(host.shadowRoot);
       const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(node=>node.getClientRects().length>0),modalVisible=!!modal;
@@ -41,12 +49,12 @@ export class Observer {
       }];
       const [structuralOnly]=[(node:Element)=>modalVisible&&!!modal&&!composedContains(modal,node)&&composedContains(node,modal)];
       const visibleSources=sources.map(visible),retained=new Set<Element>();
-      for(let index=sources.length-1;index>=0;index--){const node=sources[index]!;if(visibleSources[index]||[...node.children].some(child=>retained.has(child)))retained.add(node);}
+      for(let index=sources.length-1;index>=0;index--){const node=sources[index]!;if(visibleSources[index]||[...node.children,...(node.shadowRoot?[...node.shadowRoot.children]:[])].some(child=>retained.has(child)))retained.add(node);}
       if(!retained.has(el))return '';
-      for(let index=sources.length-1;index>=0;index--){const node=sources[index]!;if(!retained.has(node))copies[index]!.remove();else if(!visibleSources[index]||structuralOnly(node))for(const child of [...copies[index]!.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();}
+      for(let index=sources.length-1;index>=0;index--){const node=sources[index]!;if(!retained.has(node))copies[index]!.remove();else if(!visibleSources[index]||structuralOnly(node)){for(const child of [...copies[index]!.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();const shadowCopy=shadowCopies.get(node);if(shadowCopy)for(const child of [...shadowCopy.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();}}
       clone.querySelectorAll('script,style,svg').forEach(node=>node.remove());
       for(const node of [clone,...clone.querySelectorAll('*')]) {
-        for(const a of [...node.attributes]) if(!['id','role','name','type','aria-label','aria-labelledby','placeholder','required','disabled','checked','data-testid'].includes(a.name)) node.removeAttribute(a.name);
+        for(const a of [...node.attributes]) if(!['id','role','name','type','aria-label','aria-labelledby','placeholder','required','disabled','checked','data-testid','data-shadow-root'].includes(a.name)) node.removeAttribute(a.name);
         if(node.matches('textarea'))node.textContent='[local value omitted]';
       }
       return clone.outerHTML.slice(0,8000);
