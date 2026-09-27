@@ -547,6 +547,15 @@ test('redaction handles overlapping and JSON-escaped profile values',()=>{
   const result=JSON.parse(resolver.redact(text));assert.deepEqual(result,{message:'{{profile.message}}',name:'{{profile.firstName}}'});
 });
 
+test('redaction masks URL-encoded profile values',()=>{
+  const secret='Zoë A+B',resolver=new VariableResolver({profile:{email:secret},files:{}});
+  const encoded=encodeURIComponent(secret),formEncoded=new URLSearchParams([['value',secret]]).toString().slice('value='.length);
+  const lowerEncoded=encoded.replace(/%[A-F0-9]{2}/g,escape=>escape.toLowerCase()),lowerFormEncoded=formEncoded.replace(/%[A-F0-9]{2}/g,escape=>escape.toLowerCase());
+  const result=resolver.redact(`https://example.test/?email=${encoded}&copy=${lowerEncoded}#email=${formEncoded}&copy=${lowerFormEncoded}`);
+  for(const value of [encoded,lowerEncoded,formEncoded,lowerFormEncoded])assert(!result.includes(value));
+  assert.equal(result,'https://example.test/?email={{profile.email}}&copy={{profile.email}}#email={{profile.email}}&copy={{profile.email}}');
+});
+
 test('redaction masks credential query values and bearer tokens but keeps ordinary query values',()=>{
   const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris#access_token=fragment-secret&code=oauth-secret&state=keep',authorization:'Bearer abcdefghijklmnop'});
   const result=resolver.redact(input);

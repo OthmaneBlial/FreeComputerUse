@@ -5,6 +5,10 @@ function sensitiveQueryParameter(value:string){
   return /(?:token|secret|password|passwd|pwd|authorization|auth|session|sessionid|cookie|signature|sig|credential)$/.test(normalized)||
     /^(?:key|apikey|accesskey|clientkey|privatekey|subscriptionkey|signingkey|code|oauthcode|authorizationcode|codeverifier)$/.test(normalized);
 }
+function encodedPattern(value:string){
+  const hex=(digit:string)=>digit.toLowerCase()===digit.toUpperCase()?digit:`[${digit.toLowerCase()}${digit.toUpperCase()}]`;
+  return value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%([0-9a-f])([0-9a-f])/gi,(_match,high:string,low:string)=>`%${hex(high)}${hex(low)}`);
+}
 export class VariableResolver {
   constructor(public vault:Vault={profile:{},files:{}}) {}
   resolve(value:string):string {
@@ -23,12 +27,14 @@ export class VariableResolver {
   aliases() {return {profile:Object.keys(this.vault.profile),files:Object.keys(this.vault.files)};}
   redact(value:string) {
     let result=value;
-    const secrets=Object.entries(this.vault).flatMap(([group,dictionary])=>Object.entries(dictionary).map(([name,secret])=>({alias:`{{${group}.${name}}}`,secret}))).sort((a,b)=>b.secret.length-a.secret.length);
-    for(const {alias,secret} of secrets) if(secret.length>1){
-      result=result.split(secret).join(alias);
-      // Traces/prompts are often JSON-serialized: redact escaped values too.
-      const escaped=JSON.stringify(secret).slice(1,-1);
-      if(escaped!==secret)result=result.split(escaped).join(JSON.stringify(alias).slice(1,-1));
+    const secrets=Object.entries(this.vault).flatMap(([group,dictionary])=>Object.entries(dictionary).flatMap(([name,secret])=>{
+      if(secret.length<=1)return[];
+      const alias=`{{${group}.${name}}}`,escaped=JSON.stringify(secret).slice(1,-1),formEncoded=new URLSearchParams([['value',secret]]).toString().slice('value='.length);
+      return [...new Set([secret,escaped])].map(value=>({alias,value,encoded:false})).concat([...new Set([encodeURIComponent(secret),formEncoded])].map(value=>({alias,value,encoded:true})));
+    })).sort((a,b)=>b.value.length-a.value.length);
+    for(const {alias,value,encoded} of secrets){
+      result=result.split(value).join(alias);
+      if(encoded)result=result.replace(new RegExp(encodedPattern(value),'g'),alias);
     }
     return result
       .replace(/([?&#])([^=?&#\s"'<>()[\]]+)=([^&#\s"'<>),}\]]*)/g,(match,separator:string,name:string)=>sensitiveQueryParameter(name)?`${separator}${name}=REDACTED`:match)
