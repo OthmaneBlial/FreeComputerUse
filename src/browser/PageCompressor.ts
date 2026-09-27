@@ -8,7 +8,7 @@ export const similarity = (a: string,b: string) => {
 export interface Compression { text:string; bytes:number; rawBytes:number; reduction:number; truncated:boolean }
 export class PageCompressor {
   compress(state:PageState, options:{goal?:string;maxChars?:number;level?:1|2|3;region?:string}={}):Compression {
-    const max=options.maxChars??12000;
+    const requestedMax=options.maxChars??12000,max=Number.isFinite(requestedMax)?Math.max(0,Math.floor(requestedMax)):12000;
     let metadataTruncated=false;
     const bounded=(value:string,limit:number)=>{
       if(value.length<=limit)return value;
@@ -41,7 +41,8 @@ export class PageCompressor {
     lines.push('VISIBLE TEXT',state.text);
     const full=lines.join('\n');
     const truncated=full.length>max || state.truncated || metadataTruncated;
-    const text=full.length>max ? full.slice(0,Math.max(0,max-55))+'\n[TRUNCATED: request a region or more context]' : full;
+    const marker='\n[TRUNCATED: request a region or more context]';
+    const text=full.length>max ? `${full.slice(0,Math.max(0,max-marker.length))}${marker}`.slice(0,max) : full;
     const bytes=Buffer.byteLength(text);
     return {text,bytes,rawBytes:state.htmlBytes,reduction:state.htmlBytes?1-bytes/state.htmlBytes:0,truncated};
   }

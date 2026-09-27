@@ -309,6 +309,14 @@ test('page compression retains controls when page metadata is oversized',()=>{
   assert(compressed.truncated);assert(compressed.text.length<=1200);assert(compressed.text.includes('[e0] button "Confirm reservation"'));
 });
 
+test('page compression respects character limits smaller than its truncation marker',()=>{
+  const state={url:'https://example.test/',title:'Results',headings:[],text:'x'.repeat(500),elements:[],tables:[],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
+  for(const maxChars of [0,1,10,46,47]){
+    const compressed=new PageCompressor().compress(state,{maxChars});
+    assert(compressed.truncated);assert(compressed.text.length<=maxChars);
+  }
+});
+
 test('page compression marks partial table data and keeps it valid JSON',()=>{
   const rows=Array.from({length:10},(_,index)=>[`Metric ${index}`,`Value ${'x'.repeat(80)}`]);
   const state={url:'https://example.test/',title:'Report',headings:[],text:'Summary',elements:[],tables:[rows],dialogs:[],htmlBytes:0,hash:'state',warnings:[],frames:[],truncated:false};
