@@ -40,14 +40,18 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
-The latest source commit `b93df0a` invalidates approvals queued by a stopped
-task, including when the dashboard resets the shared agent for a new task. On
-27 September 2026, `FCU_BROWSER_CHANNEL=chrome npm run validate` passed with
-180/180 tests in 216.40 seconds, TypeScript checks, lab and package builds,
-history scan (284 worktree files, 286 historical paths and 1,598 blobs), and
-`npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Apple
-Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No
-live model-provider request was made.
+The latest source commit `2dda301` redacts local profile values when URLs
+encode them with either percent escapes or form encoding. On 27 September
+2026, `FCU_BROWSER_CHANNEL=chrome npm run validate` passed with 181/181 tests
+in 274.73 seconds, TypeScript checks, lab and package builds, history scan (284
+worktree files, 286 historical paths and 1,603 blobs), and `npm audit` with
+zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
+npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model-provider
+request was made.
+
+The preceding source commit `b93df0a` invalidates approvals queued by a stopped
+task, including when the dashboard resets the shared agent for a new task; its
+full local gate passed 180/180 tests.
 
 The preceding source commit `55b13f9` caches composed-tree visibility results
 for each DOM observation. A synthetic page with 40 controls under 30 nested
