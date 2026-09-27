@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {request as httpRequest} from 'node:http';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -37,6 +38,23 @@ test('dashboard rejects credentialed run URLs and origins before creating an age
     const localFile=await request({goal:'Read a local file',url:'file:///etc/passwd'});assert.equal(localFile.status,400);assert.match((await localFile.json() as {error:string}).error,/Only HTTP\(S\) destinations/);
     const badOrigin=await request({goal:'Read the page',url:'https://example.test/',allowedOrigins:['https://user:private-token@example.test/']});assert.equal(badOrigin.status,400);assert.match((await badOrigin.json() as {error:string}).error,/without embedded credentials/);
     assert.equal(dashboard.getAgent(),undefined);
+  }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
+});
+
+test('dashboard preserves UTF-8 characters split across request chunks',{timeout:10000},async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-utf8-request-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
+  const dashboard=await startServer({port:0,quiet:true});
+  try{
+    const page=await fetch(dashboard.url),html=await page.text(),token=html.match(/<meta name="csrf-token" content="([^"]+)"/)?.[1],cookie=page.headers.get('set-cookie')?.split(';')[0];
+    assert(token);assert(cookie);
+    const profile={profile:{firstName:'A😀B'},files:{}},data=Buffer.from(JSON.stringify(profile)),emoji=Buffer.from('😀'),split=data.indexOf(emoji)+2,url=new URL(dashboard.url);
+    const status=await new Promise<number>((resolve,reject)=>{
+      const request=httpRequest({hostname:url.hostname,port:Number(url.port),path:'/api/profile',method:'POST',headers:{'Content-Type':'application/json','Content-Length':String(data.length),'Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token}},response=>{response.resume();response.once('end',()=>resolve(response.statusCode??0));});
+      request.once('error',reject);request.flushHeaders();request.write(data.subarray(0,split));setTimeout(()=>request.end(data.subarray(split)),30);
+    });
+    assert.equal(status,200);
+    const saved=await fetch(dashboard.url+'/api/profile',{headers:{Cookie:cookie}});
+    assert.deepEqual(await saved.json(),profile);
   }finally{await dashboard.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 
