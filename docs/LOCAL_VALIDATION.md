@@ -40,6 +40,25 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The latest source commit `55b13f9` caches composed-tree visibility results for
+each DOM observation. On 27 September 2026, `FCU_BROWSER_CHANNEL=chrome npm run
+validate` passed with 179/179 tests in 235.44 seconds, TypeScript checks, lab
+and package builds, history scan, and `npm audit` with zero vulnerabilities.
+Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
+system Chrome `154.0.8037.57`. A synthetic page with 40 controls under 30 nested
+wrappers needed 74 computed-style reads after the change, versus 10,970 before
+it. This instrumented fixture is a regression measurement, not a general
+website benchmark. No live model-provider request was made.
+
+The published v0.2.20 release commit
+`d7e800e961817625cdf72cbda974015996dacb7d` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean detached worktree on
+27 September 2026: 178/178 tests in 451.13 seconds, type checks, lab and
+package builds, history scan (284 worktree files, 286 historical paths, 1,589
+blobs), and `npm audit` with zero vulnerabilities. Its package and publication
+checksums are recorded in [release notes](../release-notes/0.2.20.md). No live
+model-provider request was made.
+
 The published v0.2.16 release commit
 `43b481495bb6ea452365791e25c7e7bc0822f616` passed `npm ci` and
 `FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean detached Git

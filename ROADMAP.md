@@ -1,6 +1,6 @@
 # FreeComputerUse — roadmap de publication
 
-**État actualisé le 27 septembre 2026. Les 25 jalons initiaux sont terminés ; la maintenance continue. `v0.2.16` est publiée sur npm et GitHub.** Cette release applique la visibilité composée aux éléments assignés à des slots. Le tag, le tarball npm, les assets GitHub et le site Pages correspondent au candidat contrôlé ; la validation propre passe avec **176/176 tests**. Consultez les [notes publiées 0.2.16](release-notes/0.2.16.md), les [notes 0.2.15](release-notes/0.2.15.md) et les [notes 0.2.14](release-notes/0.2.14.md).
+**État actualisé le 27 septembre 2026. Les 25 jalons initiaux sont terminés ; la maintenance continue. `v0.2.20` est la dernière release publiée sur npm et GitHub.** Son tag validé passe 178/178 tests et les copies publiées du paquet correspondent au candidat contrôlé. Le commit `55b13f9` de `main` ajoute ensuite la mémorisation de visibilité DOM par instantané ; la suite locale passe 179/179 tests. Le dépôt désactive GitHub Actions à la demande du propriétaire. Consultez les [notes publiées 0.2.20](release-notes/0.2.20.md) et la [matrice de support](docs/SUPPORT_MATRIX.md) pour les preuves actuelles.
 
 ## Résumé de l’audit
 
@@ -8,8 +8,8 @@ FreeComputerUse est un agent d’automatisation de navigateur local. Il observe 
 
 ### État vérifié
 
-- `package.json` déclare la version publiée `0.2.16`, Node `>=22.13.0`, l’exécutable `agent`, l’entrée de bibliothèque et les fichiers npm.
-- Le tag `v0.2.16` sur le commit validé `43b4814` passe `FCU_BROWSER_CHANNEL=chrome npm run validate` depuis un worktree Git propre avec **176/176 tests**, vérifications TypeScript, build et `npm audit` sans vulnérabilité. Le scan couvre 280 fichiers, 282 chemins historiques et 1 540 blobs. Environnement : macOS 26.6/Apple Silicon, Node 25.9.0, npm 11.12.1 et Chrome système 154.0.8037.57. Le scan par motifs ne constitue pas un audit de sécurité complet.
+- `package.json` déclare la dernière version publiée `0.2.20`, Node `>=22.13.0`, l’exécutable `agent`, l’entrée de bibliothèque et les fichiers npm. `main` peut contenir des améliorations postérieures à cette release.
+- Le tag `v0.2.20` sur le commit validé `d7e800e` passe `FCU_BROWSER_CHANNEL=chrome npm run validate` avec **178/178 tests**. Le commit source actuel `55b13f9` passe le même gate avec **179/179 tests** après une optimisation mesurée de l’observation DOM. Environnement et détails : `docs/LOCAL_VALIDATION.md` et `docs/SUPPORT_MATRIX.md`. Le scan par motifs ne constitue pas un audit de sécurité complet.
 - `docs/BENCHMARKS.md` rapporte un essai daté du 18 septembre : 14/14 tâches publiques et leurs répétitions compatibles réussies dans cet essai, avec DeepSeek, une seule mesure par cas et des limites explicitement documentées. Le même document rapporte des résultats variables sur les tâches complexes et un audit GitHub Playwright non réussi. Cela ne prouve pas une réussite générale sur le Web.
 - Le README décrit les routes de modèles visibles dans la [matrice de compatibilité](docs/SUPPORT_MATRIX.md), qui distingue tests locaux et résultats live : DeepSeek et Codex CLI ont chacun une preuve datée ; les autres fournisseurs restent à vérifier séparément.
 - Les [notes de release 0.2.16](release-notes/0.2.16.md) vérifient le site Pages, le tag, la release GitHub et le paquet npm. Le registre npm et l’asset GitHub correspondent octet pour octet au candidat ; les installations neuves passent `agent --version`, `agent --help`, Chrome `agent doctor`, la tâche publique sans modèle et la découverte des quatre outils MCP.
