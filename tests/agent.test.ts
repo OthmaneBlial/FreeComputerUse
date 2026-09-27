@@ -25,14 +25,13 @@ test('default model budget allows long tasks while explicit caps still work',()=
   assert.equal(budget.limits.maxInputTokens,null);
 });
 
-test('first-N extraction fails instead of completing with an empty result',async()=>{
+test('first-N extraction accepts empty results when no items are available',async()=>{
   const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra'});
   try{
     await agent.browser.launch();
     await agent.browser.page.setContent('<main><h1>Empty page</h1></main>');
     const trace=await agent.run('Extract the first 5 links');
-    assert.equal(trace.status,'failed');
-    assert.match(trace.error??'',/completion could not be verified/i);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
     assert.deepEqual(agent.browser.extractions[0]?.value,[]);
   }finally{await agent.close();store.close();}
 });

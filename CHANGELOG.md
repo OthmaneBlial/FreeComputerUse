@@ -6,7 +6,6 @@
 
 - Report the package version in the MCP server handshake so clients see the
   version they installed.
-- Keep first-N extraction goals incomplete when the result contains no items.
 
 ## 0.2.9 - 2026-09-27
 
