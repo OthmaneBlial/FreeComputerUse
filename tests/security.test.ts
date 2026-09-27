@@ -39,6 +39,7 @@ test('concurrent token reservations cannot oversubscribe the input/output budget
 test('provider input usage cannot exceed its token reservation',()=>{
   const budget=new TokenBudget({maxLLMCalls:1,maxInputTokens:100,maxOutputTokens:100});
   const reservation=budget.reserve(50,100);
+  assert.throws(()=>budget.record({input:1,output:1},reservation.id+1),/Unknown token reservation/);
   assert.throws(()=>budget.record({input:51,output:10},reservation.id),/exceeded reserved token budget/);
   assert.equal(budget.input,0);assert.equal(budget.pendingInput,50);
   budget.record({input:50,output:10},reservation.id);

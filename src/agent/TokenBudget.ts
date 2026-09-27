@@ -21,6 +21,7 @@ export class TokenBudget {
   record(usage:Usage,reservationId?:number){
     if(!Number.isSafeInteger(usage.input)||usage.input<0||!Number.isSafeInteger(usage.output)||usage.output<0||usage.cacheHit!==undefined&&(!Number.isSafeInteger(usage.cacheHit)||usage.cacheHit<0||usage.cacheHit>usage.input)||usage.cacheMiss!==undefined&&(!Number.isSafeInteger(usage.cacheMiss)||usage.cacheMiss<0||usage.cacheMiss>usage.input))throw new Error('Invalid provider token usage');
     const reservation=reservationId===undefined?this.reservations.values().next().value:this.reservations.get(reservationId);
+    if(reservationId!==undefined&&!reservation)throw new Error('Unknown token reservation');
     if(reservation&&usage.input>reservation.inputBound)throw new Error('Provider input usage exceeded reserved token budget');
     const id=reservationId??this.reservations.keys().next().value;
     if(id!==undefined)this.reservations.delete(id);
