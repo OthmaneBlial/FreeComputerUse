@@ -24,7 +24,7 @@
 Requires Node.js 22.13+, npm, and an installed browser. This verified setup uses system Chrome and does not download a separate browser.
 
 ```bash
-npm install --global free-computer-use@0.2.16
+npm install --global free-computer-use@0.2.17
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -58,6 +58,13 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 4. Check the result, repair bounded failures, and reuse a compatible workflow when its completion conditions still hold.
 
 The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
+
+## New in 0.2.17
+
+DOM size and compression metrics now include markup inside open shadow roots,
+so the reported page size reflects content the agent can inspect.
+
+[Read the full 0.2.17 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.17).
 
 ## New in 0.2.16
 

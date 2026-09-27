@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.2.17 - 2026-09-27
+
+### Fixed
+
+- Include open shadow-root markup in reported DOM size and compression metrics.
+
 ## 0.2.16 - 2026-09-27
 
 ### Security
