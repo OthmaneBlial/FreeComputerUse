@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 0.2.13 - 2026-09-27
+
+### Security
+
+- Detect sensitive fields from common labels and hints, require approval before
+  text entry, and recheck the target after approval.
+- Mask sensitive form values in record extraction and accessibility snapshots,
+  including textareas and selects.
+- Require approval for image-based form submission controls.
+
+### Fixed
+
+- Verify form submissions against the clicked or Enter-activated submitter's
+  effective action and method, including `formaction` and `formmethod`.
+- Search the full text source before applying an extraction result limit.
+- Bound streamed model responses before parsing.
+
+### Performance
+
+- Index learned-workflow and chronological run-history lookups.
+
 ## 0.2.12 - 2026-09-27
 
 ### Fixed
