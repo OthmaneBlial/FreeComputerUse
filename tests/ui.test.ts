@@ -132,7 +132,7 @@ test('the real cursor is visible before the first model reply and survives docum
 test('local dashboard saves a profile, executes a form, gates approval, shows metrics and replays',{timeout:90000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-ui-'));const oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const dashboard=await startServer({port:0,quiet:true,provider:new FixtureProvider()}),fixture=await startFixtures();
-  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{const path=new URL(response.url()).pathname;if(response.status()>=400&&!(path==='/api/preview'&&response.status()===502))httpErrors.push(`${response.status()} ${path}`);});
+  const browser=await new Browser({allowedOrigins:[dashboard.url]}).launch();const errors:string[]=[],consoleErrors:string[]=[],httpErrors:string[]=[];browser.page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});browser.page.on('pageerror',error=>errors.push(error.message));browser.page.on('response',response=>{const path=new URL(response.url()).pathname,status=response.status();if(status>=400&&!(path==='/api/preview'&&status===502))httpErrors.push(`${status} ${response.request().method()} ${path} [${response.headers()['content-type']??'no content type'}]`);});
   try{
     await browser.navigate(dashboard.url);await browser.page.getByRole('button',{name:'Local profile'}).click();
     await browser.page.locator('#profile-json').fill(JSON.stringify({profile:{firstName:'Alex',lastName:'Example',email:'alex@example.test',message:'Synthetic message',country:'France'},files:{}}));
@@ -196,10 +196,12 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
         return !cursor.hidden&&Math.abs(matrix.m41-expectedX)<1&&Math.abs(matrix.m42-expectedY)<1;
       },dashboard.getAgent()!.browser.interaction.snapshot()!,{timeout:8000});
     }
-    assert.deepEqual(httpErrors,[],`Unexpected dashboard HTTP errors: ${httpErrors.join(', ')}`);
     assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[],`Browser console errors: ${consoleErrors.join(' | ')}`);
     const unauthenticated=await fetch(dashboard.url+'/api/state');assert.equal(unauthenticated.status,401);
     const crossOrigin=await browser.page.evaluate(async()=>{const response=await fetch('/api/control/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});return response.status;});assert.equal(crossOrigin,403);
+    const expectedRejection='403 POST /api/control/stop [application/json]';
+    assert(httpErrors.includes(expectedRejection),'HTTP diagnostics include response method, route and content type');
+    assert.deepEqual(httpErrors.filter(error=>error!==expectedRejection),[],`Unexpected dashboard HTTP errors: ${httpErrors.join(' | ')}`);
   }finally{await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });
 
