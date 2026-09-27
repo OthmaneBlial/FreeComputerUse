@@ -114,9 +114,11 @@ resolve locally during actions. Common credentials in URL queries and fragments,
 as well as bearer-shaped tokens, are redacted before model requests, new trace
 saves and dashboard/CLI history output; the browser still opens the original URL.
 Recognized GitHub, GitLab and Slack token prefixes and `sk-`-shaped keys are also
-redacted. Records extraction omits password/payment field values. These filters
-do not identify every possible secret in arbitrary website content. Do not
-publish local traces, browser profiles or screenshots from a real account.
+redacted. These filters do not identify every possible secret in arbitrary
+website content. Records extraction omits password, payment-card and
+one-time-code values identified from input type, autofill metadata and common
+labels, names or placeholders. Do not publish local traces, browser profiles
+or screenshots from a real account.
 Replays that depended on a redacted URL credential need a fresh starting URL.
 
 ## Dashboard boundary
