@@ -224,6 +224,20 @@ test('password and payment fields require approval before page scripts receive v
   }finally{await browser.close();}
 });
 
+test('keyboard input into sensitive fields requires approval',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<input id="password" type="password" oninput="document.body.dataset.sent=this.value">');
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    const waiting=new Promise<'approval'>(resolve=>control.once('approval',()=>resolve('approval')));
+    const execution=executor.run({type:'press',target:{css:'#password'},value:'x'});
+    assert.equal(await Promise.race([waiting,execution.then(()=>'finished' as const)]),'approval');
+    assert.equal(await browser.page.locator('#password').inputValue(),'');
+    assert.equal(await browser.page.locator('body').getAttribute('data-sent'),null);
+    control.reject();assert.equal((await execution).success,false);
+  }finally{await browser.close();}
+});
+
 test('changing a sensitive field classification while approval waits cancels entry',async()=>{
   const browser=await new Browser().launch();
   try{

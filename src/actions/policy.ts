@@ -11,7 +11,7 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
     sensitiveField:el.getAttribute('type')?.toLowerCase()==='password'||(el.getAttribute('autocomplete')??'').toLowerCase().split(/\s+/).some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token)),
     submit:!!(el as HTMLInputElement).form && (el.tagName==='BUTTON' ? el.getAttribute('type')!=='button' : el.getAttribute('type')==='submit'),
   }));
-  if(fieldEntry&&facts.sensitiveField)return 'Sensitive field entry';
+  if((fieldEntry||action.type==='press')&&facts.sensitiveField)return 'Sensitive field entry';
   if(/\b(submit|purchase|buy|pay|checkout|delete|remove|send|confirm|transfer|publish|unsubscribe|register|create account|accept terms)\b/i.test(facts.text))return `Potentially irreversible control: ${facts.text.slice(0,80)}`;
   if(action.type==='press'&&action.value==='Enter'&&facts.type!=='search')return 'Enter may submit a form';
   if(facts.submit&&!/\b(search|find flights|find tickets|filter|continue|next|review|apply|sign in|log in)\b/i.test(facts.text))return 'Form submission';
