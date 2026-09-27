@@ -179,11 +179,12 @@ export class Agent extends EventEmitter {
           this.event('EXECUTE',`${action.type}${'target'in action?' '+JSON.stringify(action.target):''}`,{index:index+1,total:actions.length});
           const result=await this.executor.run(action);trace.actions.push(result);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
           let after=await this.observe();
+          result.observedStateChanged=before.hash!==after.hash;this.trace=this.safeTrace(trace);
           if(before.url!==after.url){const loops=(navigations.get(after.url)??0)+1;navigations.set(after.url,loops);if(loops>(this.options.maxNavigationLoops??3))throw new Error('Navigation loop detected');}
           if(result.success){
             const descriptor='target'in result.action&&typeof result.action.target==='object'?result.action.target:undefined;
             completed.push(this.variables.redact(JSON.stringify({type:action.type,...('url'in result.action?{url:result.action.url}:{}),...(descriptor?{target:{role:descriptor.role,name:descriptor.name??descriptor.label??descriptor.id??descriptor.css}}:{}),...('key'in result.action?{key:result.action.key}:{})})));
-            index++;this.event('VERIFY','Action completed locally',{action:action.type,durationMs:result.durationMs,strategy:result.strategy});continue;
+            index++;this.event('VERIFY',`Action completed locally; observed state ${result.observedStateChanged?'changed':'unchanged'}`,{action:action.type,durationMs:result.durationMs,strategy:result.strategy,observedStateChanged:result.observedStateChanged});continue;
           }
           if(this.control.stopped||/rejected by human|stopped by human/.test(result.error??''))throw new Error(result.error);
           if(result.uncertain){

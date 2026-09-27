@@ -170,13 +170,13 @@ test('provider-free workflow replay resolves controls replaced by SPA hydration'
     await installPage(first);
     const learned=await first.run('Complete the hydrated workflow');
     assert.equal(learned.status,'completed',learned.error??'Task failed');assert.equal(planCalls,1);
-    assert.equal(learned.actions[1]?.strategy,'role');
+    assert.equal(learned.actions[0]?.observedStateChanged,true);assert.equal(learned.actions[1]?.strategy,'role');assert.equal(learned.actions[1]?.observedStateChanged,true);
 
     await installPage(replay);
     const cached=await replay.run('Complete the hydrated workflow');
     assert.equal(cached.status,'completed',cached.error??'Task failed');
     assert.equal(cached.metrics.workflowCacheHits,1);assert.equal(cached.metrics.llmCalls,0);
-    assert.equal(cached.actions[1]?.strategy,'role');assert.equal(planCalls,1);
+    assert.equal(cached.actions[0]?.observedStateChanged,true);assert.equal(cached.actions[1]?.strategy,'role');assert.equal(cached.actions[1]?.observedStateChanged,true);assert.equal(planCalls,1);
   }finally{await first.close();await replay.close();store.close();}
 });
 
@@ -352,6 +352,7 @@ test('generic adapter reads page text without invoking a provider',async()=>{
   try{
     const trace=await agent.run('Read the page',fixture.url+'/demo');
     assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(trace.metrics.llmCalls,0);assert.equal(trace.metrics.planBatches,0);
+    assert.equal(trace.actions[0]?.observedStateChanged,false,'A read can succeed without changing the observed page');
     assert(String(agent.browser.extractions[0]?.value).includes('Contact our team'));
   }finally{await agent.close();store.close();await fixture.close();}
 });

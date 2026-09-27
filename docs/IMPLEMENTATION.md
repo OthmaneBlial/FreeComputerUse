@@ -43,6 +43,10 @@ User-owned final criteria cannot be removed by model repair. Completion proves
 those checks, not arbitrary semantic correctness; benchmark oracles also inspect
 actual data and browser outcomes.
 
+Each action is followed by a fresh observation. Its trace records whether the
+observed state hash changed; unchanged state is diagnostic, not a failure by
+itself, because reads and extraction can succeed without changing the page.
+
 ## Data and reuse
 
 The profile sends alias names instead of values. Runtime resolution is local;

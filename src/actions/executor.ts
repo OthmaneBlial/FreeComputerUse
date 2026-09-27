@@ -14,7 +14,7 @@ import { ActionCompiler } from './compiler.js';
 
 export interface ActionResult {
   action:Action;startedAt:number;durationMs:number;success:boolean;
-  strategy?:string;data?:unknown;error?:string;uncertain?:boolean;
+  strategy?:string;data?:unknown;error?:string;uncertain?:boolean;observedStateChanged?:boolean;
 }
 const approvalFingerprint=(el:Element)=>{
   const root=el.getRootNode(),labelledBy=(el.getAttribute('aria-labelledby')??'').split(/\s+/).map(id=>(root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id))?.textContent??'');
