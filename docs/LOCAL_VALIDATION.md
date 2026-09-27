@@ -40,6 +40,18 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.12 release candidate, based on main commit `f0e1f55`, passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 149/149
+tests in 219.63 seconds, type checks, build, security scan (275 worktree files,
+277 historical paths, 1,392 blobs), and npm audit with zero vulnerabilities.
+Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
+system Chrome `154.0.8037.57`. No live model-provider request was made.
+
+The candidate installed into a fresh global npm prefix and passed CLI
+version/help, Chrome `agent doctor`, the public synthetic practice-table task
+(three rows, one browser action, zero failed actions, zero model calls), and an
+MCP `stdio` handshake reporting version `0.2.12` with all four tools.
+
 The post-release browser-reference hardening, on the working tree based on main
 commit `4add090`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27
 September 2026: 149/149 tests in 189.83 seconds, type checks, build, security

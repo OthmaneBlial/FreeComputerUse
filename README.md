@@ -24,21 +24,21 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.11: broken workflow cache no longer stops a task
+## New in 0.2.12: pages cannot redirect saved target references
 
-Saved workflows are now checked against their stored identity and action plan. Corrupt or incompatible cache entries are skipped, so the planner can continue. v0.2.10 also made MCP clients see the installed package version.
+Browser references now reject malformed or duplicate values supplied by a page. When a target needs its saved DOM path, FreeComputerUse checks that the element still has the expected role and accessible name. Inspection no longer adds `data-fcu-ref` attributes to the live page. v0.2.11 also lets tasks recover from incompatible learned workflows.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.11
+npm install --global free-computer-use@0.2.12
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
 
-If npm has not finished serving the package yet, [download the verified 0.2.11 release tarball](https://github.com/OthmaneBlial/FreeComputerUse/releases/download/v0.2.11/free-computer-use-0.2.11.tgz), then run `npm install --global ./free-computer-use-0.2.11.tgz`.
+If npm has not finished serving the package yet, [download the verified 0.2.12 release tarball](https://github.com/OthmaneBlial/FreeComputerUse/releases/download/v0.2.12/free-computer-use-0.2.12.tgz), then run `npm install --global ./free-computer-use-0.2.12.tgz`.
 
 Open **http://127.0.0.1:4318**, enter a page URL and one of these goals, then approve access to that website:
 
@@ -79,7 +79,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.11
+npm install --global free-computer-use@0.2.12
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
