@@ -36,11 +36,24 @@ export class DomExtractor {
           const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(el=>el.getClientRects().length>0),modalVisible=!!modal;
           const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
           const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
+          const styleCache=new WeakMap<Element,{blocked:boolean;visible:boolean}>(),blockedCache=new WeakMap<Element,boolean>();
+          const [styleFor]=[(el:Element)=>{
+            let value=styleCache.get(el);
+            if(!value){const style=getComputedStyle(el);value={blocked:el.matches('[hidden],[inert],[aria-hidden="true"]')||style.display==='none'||style.opacity==='0',visible:style.visibility==='visible'};styleCache.set(el,value);}
+            return value;
+          }];
+          const [blockedByAncestor]=[(el:Element)=>{
+            const chain:Element[]=[];let parent:Element|null=el,blocked=false;
+            while(parent){
+              const cached=blockedCache.get(parent);if(cached!==undefined){blocked=cached;break;}
+              chain.push(parent);if(styleFor(parent).blocked){blocked=true;break;}parent=composedParent(parent);
+            }
+            for(const node of chain)blockedCache.set(node,blocked);
+            return blocked;
+          }];
           const [visible] = [(el: Element) => {
             if(modalVisible&&modal&&!composedContains(modal,el))return false;
-            let parent:Element|null=el;
-            while(parent){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return false;const style=getComputedStyle(parent);if(style.display==='none'||style.opacity==='0'||parent===el&&style.visibility!=='visible')return false;parent=composedParent(parent);}
-            return el.getClientRects().length>0;
+            return !blockedByAncestor(el)&&styleFor(el).visible&&el.getClientRects().length>0;
           }];
           const [visibleText] = [(el:Element,max=180)=>{
             if(!visible(el))return '';

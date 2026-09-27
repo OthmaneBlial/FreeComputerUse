@@ -45,6 +45,28 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
   }finally{await browser.close();}
 });
 
+test('DOM visibility styles are read once per element in a deep tree',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    let html='<main>';for(let depth=0;depth<30;depth++)html+='<div>';
+    for(let index=0;index<40;index++)html+=`<button>Action ${index}</button>`;
+    for(let depth=0;depth<30;depth++)html+='</div>';
+    html+='<div style="display:none"><button>Hidden action</button></div><div style="visibility:hidden"><button style="visibility:visible">Visible override</button></div></main>';
+    await browser.page.setContent(html);
+    await browser.page.evaluate(()=>{
+      const original=window.getComputedStyle.bind(window),calls={value:0};
+      const tracked=Function('original','calls','return function(){calls.value++;return original.apply(this,arguments)}')(original,calls) as typeof getComputedStyle;
+      Object.defineProperty(window,'getComputedStyle',{configurable:true,value:tracked});
+      Object.defineProperty(window,'__fcuStyleCalls',{configurable:true,value:calls});
+    });
+    const state=await new Observer().inspect(browser.page),styleCalls=await browser.page.evaluate(()=>
+      (window as unknown as Window&{__fcuStyleCalls:{value:number}}).__fcuStyleCalls.value);
+    const names=state.elements.map(element=>element.name);
+    assert.equal(names.length,41);assert(names.includes('Visible override'));assert(!names.includes('Hidden action'));
+    assert(styleCalls<500,`Expected memoized visibility checks, got ${styleCalls} computed-style reads`);
+  }finally{await browser.close();}
+});
+
 test('DOM byte accounting includes nested open shadow roots',async()=>{
   const browser=await new Browser().launch();
   try{
