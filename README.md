@@ -24,7 +24,7 @@
 Requires Node.js 22.13+, npm, and an installed browser. This verified setup uses system Chrome and does not download a separate browser.
 
 ```bash
-npm install --global free-computer-use@0.2.17
+npm install --global free-computer-use@0.2.18
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -58,6 +58,15 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 4. Check the result, repair bounded failures, and reuse a compatible workflow when its completion conditions still hold.
 
 The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
+
+## New in 0.2.18
+
+Page observation and repair context now agree on visibility. Visible descendants
+inside hidden ancestors are retained when their own styles make them visible;
+collapsed content, blocked background text, and hidden shadow content stay out
+of repair snippets. Visible controls inside open shadow roots are included.
+
+[Read the full 0.2.18 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.18).
 
 ## New in 0.2.17
 
@@ -112,7 +121,7 @@ Run `agent mcp` to expose four bounded tools over local `stdio`: start, inspect,
 
 ## Evidence and support
 
-The full local gate covers TypeScript, 174 tests, the build, a credential-pattern scan, and the production dependency audit. Current environment and platform limits are recorded in the [support matrix](docs/SUPPORT_MATRIX.md). Tests do not certify an untested provider, browser, operating system, or real website.
+The current full local gate covers TypeScript, the test suite, the build, a credential-pattern scan, and the production dependency audit. Current environment and platform limits are recorded in the [support matrix](docs/SUPPORT_MATRIX.md). Tests do not certify an untested provider, browser, operating system, or real website.
 
 The public task suite measured on 18 September passed 14 first runs and 14 compatible repeats in that single trial. Repeats made zero model calls. These synthetic and public-web measurements do not predict success on arbitrary sites. See the [report](artifacts/benchmark-public.json) and [method limits](docs/BENCHMARKS.md).
 

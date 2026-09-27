@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.2.18 - 2026-09-27
+
+### Security
+
+- Keep blocked background text out of repair fragments around visible dialogs.
+- Include visible content from open shadow roots in targeted repair fragments,
+  while preserving hidden-content and sensitive-value filtering.
+
+### Fixed
+
+- Preserve visible descendants that override hidden ancestor visibility, and
+  exclude collapsed content from observations and repair context.
+
 ## 0.2.17 - 2026-09-27
 
 ### Fixed
