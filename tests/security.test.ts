@@ -357,6 +357,20 @@ test('concurrent permissions remain distinct and stopping rejects queued approva
   assert((await settled).every(result=>result.status==='rejected'));
 });
 
+test('reset cannot revive queued approvals from a stopped task',async()=>{
+  const control=new Control(),seen:unknown[]=[];
+  control.on('approval',pending=>{seen.push(pending.action);if((pending.action as {stale?:boolean}).stale)control.reject();});
+  const firstVisible=once(control,'approval'),first=control.confirm('Current approval',{id:'current'}),stale=control.confirm('Queued old approval',{id:'old',stale:true});
+  await firstVisible;
+  control.on('change',()=>{if(control.stopped&&!control.pending)control.reset();});
+  control.stop();
+  await assert.rejects(first,/rejected by human/);
+  await assert.rejects(stale,/stopped by human/);
+  assert.deepEqual(seen,[{id:'current'}]);
+  const nextVisible=once(control,'approval'),next=control.confirm('Next task approval',{id:'next'});
+  await nextVisible;control.approve();await next;
+});
+
 test('approval listener errors clear pending control state',async()=>{
   const control=new Control();control.on('approval',()=>{throw new Error('simulated approval listener failure');});
   await assert.rejects(control.confirm('Approve action',{}),/simulated approval listener failure/);

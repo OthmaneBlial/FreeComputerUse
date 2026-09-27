@@ -6,13 +6,14 @@ export class Control extends EventEmitter {
   replacement?:Plan;
   private decide?: (approved:boolean)=>void;
   private approvalTail:Promise<void>=Promise.resolve();
+  private approvalGeneration=0;
   pause(){this.paused=true;this.emit('change');}
   resume(){this.paused=false;this.revision++;this.emit('change');}
-  stop(){this.stopped=true;this.paused=false;this.decide?.(false);this.emit('change');}
+  stop(){this.stopped=true;this.approvalGeneration++;this.paused=false;this.decide?.(false);this.emit('change');}
   approve(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(true);}
   reject(){if(!this.decide)throw new Error('No action is awaiting approval');this.decide(false);}
   edit(value:unknown){if(!this.paused)throw new Error('Pause before editing the plan');this.replacement=PlanSchema.parse(value);}
-  reset(){if(this.pending||this.decide)throw new Error('Cannot reset control while approval is pending');this.paused=false;this.stopped=false;this.replacement=undefined;this.revision++;this.emit('change');}
+  reset(){if(this.pending||this.decide)throw new Error('Cannot reset control while approval is pending');this.approvalGeneration++;this.paused=false;this.stopped=false;this.replacement=undefined;this.revision++;this.emit('change');}
   async checkpoint(){
     while(this.paused&&!this.stopped) await new Promise<void>(resolve=>this.once('change',resolve));
     if(this.stopped)throw new Error('Task stopped by human');
@@ -20,12 +21,13 @@ export class Control extends EventEmitter {
   async confirm(reason:string,action:unknown){
     // Frames/popups can request permissions concurrently. Never overwrite the
     // decision callback for an approval already visible to the human.
+    const generation=this.approvalGeneration;
     const predecessor=this.approvalTail;
     let release!:()=>void;
     this.approvalTail=new Promise<void>(resolve=>{release=resolve;});
     await predecessor;
     try{
-    if(this.stopped)throw new Error('Task stopped by human');
+    if(this.stopped||generation!==this.approvalGeneration)throw new Error('Task stopped by human');
     this.pending={reason,action};
     const approved=await new Promise<boolean>(resolve=>{this.decide=resolve;this.emit('approval',this.pending);});
     if(!approved)throw new Error('Sensitive action rejected by human');
