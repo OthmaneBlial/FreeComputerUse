@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.2.15 - 2026-09-27
+
+### Security
+
+- Resolve shadow-root labels when classifying and fingerprinting sensitive
+  controls, and cancel entry if a label changes while approval is pending.
+- Redact labeled payment values and omit hidden shadow content from extraction
+  and repair context, including content outside an open modal.
+
+### Fixed
+
+- Apply the same composed-tree visibility rules to text, table, link and record
+  extraction so open shadow roots respect hidden and inert ancestors.
+
 ## 0.2.14 - 2026-09-27
 
 ### Security
