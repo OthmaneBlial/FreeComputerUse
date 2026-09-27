@@ -40,6 +40,20 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The published `v0.2.22` release commit
+`96a7084410e1cccf3738a6d42c8d7a80213c30e0` passed
+`FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean detached worktree on
+27 September 2026: 186/186 tests in 314.80 seconds, TypeScript checks, lab and
+package builds, history scan (286 worktree files, 288 historical paths, 1,654
+blobs), and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`,
+Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`.
+The exact tested package was published to npm and attached to the matching
+GitHub release. Fresh-prefix candidate, registry and release-asset installs
+passed CLI version/help, Chrome doctor, a public table task and MCP `stdio`
+discovery. Package checksums, install details, and live Pages checks are in the
+[v0.2.22 release notes](../release-notes/0.2.22.md). No live model-provider
+request was made. The history pattern scan is not a complete security audit.
+
 The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
 preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
 network chunk boundary. From a clean detached worktree on 27 September 2026,
@@ -61,14 +75,12 @@ Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
 system Chrome `154.0.8037.57`. This follow-up is newer than tag `v0.2.21` and
 is not included in that release. No live model-provider request was made.
 
-The latest code commit `284a3c9` adds observed page-change telemetry and
+The preceding source commit `284a3c9` adds observed page-change telemetry and
 provider-free workflow reuse after delayed SPA hydration. Its full local gate
 passed 185/185 tests in 252.02 seconds, type checks, lab/package builds,
 history scan (285 worktree files, 287 historical paths and 1,638 blobs), and
-`npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Apple
-Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`.
-These changes are newer than tag `v0.2.21`; no live model-provider request
-was made.
+`npm audit` with zero vulnerabilities. These changes are included in `v0.2.22`.
+No live model-provider request was made.
 
 The preceding source commit `040743c` prevents a canceled TLS tunnel from
 opening an upstream connection after DNS resolution. Its full validation passed
