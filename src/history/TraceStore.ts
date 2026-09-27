@@ -36,7 +36,7 @@ export class TraceStore {
         if(descriptor!==-1)closeSync(descriptor);
       }
     }
-    this.db=new DatabaseSync(path);this.db.exec('PRAGMA journal_mode=DELETE; PRAGMA busy_timeout=3000; CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, started INTEGER, status TEXT, goal TEXT, url TEXT, trace TEXT); CREATE TABLE IF NOT EXISTS workflows(id TEXT PRIMARY KEY, domain TEXT, intent TEXT, structure TEXT, workflow TEXT, hits INTEGER DEFAULT 0); CREATE INDEX IF NOT EXISTS workflows_match ON workflows(domain,intent,structure);');
+    this.db=new DatabaseSync(path);this.db.exec('PRAGMA journal_mode=DELETE; PRAGMA busy_timeout=3000; CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, started INTEGER, status TEXT, goal TEXT, url TEXT, trace TEXT); CREATE TABLE IF NOT EXISTS workflows(id TEXT PRIMARY KEY, domain TEXT, intent TEXT, structure TEXT, workflow TEXT, hits INTEGER DEFAULT 0); CREATE INDEX IF NOT EXISTS workflows_match ON workflows(domain,intent,structure); CREATE INDEX IF NOT EXISTS runs_history ON runs(started DESC);');
     if(path!==':memory:')chmodSync(path,0o600);
   }
   save(trace:Trace){this.db.prepare('INSERT OR REPLACE INTO runs VALUES(?,?,?,?,?,?)').run(trace.id,trace.startedAt,trace.status,trace.goal,trace.url,JSON.stringify(trace));}

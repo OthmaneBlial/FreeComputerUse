@@ -17,6 +17,15 @@ test('workflow lookup uses an index for origin, intent and page structure',()=>{
   }finally{store.close();}
 });
 
+test('run history uses a descending index without a temporary sort',()=>{
+  const store=new TraceStore(':memory:');
+  try{
+    const plan=store.db.prepare('EXPLAIN QUERY PLAN SELECT id,started,status,goal,url FROM runs ORDER BY started DESC LIMIT ?').all(30) as {detail:string}[];
+    assert(plan.some(row=>row.detail.includes('USING INDEX runs_history')));
+    assert(!plan.some(row=>row.detail.includes('TEMP B-TREE FOR ORDER BY')));
+  }finally{store.close();}
+});
+
 test('bounded token budget reserves calls/output and tracks cache-aware configured cost',()=>{
   const budget=new TokenBudget({maxLLMCalls:2,maxInputTokens:100,maxOutputTokens:1000},{input:1,output:2,cachedInput:.1});
   assert.equal(budget.reserve(30,500).maxOutput,500);budget.record({input:30,output:500,cacheHit:10});
