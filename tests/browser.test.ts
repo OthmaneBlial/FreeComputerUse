@@ -236,6 +236,16 @@ test('path fallback rejects a same-name link after its destination changes',asyn
   }finally{await browser.close();}
 });
 
+test('path fallback rejects a same-name control after its region changes',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<section id="profile"><button>Save</button></section><section id="billing"><button>Save</button></section>');
+    const observer=new Observer(),state=await observer.inspect(browser.page),target=state.elements[1]!;
+    await browser.page.locator('#billing').evaluate(section=>section.id='account');
+    await assert.rejects(observer.selectors.resolve(browser.page,target.ref,100),/Target missing or ambiguous/);
+  }finally{await browser.close();}
+});
+
 test('page cannot redirect a saved semantic reference by copying its DOM marker',async()=>{
   const browser=await new Browser().launch();
   try{

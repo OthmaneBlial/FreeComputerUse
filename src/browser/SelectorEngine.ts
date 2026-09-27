@@ -55,11 +55,13 @@ export class SelectorEngine {
           const control=el as HTMLInputElement,tag=el.tagName.toLowerCase(),type=(el.getAttribute('type')??'').toLowerCase();
           const form=control.form,formName=form?clean(form.getAttribute('aria-label')||form.id||'form'):undefined;
           const href=tag==='a'&&el.hasAttribute('href')?(el as HTMLAnchorElement).href:undefined;
+          const section=el.closest('form,dialog,[role=dialog],nav,main,section');
+          const region=section?clean(section.getAttribute('aria-label')||section.id||section.tagName.toLowerCase()):undefined;
           const label=clean(el.getAttribute('aria-label'))||clean(described)||clean(control.labels?Array.from(control.labels).map(visibleLabel).join(' '):'');
           const content=['input','textarea','select'].includes(tag)?'':clean((el as HTMLElement).innerText??el.textContent);
           const name=label||(['input','textarea','select'].includes(tag)?clean(el.getAttribute('placeholder'))|| (type==='image'?clean(control.alt):'') || clean(el.getAttribute('name'))||(['submit','button'].includes(type)?clean(control.value):''):content);
           const role=el.getAttribute('role')||(tag==='button'||['submit','button','reset','image'].includes(type)?'button':tag==='a'?'link':tag==='select'?'combobox':type==='checkbox'?'checkbox':type==='radio'?'radio':type==='file'?'upload':type==='number'?'spinbutton':tag==='summary'?'button':'textbox');
-          return role===expected.role&&name===expected.name&&tag===expected.tag&&type===(expected.type??'')&&formName===expected.form&&href===expected.href;
+          return role===expected.role&&name===expected.name&&tag===expected.tag&&type===(expected.type??'')&&formName===expected.form&&href===expected.href&&region===expected.region;
         },observed))return{locator:path,strategy:'path'};
       }
       const remaining=deadline-Date.now();
