@@ -40,6 +40,13 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.10 release candidate passed `FCU_BROWSER_CHANNEL=chrome npm run
+validate` on 27 September 2026: 144/144 tests in 187.23 seconds, type checks,
+build, security scan (273 worktree files, 275 historical paths, 1,354 blobs)
+and npm audit with zero vulnerabilities. The installed candidate also passed
+CLI version/help, Chrome doctor, a read-only practice-table task and MCP
+initialization/tool discovery. No live model request was made.
+
 Post-release main commits `5dfe985` and `85cfc36` fix the MCP initialization
 version and guard the existing “up to N” extraction contract, including empty
 results when no items are available. The

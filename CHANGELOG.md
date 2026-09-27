@@ -2,10 +2,12 @@
 
 ## Unreleased
 
+## 0.2.10 - 2026-09-27
+
 ### Fixed
 
-- Report the package version in the MCP server handshake so clients see the
-  version they installed.
+- Report the installed package version in the MCP server initialization
+  handshake.
 
 ## 0.2.9 - 2026-09-27
 

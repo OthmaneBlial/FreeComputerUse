@@ -24,16 +24,16 @@
 
 Use an API or supported model CLI for open-ended tasks. Skip model setup for common page-reading jobs: deterministic local strategies read visible text, links and tables without a model call.
 
-## New in 0.2.9: recover from repeated actions and verify faster
+## New in 0.2.10: MCP clients see the installed version
 
-Completion checks now run concurrently, so one slow condition does not delay the rest. If an action repeats without changing the observed page, the agent gives the provider one bounded repair chance, then stops if the loop continues. Large table context also stays valid JSON and is marked partial when rows are omitted.
+MCP connections now advertise the package version they actually run. v0.2.9 also added bounded recovery from repeated actions and concurrent completion checks.
 
 ## No model key needed
 
 Install the release and start the local dashboard:
 
 ```bash
-npm install --global free-computer-use@0.2.9
+npm install --global free-computer-use@0.2.10
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -77,7 +77,7 @@ Requires Node.js 22.13+, npm and an installed browser. The verified setup select
 ### Install from npm
 
 ```bash
-npm install --global free-computer-use@0.2.9
+npm install --global free-computer-use@0.2.10
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
