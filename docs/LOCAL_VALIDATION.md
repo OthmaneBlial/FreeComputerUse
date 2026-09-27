@@ -61,6 +61,15 @@ Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
 system Chrome `154.0.8037.57`. This follow-up is newer than tag `v0.2.21` and
 is not included in that release. No live model-provider request was made.
 
+The latest code commit `284a3c9` adds observed page-change telemetry and
+provider-free workflow reuse after delayed SPA hydration. Its full local gate
+passed 185/185 tests in 252.02 seconds, type checks, lab/package builds,
+history scan (285 worktree files, 287 historical paths and 1,638 blobs), and
+`npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Apple
+Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`.
+These changes are newer than tag `v0.2.21`; no live model-provider request
+was made.
+
 The preceding source commit `040743c` prevents a canceled TLS tunnel from
 opening an upstream connection after DNS resolution. Its full validation passed
 182/182 tests. The preceding source commit `2dda301` redacts URL- and
