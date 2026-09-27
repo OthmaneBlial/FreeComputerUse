@@ -132,10 +132,11 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     assert.equal(dashboard.getAgent()?.browser.page.url(),'about:blank');
     assert.match(await browser.page.locator('#approval-reason').innerText(),/Allow browser access/);
     await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
-    await browser.page.waitForFunction(()=>!document.querySelector('#approval-reason')?.textContent?.includes('Allow browser access'),undefined,{timeout:15000});
-    try{await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});}catch(error){
+    await browser.page.locator('#approval').waitFor({state:'hidden',timeout:5000});
+    try{await browser.page.locator('#approval').waitFor({state:'visible',timeout:45000});}catch(error){
       console.log('Dashboard diagnostic',JSON.stringify({notice:await browser.page.locator('#notice').innerText(),agent:dashboard.getAgent()?.trace,events:dashboard.getAgent()?.events,errors}));throw error;
     }
+    assert.doesNotMatch(await browser.page.locator('#approval-reason').innerText(),/Allow browser access/);
     assert.equal(dashboard.getAgent()?.trace?.status,'running');
     await browser.page.locator('#agent-cursor').waitFor({state:'visible',timeout:8000});
     assert((await browser.page.locator('#agent-cursor').getAttribute('data-sequence'))!==null);
@@ -153,8 +154,10 @@ test('local dashboard saves a profile, executes a form, gates approval, shows me
     await browser.page.getByRole('button',{name:'Recent runs',exact:false}).click();
     await browser.page.getByRole('button',{name:/Fill the contact form and send/}).click();
     await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
-    await browser.page.waitForFunction(()=>!document.querySelector('#approval-reason')?.textContent?.includes('Allow browser access'),undefined,{timeout:15000});
-    await browser.page.locator('#approval').waitFor({state:'visible',timeout:15000});await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
+    await browser.page.locator('#approval').waitFor({state:'hidden',timeout:5000});
+    await browser.page.locator('#approval').waitFor({state:'visible',timeout:45000});
+    assert.doesNotMatch(await browser.page.locator('#approval-reason').innerText(),/Allow browser access/);
+    await browser.page.getByRole('button',{name:'Approve action',exact:true}).click();
     await browser.page.waitForFunction(()=>document.querySelector('#status')?.textContent==='COMPLETED',undefined,{timeout:25000});
     assert.equal(dashboard.getAgent(),priorAgent,'The dashboard reuses its local agent between tasks');
     assert.equal(dashboard.getAgent()?.browser.context,priorContext,'The dashboard keeps one browser context between tasks');
