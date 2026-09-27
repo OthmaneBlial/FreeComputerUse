@@ -68,7 +68,7 @@ This release tightens form targeting, workflow replay, agent recovery, and model
 - Keep the agent usable after trace-save or approval-listener errors.
 - Reject output usage above its reserved limit and cache counts above reported input usage.
 
-[Read the full 0.2.14 release notes](release-notes/0.2.14.md).
+[Read the full 0.2.14 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.14).
 
 ## Choose a model
 

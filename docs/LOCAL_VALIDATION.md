@@ -50,9 +50,28 @@ fresh-prefix candidate install passed `agent --version`, `agent --help`, Chrome
 `agent doctor`, the public synthetic table task (three rows, one browser action,
 zero failed actions, zero model calls in explicit `--ultra` mode), and an MCP
 `stdio` handshake reporting
-version `0.2.14` with all four tools. The install and smoke checks ran against a
-candidate tarball; publication and clean-archive validation remain separate
-gates.
+version `0.2.14` with all four tools. This was the pre-release working-tree
+pass; clean-archive and publication checks follow.
+
+The published v0.2.14 release commit `f1ae2cbae491c062074aa259c19836b3b46523f8`
+passed `npm ci` and `FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean
+worktree on 27 September 2026: 167/167 tests in 197.54 seconds, type checks,
+build, security scan (278 worktree files, 280 historical paths, 1,495 blobs),
+and npm audit with zero vulnerabilities. Environment: macOS `26.6`, Apple
+Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No
+live model-provider request was made.
+
+The 1,166,332-byte package has 135 files and excludes tests and `.env` data.
+SHA-256: `9bd0fb1cc1543d48409f441ed5fc4973ae7a73aeaa3c71dfb465bdf502456242`.
+npm shasum: `a76c5e3b71535d402e63fad63284b9a3219e0457`; integrity:
+`sha512-Ou0OZmQXrDVWKDeQZhF6SpgIN9Ot4ZPxehrVuz51i2mgZo9zgczkKJLxMjQXGyCuaK4QkVcC0VcBBcsIqQt0Yg==`.
+The npm registry and GitHub release asset each match the candidate byte for
+byte. Fresh-prefix installs from both sources passed version/help, Chrome
+doctor, the synthetic three-row table task with one browser action and zero
+model calls in explicit `--ultra` mode, and the MCP version/tool handshake.
+Pages built the same commit, served HTTP 200, and passed 320/390/768/1440 px
+overflow checks plus task-tab, filter, and copy-goal checks with no console
+errors. The pattern scan is not a complete security audit.
 
 The v0.2.12 release candidate, based on main commit `f0e1f55`, passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 149/149
