@@ -29,11 +29,14 @@ export class Observer {
   async fragment(page:Page,selector:string) {
     return page.locator(selector).evaluate(el=>{
       const sources=[el,...el.querySelectorAll('*')],clone=el.cloneNode(true) as Element,copies=[clone,...clone.querySelectorAll('*')];
-      const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+      const roots:(Document|ShadowRoot)[]=[document];
+      for(let index=0;index<roots.length;index++)for(const host of roots[index]!.querySelectorAll('*'))if(host.shadowRoot)roots.push(host.shadowRoot);
+      const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(node=>node.getClientRects().length>0),modalVisible=!!modal;
+      const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+      const [composedContains]=[(ancestor:Element,node:Element)=>{for(let parent:Element|null=node;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
       const [visible]=[(node:Element)=>{
-        if(node.closest('[hidden],[inert],[aria-hidden="true"]'))return false;
-        if(modalVisible&&modal&&!modal.contains(node)&&modal!==node&&!node.contains(modal))return false;
-        for(let parent:Element|null=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;}
+        if(modalVisible&&modal&&!composedContains(modal,node)&&!composedContains(node,modal))return false;
+        for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return false;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;}
         return node.getClientRects().length>0;
       }];
       if(!visible(el))return '';

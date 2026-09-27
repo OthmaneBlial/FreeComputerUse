@@ -121,6 +121,18 @@ test('page observation excludes visually hidden descendant text',async()=>{
   }finally{await browser.close();}
 });
 
+test('repair HTML fragments honor shadow visibility and modal boundaries',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>Background instructions</button><div id="modal-host"></div><div id="hidden-host" aria-hidden="true"></div>');
+    await browser.page.locator('#modal-host').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<div role="dialog" aria-modal="true"><p>Visible modal</p></div>';});
+    await browser.page.locator('#hidden-host').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<form id="private-form"><p>Hidden repair instructions</p></form>';});
+    const observer=new Observer(),background=await observer.fragment(browser.page,'body');
+    assert.doesNotMatch(background,/Background instructions/);
+    assert.equal(await observer.fragment(browser.page,'#private-form'),'');
+  }finally{await browser.close();}
+});
+
 test('ranked selector survives replacement and rejects ambiguous duplicate buttons',async()=>{
   const browser=await new Browser().launch();
   try {
