@@ -209,6 +209,18 @@ test('sensitive action waits for a human and rejection never clicks',async()=>{
   }finally{await browser.close();}
 });
 
+test('conflicting aria labels cannot hide irreversible visible button text',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button aria-label="Save changes" onclick="document.body.dataset.deleted=\'yes\'">Delete record</button>');
+    const control=new Control(),executor=new Executor(browser,new Observer(),new VariableResolver(),control);
+    control.on('approval',()=>control.reject());
+    const result=await executor.run({type:'click',target:{role:'button',name:'Save changes'}});
+    assert.equal(result.success,false,'Visible destructive text must still require approval when aria-label is benign');
+    assert.equal(await browser.page.locator('body').getAttribute('data-deleted'),null);
+  }finally{await browser.close();}
+});
+
 test('image submit controls are exposed as buttons and require approval',async()=>{
   const browser=await new Browser().launch();
   try{

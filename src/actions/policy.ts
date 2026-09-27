@@ -13,7 +13,7 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
     const hint=[autocomplete,el.getAttribute('name'),el.id,el.getAttribute('placeholder'),el.getAttribute('aria-label'),el.getAttribute('title'),...labels,...referenced]
       .join(' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().replace(/[^a-z0-9]+/g,' ');
     return {
-      text:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('value')||'').trim(),
+      text:[el.getAttribute('aria-label'),...labels,...referenced,el.getAttribute('title'),el.textContent,el.getAttribute('value')].filter(Boolean).join(' ').trim(),
       type:el.getAttribute('type'),tag:el.tagName.toLowerCase(),
       sensitiveField:el.getAttribute('type')?.toLowerCase()==='password'||autocomplete.toLowerCase().split(/\s+/).some(token=>token.startsWith('cc-')||['current-password','new-password','one-time-code'].includes(token))||
         /\b(password|passwd|passcode|pin|otp|cvv|cvc|csc|card number|credit card|debit card|cardholder|one time code|verification code|security code|auth code|expiration|expiry)\b/.test(hint),
