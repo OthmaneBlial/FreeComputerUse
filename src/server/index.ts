@@ -23,7 +23,7 @@ const Manual=z.discriminatedUnion('type',[
   z.object({type:z.literal('scroll'),y:z.number().min(-10000).max(10000)}).strict(),
   z.object({type:z.literal('navigate'),url:browserURL}).strict(),
 ]);
-async function body(req:IncomingMessage){
+async function body(req:IncomingMessage):Promise<unknown>{
   let buffer='';for await(const chunk of req){buffer+=chunk;if(Buffer.byteLength(buffer)>65536)throw new Error('Request too large');}
   try{return JSON.parse(buffer);}catch{throw new Error('Invalid JSON request');}
 }
