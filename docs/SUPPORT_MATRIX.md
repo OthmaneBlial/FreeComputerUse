@@ -44,6 +44,14 @@ parameters, endpoint and terms before use.
 
 ## Validation snapshot for this implementation session
 
+- Post-release main commit `596e18d` adds form-scoped profile filling and a
+  regression test for unrelated required fields and competing forms.
+  `FCU_BROWSER_CHANNEL=chrome npm run validate` passed 161/161 tests, type
+  checks, build, history scan (277 worktree files, 279 historical paths and
+  1,457 blobs), and `npm audit` with zero vulnerabilities on 27 September
+  2026. Environment: macOS `26.6`, Node `25.9.0`, system Chrome
+  `154.0.8037.57`. This verifies the source on `main`; the published npm
+  artifact remains v0.2.13. The pattern scan is not a complete security audit.
 - Fresh-export onboarding: `git archive` of commit `eca3f17`, offline `npm ci`,
   copied `.env.example` with Chrome selected, `chmod 600`, `agent doctor`,
   keyboard-only no-key `ui:smoke`, and `npm run dev -- --port 0` all passed on
