@@ -89,7 +89,7 @@ export class DomExtractor {
               parts.unshift(`${parent.tagName.toLowerCase()}${siblings.length > 1 ? `:nth-of-type(${siblings.indexOf(parent)+1})` : ''}`);
               parent = parent.parentElement;
             }
-            const errors = (el.getAttribute('aria-errormessage') || el.getAttribute('aria-describedby') || '').split(/\s+/).map(id=>{const error=document.getElementById(id);return error?visibleText(error):'';}).join(' ');
+            const errors = (el.getAttribute('aria-errormessage') || el.getAttribute('aria-describedby') || '').split(/\s+/).map(id=>{const error=root instanceof Document?document.getElementById(id):(root as ShadowRoot).getElementById(id);return error?visibleText(error):'';}).join(' ');
             const form = input.form;
             const section = el.closest('form,dialog,[role=dialog],nav,main,section');
             return {

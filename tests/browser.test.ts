@@ -16,10 +16,11 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
   const browser=await new Browser().launch();
   try {
     await browser.page.setContent(`<h1>Application</h1><style>${'/* decoration */'.repeat(2000)}</style><form id="application"><label for="email">Email</label><input id="email" name="email" required><label for="country">Country</label><select id="country"><option>France</option><option>Germany</option></select><button>Continue</button></form><button hidden>Hidden</button><div aria-hidden="true"><button>Tracking</button></div><iframe srcdoc='<button>Frame action</button>'></iframe><div id="shadow"></div><table><tr><th>Price</th></tr><tr><td>12</td></tr></table>`);
-    await browser.page.locator('#shadow').evaluate(el=>{el.attachShadow({mode:'open'}).innerHTML='<button>Shadow action</button>';});
+    await browser.page.locator('#shadow').evaluate(el=>{el.attachShadow({mode:'open'}).innerHTML='<button>Shadow action</button><label for="postal">Postal code</label><input id="postal" aria-describedby="postal-error"><span id="postal-error">Postal code is invalid</span>';});
     const observer=new Observer();const first=await observer.inspect(browser.page);
     assert.deepEqual(first.headings,['Application']);
     assert(first.elements.some(e=>e.name==='Shadow action'));
+    assert.equal(first.elements.find(e=>e.name==='Postal code')?.error,'Postal code is invalid');
     assert(first.elements.some(e=>e.name==='Frame action'&&e.frame===1));
     assert(!first.elements.some(e=>e.name==='Hidden'||e.name==='Tracking'));
     assert.equal(first.elements.find(e=>e.name==='Email')?.required,true);
