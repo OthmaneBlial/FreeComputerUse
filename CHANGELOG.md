@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.2.14 - 2026-09-27
+
+### Security
+
+- Scope profile filling to a single unambiguous form.
+- Evaluate visible action text with accessible labels before approving risky
+  browser actions.
+
+### Reliability
+
+- Skip replay when learned-workflow completion checks already pass.
+- Keep the agent and approval queue recoverable after trace-store and listener
+  errors.
+- Validate provider token usage against reserved output and reported input
+  counts.
+
 ## 0.2.13 - 2026-09-27
 
 ### Security
