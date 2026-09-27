@@ -78,12 +78,19 @@ passed 190/190 tests in 294.78 seconds, type checks, lab/package builds, history
 scan (286 worktree files, 288 historical paths, 1,673 blobs), and `npm audit`
 with zero vulnerabilities. No live model-provider request was made.
 
-Latest fully validated source commit `0cf3dab` also rejects a same-name fallback
+Earlier validated source commit `0cf3dab` also rejects a same-name fallback
 target when its observed region changes. Its full local gate passed 191/191
 tests in 262.31 seconds, type checks, lab/package builds, history scan (286
 worktree files, 288 historical paths, 1,679 blobs), and `npm audit` with zero
-vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm
-`11.12.1`, and system Chrome `154.0.8037.57`. This source is newer than
+vulnerabilities. No live model-provider request was made.
+
+Latest fully validated source commit `0df63d0` verifies successful
+`method="dialog"` form submissions by checking that the associated dialog
+closed, without requiring a document response. Its full local gate passed
+192/192 tests in 251.63 seconds, type checks, lab/package builds, history scan
+(286 worktree files, 288 historical paths, 1,685 blobs), and `npm audit` with
+zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`,
+npm `11.12.1`, and system Chrome `154.0.8037.57`. This source is newer than
 published `v0.2.22`. No live model-provider request was made. The history
 pattern scan is not a complete security audit.
 
