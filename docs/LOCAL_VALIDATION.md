@@ -52,6 +52,15 @@ publication checks are recorded in [v0.2.21 release notes](../release-notes/0.2.
 No live model-provider request was made. The history pattern scan is not a
 complete security audit.
 
+The post-release `main` commit `b43b4a0` rejects malformed UTF-8 request bytes
+instead of silently saving replacement characters. On 27 September 2026,
+`FCU_BROWSER_CHANNEL=chrome npm run validate` passed 183/183 tests in 312.74
+seconds, type checks, lab/package builds, history scan (285 worktree files, 287
+historical paths and 1,627 blobs), and `npm audit` with zero vulnerabilities.
+Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and
+system Chrome `154.0.8037.57`. This follow-up is newer than tag `v0.2.21` and
+is not included in that release. No live model-provider request was made.
+
 The preceding source commit `040743c` prevents a canceled TLS tunnel from
 opening an upstream connection after DNS resolution. Its full validation passed
 182/182 tests. The preceding source commit `2dda301` redacts URL- and
