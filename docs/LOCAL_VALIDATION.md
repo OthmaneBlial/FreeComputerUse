@@ -40,6 +40,10 @@ keys, cookies, or user data.
 
 ## Recent local gate results
 
+The v0.2.23 release-candidate tree, committed as `dc8416b0e332a38a09589093f09403b130c5c437`, passed `FCU_BROWSER_CHANNEL=chrome npm run validate` on 27 September 2026: 196/196 tests in 231.60 seconds, TypeScript checks, lab and package builds, history scan (286 worktree files, 288 historical paths, 1,719 blobs), and `npm audit` with zero vulnerabilities. Environment: macOS `26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. No live model-provider request was made. The history pattern scan is not a complete security audit.
+
+The tested archive contains 135 files (1,179,875 compressed bytes; 2,114,975 unpacked bytes), SHA-256 `556f2a769a6e886a9c1fbba298eabde70c99a80238b5e69c84d545539be04fbb`, npm shasum `11009a16319d7b88bfab4759b7001a45e61a1f1f`, and integrity `sha512-f+3w+CbdweuUuP+0b9Y93UXTxutVZiAkopA81W40dmeb0wBDDfNQxqR1hcaP+r3ial/9XHweT1RsRaukMQef8w==`. Candidate, npm registry and GitHub release tarballs match byte for byte; the GitHub asset passes its SHA-256 sidecar. Fresh-prefix npm and GitHub installs pass `agent --version`, `agent --help`, Chrome `agent doctor`, and MCP `stdio` discovery of all four tools. The noninteractive CLI practice-table smoke was blocked at the required human site-approval step before any browser action; it made zero model calls. The live Pages homepage returns HTTP 200 and passes 320/390/768/1440 px overflow checks without browser console errors. GitHub Actions are disabled; no hosted build is claimed.
+
 The published `v0.2.22` release commit
 `96a7084410e1cccf3738a6d42c8d7a80213c30e0` passed
 `FCU_BROWSER_CHANNEL=chrome npm run validate` from a clean detached worktree on
