@@ -21,8 +21,8 @@ the values you entered; `history.sqlite` stores run traces and learned workflows
 saved by tasks. These files are local and are not encrypted.
 
 Before a URL is sent in model context, saved in a new trace, or shown in
-dashboard state and CLI history, credentials in URL queries/fragments and
-bearer-shaped tokens are replaced with `REDACTED`. The browser still opens the
+dashboard state and CLI history, recognized token, authentication, one-time-code, payment-card and bank-account
+query values, plus bearer-shaped tokens, are replaced with `REDACTED`. The browser still opens the
 original URL. A replay that depended on a hidden URL credential needs a fresh
 starting URL. This name-based filter cannot recognize every secret; review local
 data and screenshots before sharing.
