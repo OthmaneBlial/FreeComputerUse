@@ -139,6 +139,13 @@ export class Agent extends EventEmitter {
       let previous:PageState|undefined;
       while(true){
         await this.control.checkpoint();
+        if(learned&&plan){
+          const criteria=[...learned.plan.completion,...(this.options.completionCriteria??[]),...goalCriteria(goal)];
+          if((await this.executor.verifier.check(criteria,0,startedAt)).success){
+            trace.plans.push(learned.plan);trace.completion=criteria.map(c=>this.executor.semanticCondition(c));trace.status='completed';
+            this.event('CACHE','Learned workflow completion already satisfied');break;
+          }
+        }
         if(!plan){
           if(!provider)throw new Error('No matching local strategy/workflow; configure an LLM provider');
           this.event('PLAN','Requesting one action batch');planCalls++;

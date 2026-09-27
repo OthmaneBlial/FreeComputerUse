@@ -112,6 +112,25 @@ test('observe/plan/execute/verify learns semantic workflow and replays without a
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('learned workflow does not replay a checkbox toggle after its state changes',async()=>{
+  const store=new TraceStore(':memory:');let planCalls=0;
+  const provider:LLMProvider={name:'fixture',plan:async context=>{
+    planCalls++;
+    return PlanSchema.parse({goal:context.goal,steps:['Enable the preference'],actions:[{type:context.page.includes(' checked')?'check':'click',target:{role:'checkbox',name:'Email updates'}}],completion:[{type:'checkbox_checked',target:{role:'checkbox',name:'Email updates'}}],continue:false});
+  },repair:async()=>{throw new Error('Unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    await agent.browser.launch();await agent.browser.page.setContent('<label><input type="checkbox">Email updates</label>');
+    const goal='Enable email updates';
+    const first=await agent.run(goal);
+    assert.equal(first.status,'completed',first.error??'Task failed');assert.equal(planCalls,1);
+    const second=await agent.run(goal);
+    assert.equal(second.status,'completed',second.error??'Task failed');
+    assert.equal(second.metrics.workflowCacheHits,1);assert.equal(second.metrics.browserActions,0,'Do not replay the learned toggle after its completion condition is already true');
+    assert.equal(planCalls,1);assert.equal(await agent.browser.page.getByRole('checkbox').isChecked(),true);
+  }finally{await agent.close();store.close();}
+});
+
 test('invalid learned workflows fall back to the planner',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let planCalls=0;
   const goal='Summarize the page',url=`${fixture.url}/demo`;
