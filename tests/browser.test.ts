@@ -121,6 +121,17 @@ test('page observation excludes visually hidden descendant text',async()=>{
   }finally{await browser.close();}
 });
 
+test('assigned slot visibility filters page state and repair fragments',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<main><div id="host"><p id="slot-secret" slot="hidden">Slotted private text</p><button slot="hidden">Slotted private action</button><p slot="visible">Slotted public text</p></div></main>');
+    await browser.page.locator('#host').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<section aria-hidden="true"><slot name="hidden"></slot></section><slot name="visible"></slot>';});
+    const observer=new Observer(),state=await observer.inspect(browser.page),observed=JSON.stringify(state);
+    assert(!observed.includes('Slotted private'));assert(observed.includes('Slotted public text'));
+    assert.equal(await observer.fragment(browser.page,'#slot-secret'),'');
+  }finally{await browser.close();}
+});
+
 test('repair HTML fragments honor shadow visibility and modal boundaries',async()=>{
   const browser=await new Browser().launch();
   try{

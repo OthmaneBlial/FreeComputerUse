@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.2.16 - 2026-09-27
+
+### Security
+
+- Respect assigned slot ancestors when filtering hidden or inert content from
+  observation, repair context, and text, table, link, and record extraction.
+
+### Fixed
+
+- Preserve visible slotted content during text extraction when hidden slot
+  branches are omitted.
+
 ## 0.2.15 - 2026-09-27
 
 ### Security

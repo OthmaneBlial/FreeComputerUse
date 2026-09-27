@@ -507,6 +507,26 @@ test('text extraction excludes hidden descendants and blocked modal backgrounds'
   }finally{await browser.close();}
 });
 
+test('all extraction formats exclude content assigned to hidden slots',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<div id="host"><main slot="hidden"><p>Slot private text</p><table><tr><td>Slot private record</td></tr></table><a href="/private">Slot private link</a></main><main slot="visible"><p>Slot public text</p><table><tr><td>Slot public record</td></tr></table><a href="/public">Slot public link</a></main></div>');
+    await browser.page.locator('#host').evaluate(host=>{host.attachShadow({mode:'open'}).innerHTML='<section aria-hidden="true"><slot name="hidden"></slot></section><slot name="visible"></slot>';});
+    const executor=new Executor(browser,new Observer(),new VariableResolver(),new Control());
+    for(const action of [
+      {type:'extract',format:'text',key:'slot-text'},
+      {type:'extract',format:'table',key:'slot-table'},
+      {type:'extract',format:'links',key:'slot-links'},
+      {type:'extract',target:{css:'tr'},format:'records',key:'slot-records',fields:{item:{css:'td',attribute:'text'}}},
+    ]){
+      const result=await executor.run(action as never),value=JSON.stringify(browser.extractions.at(-1)?.value);
+      assert.equal(result.success,true,result.error??`${action.format} extraction failed`);
+      assert(!value.includes('Slot private'),`${action.format} extraction included hidden slot content`);
+      assert(value.includes('Slot public'),`${action.format} extraction omitted public content: ${value}`);
+    }
+  }finally{await browser.close();}
+});
+
 test('popup navigation waits for the new document before extraction and closing',async()=>{
   const fixture=await startFixtures(),browser=await new Browser({allowedOrigins:[fixture.url]}).launch();
   try{

@@ -184,7 +184,7 @@ export class Executor {
           interaction.cue('extract');
           const root=locator??page.locator('body');
           if(action.format==='table')data=await root.evaluateAll((els,{match,limit})=>{
-            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
             const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
             const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
             const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
@@ -194,7 +194,7 @@ export class Executor {
             return (match?values.filter(row=>JSON.stringify(row).toLowerCase().includes(match)):values).slice(0,limit);
           },{match:action.match?.toLowerCase(),limit:action.limit});
           else if(action.format==='links')data=await root.evaluateAll((els,{match,limit})=>{
-            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+            const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
             const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
             const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
             const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
@@ -208,8 +208,8 @@ export class Executor {
           else if(action.format==='records'){
             if(!action.fields||!Object.keys(action.fields).length||Object.keys(action.fields).length>20)throw new Error('Records extraction requires 1..20 controlled CSS fields');
             data=await root.filter({visible:true}).evaluateAll((els,{fields,match,limit})=>{
-              const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;){if(parent===ancestor)return true;const root=parent.getRootNode();parent=parent.parentElement??(root instanceof ShadowRoot?root.host:null);}return false;}];
-              const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+              const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;){if(parent===ancestor)return true;const root=parent.getRootNode();parent=parent.assignedSlot??parent.parentElement??(root instanceof ShadowRoot?root.host:null);}return false;}];
+              const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
               const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
               const [hiddenByAncestor]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node))return true;for(let parent:Element|null=node;parent;parent=composedParent(parent)){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility!=='visible'||style.opacity==='0')return true;}return !node.getClientRects().length;}];
               let rows=[...new Set(els.flatMap(el=>el.matches('table,tbody')?[...el.querySelectorAll('tr')].filter(row=>row.querySelector('td')):[el]))];
@@ -251,7 +251,7 @@ export class Executor {
           else data=await root.filter({visible:true}).evaluateAll((els,{match,limit})=>{
             let lines=els.map(el=>{
               const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
-              const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+              const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.assignedSlot??node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
               const [composedContains]=[(ancestor:Element,node:Element)=>{for(let parent:Element|null=node;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
               const [excluded]=[(node:Element)=>{if(modalVisible&&modal&&!composedContains(modal,node)&&!composedContains(node,modal))return true;if(node.matches('[hidden],[inert],[aria-hidden="true"]'))return true;const style=getComputedStyle(node);return style.display==='none'||style.visibility!=='visible'||style.opacity==='0';}];
               let hiddenParent=false;
@@ -268,7 +268,7 @@ export class Executor {
                 if(node.nodeType!==Node.ELEMENT_NODE)return '';
                 const element=node as HTMLElement;
                 if(omitted.has(element))return '';
-                if(!dirty.has(element))return element.innerText??element.textContent??'';
+                if(!dirty.has(element)&&!(element instanceof HTMLSlotElement&&element.assignedNodes({flatten:true}).length))return element.innerText??element.textContent??'';
                 if(element.tagName==='BR')return '\n';
                 const children=element.shadowRoot?.childNodes??(element instanceof HTMLSlotElement&&element.assignedNodes({flatten:true}).length?element.assignedNodes({flatten:true}):element.childNodes);
                 const content=[...children].map(read).join('');

@@ -34,7 +34,7 @@ export class DomExtractor {
             }
           }
           const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(el=>el.getClientRects().length>0),modalVisible=!!modal;
-          const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+          const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
           const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
           const [visible] = [(el: Element) => {
             if(modalVisible&&modal&&!composedContains(modal,el))return false;

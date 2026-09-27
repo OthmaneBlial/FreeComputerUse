@@ -32,7 +32,7 @@ export class Observer {
       const roots:(Document|ShadowRoot)[]=[document];
       for(let index=0;index<roots.length;index++)for(const host of roots[index]!.querySelectorAll('*'))if(host.shadowRoot)roots.push(host.shadowRoot);
       const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(node=>node.getClientRects().length>0),modalVisible=!!modal;
-      const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+      const [composedParent]=[(node:Element):Element|null=>{const root=node.getRootNode();return node.assignedSlot??node.parentElement??(root instanceof ShadowRoot?root.host:null);}];
       const [composedContains]=[(ancestor:Element,node:Element)=>{for(let parent:Element|null=node;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
       const [visible]=[(node:Element)=>{
         if(modalVisible&&modal&&!composedContains(modal,node)&&!composedContains(node,modal))return false;

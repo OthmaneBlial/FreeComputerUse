@@ -8,9 +8,10 @@ release, and deploying Pages are separate checks.
 - Confirm the version is absent from npm, Git tags, and GitHub releases.
 - Keep `package.json`, lockfile, changelog, README, install guides, site copy,
   and release notes on the same version.
-- From a clean archive of the intended commit, install dependencies and run
-  `FCU_BROWSER_CHANNEL=chrome npm run validate`. Record runtime versions and
-  gate results without secrets or user data.
+- From a clean detached Git worktree of the intended commit, install
+  dependencies and run `FCU_BROWSER_CHANNEL=chrome npm run validate`. The
+  history security scan requires Git metadata. Record runtime versions and gate
+  results without secrets or user data.
 - Review `npm pack --dry-run --json`; ensure the package contains required
   runtime files and excludes tests, caches, `.env` data, profiles, traces and
   local user reports.
