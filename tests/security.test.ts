@@ -348,6 +348,12 @@ test('concurrent permissions remain distinct and stopping rejects queued approva
   assert((await settled).every(result=>result.status==='rejected'));
 });
 
+test('approval listener errors clear pending control state',async()=>{
+  const control=new Control();control.on('approval',()=>{throw new Error('simulated approval listener failure');});
+  await assert.rejects(control.confirm('Approve action',{}),/simulated approval listener failure/);
+  assert.equal(control.pending,undefined);assert.throws(()=>control.approve(),/No action is awaiting approval/);control.reset();
+});
+
 test('replaced sensitive target cannot inherit an earlier human approval',async()=>{
   const browser=await new Browser().launch();
   try{
