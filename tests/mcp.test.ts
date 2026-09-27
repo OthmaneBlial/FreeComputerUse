@@ -4,7 +4,7 @@ import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { InMemoryTransport, type ElicitRequest } from '@modelcontextprotocol/server';
 import { createServer } from 'node:http';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Agent } from '../src/agent/Agent.js';
@@ -62,6 +62,8 @@ test('MCP exposes bounded tools and runs a verified task after human site approv
     return { store, agent: new Agent({ store, provider, browser: { allowedOrigins: [new URL(url).origin] } }) };
   });
   try {
+    const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+    assert.equal(connected.client.getServerVersion()?.version, version);
     const tools = await connected.client.listTools();
     assert.deepEqual(tools.tools.map(tool => tool.name).sort(), ['follow_task', 'inspect_page', 'start_task', 'stop_task']);
     const started = parseText(await connected.client.callTool({ name: 'start_task', arguments: { goal: 'Filter products and read the table', url: fixture.url + '/catalogue' } }));

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- Report the package version in the MCP server handshake so clients see the
+  version they installed.
+
 ## 0.2.9 - 2026-09-27
 
 ### Fixed
