@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.2.21 - 2026-09-27
+
+### Fixed
+
+- Preserve Unicode characters when JSON dashboard requests split a UTF-8
+  character across network chunks, while enforcing the 64 KiB limit on raw bytes.
+
 ## 0.2.20 - 2026-09-27
 
 ### Reliability

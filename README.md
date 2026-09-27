@@ -24,7 +24,7 @@
 Requires Node.js 22.13+, npm, and an installed browser. This verified setup uses system Chrome and does not download a separate browser.
 
 ```bash
-npm install --global free-computer-use@0.2.20
+npm install --global free-computer-use@0.2.21
 FCU_BROWSER_CHANNEL=chrome agent doctor
 FCU_BROWSER_CHANNEL=chrome agent ui
 ```
@@ -59,12 +59,12 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 
 The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
 
-## New in 0.2.20
+## New in 0.2.21
 
-Synchronous listener exceptions and rejected async listener promises no longer
-interrupt browser tasks or block later subscribers from receiving events.
+Dashboard JSON requests preserve emojis and other Unicode text even when a
+network chunk splits a UTF-8 character. The 64 KiB limit still counts raw bytes.
 
-[Read the full 0.2.20 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.20).
+[Read the full 0.2.21 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.21).
 
 ## Choose a model
 
