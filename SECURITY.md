@@ -122,6 +122,12 @@ and labels but omit current editable-control values and selected option values.
 Do not publish local traces, browser profiles or screenshots from a real account.
 Replays that depended on a redacted URL credential need a fresh starting URL.
 
+The full select option-value list is used locally when matching learned
+workflows; its one-way fingerprint is stored. Page compression and planner
+diffs omit raw option values, while visible labels remain available as task
+context. A workflow may retain the value it selected, like other local action
+history covered by the retention policy.
+
 ## Dashboard boundary
 
 The UI binds only to `127.0.0.1`; Host checks prevent simple DNS rebinding. API

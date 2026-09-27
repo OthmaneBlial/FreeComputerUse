@@ -64,6 +64,15 @@ Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome `154.0.8037.57`. This
 source change is newer than `v0.2.22` and is not in the published package. No
 live model-provider request was made.
 
+The current post-release `main` commit `758a3dd` keeps raw select option values
+out of provider-facing context while retaining them for local workflow matching.
+Its full local gate passed 189/189 tests in 336.41 seconds, type checks,
+lab/package builds, history scan (286 worktree files, 288 historical paths,
+1,666 blobs), and `npm audit` with zero vulnerabilities. Environment: macOS
+`26.6`, Apple Silicon, Node `25.9.0`, npm `11.12.1`, and system Chrome
+`154.0.8037.57`. This source change is newer than published `v0.2.22`. No live
+model-provider request was made.
+
 The `v0.2.21` release commit `86ef775919c5b73bdf5bda087c1ae0c1cf48786f`
 preserves Unicode in dashboard JSON requests when a UTF-8 character crosses a
 network chunk boundary. From a clean detached worktree on 27 September 2026,
