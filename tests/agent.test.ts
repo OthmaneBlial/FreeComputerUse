@@ -27,6 +27,23 @@ test('run history uses a descending index without a temporary sort',()=>{
   }finally{store.close();}
 });
 
+test('trace persistence failures do not strand an agent as active',async()=>{
+  const store=new TraceStore(':memory:'),save=store.save.bind(store);let failure:'initial'|'final'|undefined='initial';
+  store.save=trace=>{
+    if(failure==='initial'){failure=undefined;throw new Error('simulated initial persistence failure');}
+    if(failure==='final'&&trace.status==='completed'){failure=undefined;throw new Error('simulated final persistence failure');}
+    save(trace);
+  };
+  const provider:LLMProvider={name:'fixture',plan:async context=>PlanSchema.parse({goal:context.goal,steps:['Extract current text'],actions:[{type:'extract',key:'page'}],completion:[{type:'extraction_created',key:'page'}],continue:false}),repair:async()=>{throw new Error('Unexpected repair');}};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    await assert.rejects(agent.run('Read the page'),/simulated initial persistence failure/);assert.equal(agent.active,false);
+    assert.equal((await agent.run('Read the page')).status,'completed');
+    failure='final';await assert.rejects(agent.run('Read the page'),/simulated final persistence failure/);assert.equal(agent.active,false);
+    assert.equal((await agent.run('Read the page')).status,'completed');
+  }finally{await agent.close();store.close();}
+});
+
 test('local profile filling scopes required fields and rejects competing forms',async()=>{
   const store=new TraceStore(':memory:'),agent=new Agent({store,mode:'ultra',vault:{profile:{firstName:'Alex',email:'synthetic@example.test',message:'Synthetic message'},files:{}}});
   try{

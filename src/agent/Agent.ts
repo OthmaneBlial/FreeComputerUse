@@ -113,11 +113,11 @@ export class Agent extends EventEmitter {
     if(this.active)throw new Error('An agent task is already running');
     if(this.control.stopped)throw new Error('Create a new agent after stopping a task');
     if(url)checkedHttpURL(url,this.browser.page?.url());
-    this.active=true;const startedAt=Date.now();const callStart=this.providerCalls().length;
+    const startedAt=Date.now();const callStart=this.providerCalls().length;
     const provider=allowProvider?this.options.provider:undefined;
     const usageStart=this.budget.snapshot();let initial:PageState|undefined,repairs=0,cacheHits=0,planCalls=0;
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
-    this.trace=trace;this.options.store.save(trace);
+    this.trace=trace;this.options.store.save(trace);this.active=true;
     const repeated=new Map<string,number>(),repeatRecoveries=new Set<string>(),navigations=new Map<string,number>(),completed:string[]=[];
     let revision=this.control.revision,completionReplans=0;
     try{
@@ -220,6 +220,7 @@ export class Agent extends EventEmitter {
       }
     }catch(error){trace.status=this.control.stopped?'stopped':'failed';if(error instanceof SecurityBoundaryError)trace.failureKind='security';trace.error=this.variables.redact(error instanceof Error?error.message:'Task failed');this.control.stop();this.event(trace.failureKind==='security'?'BLOCKED':'ERROR',trace.error);}
     finally{
+      this.active=false;
       trace.durationMs=Date.now()-startedAt;trace.calls=this.providerCalls().slice(callStart);
       const usage=this.budget.snapshot(trace.actions.filter(a=>a.success).length);
       const actions=trace.actions.filter(a=>a.success).length,calls=usage.llmCalls-usageStart.llmCalls;
@@ -228,7 +229,6 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      this.active=false;
       if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
       this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
