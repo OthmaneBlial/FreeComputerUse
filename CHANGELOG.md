@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.2.22 - 2026-09-27
+
+### Reliability
+
+- Reuse learned workflows when a single-page app needs a short, bounded wait
+  to hydrate its controls.
+- Record observed page changes after each action and avoid sleeping after a
+  zero-timeout verification check.
+
+### Security
+
+- Reject malformed UTF-8 dashboard JSON bytes instead of storing replacement
+  characters; preserve valid Unicode split across network chunks.
+
 ## 0.2.21 - 2026-09-27
 
 ### Fixed
