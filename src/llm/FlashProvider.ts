@@ -5,6 +5,21 @@ import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js'
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
 import { normalizeProviderOutput,providerOutputSchema } from './structuredOutput.js';
 export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';maxOutputTokensParam?:'max_tokens'|'max_completion_tokens';timeoutMs?:number}
+async function responseJSON(response:Response):Promise<unknown>{
+  const reader=response.body?.getReader();if(!reader)throw new Error('LLM response body is empty');
+  const chunks:Uint8Array[]=[];let size=0;
+  try{
+    while(true){
+      const {done,value}=await reader.read();if(done)break;
+      size+=value.byteLength;
+      if(size>1_048_576){await reader.cancel().catch(()=>{});throw new Error('LLM response exceeded 1 MiB');}
+      chunks.push(value);
+    }
+  }finally{reader.releaseLock();}
+  const bytes=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+}
 export class FlashProvider implements LLMProvider {
   readonly name:string;
   readonly calls:LLMCall[]=[];
@@ -51,7 +66,7 @@ export class FlashProvider implements LLMProvider {
         body:JSON.stringify(makeBody(max_tokens)),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(this.config.timeoutMs??60000)]),redirect:'error',
       });
       if(!response.ok)throw new Error(`LLM request failed with HTTP ${response.status}`);
-      const data=await response.json() as {usage?:{prompt_tokens?:number;completion_tokens?:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number;input_tokens?:number;output_tokens?:number;cache_read_input_tokens?:number;cache_creation_input_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[];stop_reason?:string;content?:{type:string;text?:string}[]};
+      const data=await responseJSON(response) as {usage?:{prompt_tokens?:number;completion_tokens?:number;prompt_cache_hit_tokens?:number;prompt_cache_miss_tokens?:number;input_tokens?:number;output_tokens?:number;cache_read_input_tokens?:number;cache_creation_input_tokens?:number};choices?:{finish_reason:string;message:{content:string|null}}[];stop_reason?:string;content?:{type:string;text?:string}[]};
       const reported=data.usage?anthropic?{input:(data.usage.input_tokens??0)+(data.usage.cache_read_input_tokens??0)+(data.usage.cache_creation_input_tokens??0),output:data.usage.output_tokens??0,cacheHit:data.usage.cache_read_input_tokens,cacheMiss:(data.usage.input_tokens??0)+(data.usage.cache_creation_input_tokens??0)}:{input:data.usage.prompt_tokens??0,output:data.usage.completion_tokens??0,cacheHit:data.usage.prompt_cache_hit_tokens,cacheMiss:data.usage.prompt_cache_miss_tokens}:{input:inputBound,output:max_tokens,estimated:true};
       this.budget.record(reported,reservation.id);usage=reported;
       const choice=data.choices?.[0],content=anthropic?data.content?.filter(block=>block.type==='text').map(block=>block.text??'').join(''):choice?.message.content;

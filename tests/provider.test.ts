@@ -81,6 +81,20 @@ test('provider errors expose status, not response body or API key',async()=>{
   }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('API provider rejects oversized streamed responses',async()=>{
+  const output={steps:['Extract'],actions:[{type:'extract',format:'text',key:'result'}],completion:[{type:'extraction_created'}],continue:false};
+  const server=createServer((_req,res)=>{
+    res.writeHead(200,{'Content-Type':'application/json','Transfer-Encoding':'chunked'});
+    res.end(JSON.stringify({usage:{prompt_tokens:10,completion_tokens:20},choices:[{finish_reason:'stop',message:{content:JSON.stringify(output)}}],padding:'x'.repeat(1_048_576)}));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const budget=new TokenBudget(),provider=new FlashProvider({key:'test-only',model:'fixture',baseURL:`http://127.0.0.1:${(server.address() as {port:number}).port}`},budget);
+    await assert.rejects(provider.plan({goal:'Read',page:'Fixture',aliases:{profile:[],files:[]},completed:[],allowedOrigins:[]}),/exceeded 1 MiB/);
+    assert.equal(budget.calls,1);assert.equal(budget.pendingInput,0);assert.equal(provider.calls[0]?.success,false);
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
 test('provider reduces optional page data to fit the budget while preserving trusted criteria',async()=>{
   let request:Record<string,unknown>|undefined;
   const server=createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;request=JSON.parse(body);res.end(JSON.stringify({usage:{prompt_tokens:400,completion_tokens:40},choices:[{finish_reason:'stop',message:{content:JSON.stringify({steps:['Extract'],actions:[{type:'extract',format:'text',key:'facts'}],completion:[{type:'extraction_contains',value:'922'}],continue:false})}}]}));});
