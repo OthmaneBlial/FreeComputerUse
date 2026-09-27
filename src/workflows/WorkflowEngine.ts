@@ -9,15 +9,15 @@ export class WorkflowEngine {
   constructor(readonly store:TraceStore){}
   match(goal:string,state:PageState):Workflow|undefined{
     const url=new URL(state.url);const intent=normalizeIntent(goal),structure=structureHash(state);
-    const rows=this.store.db.prepare('SELECT workflow FROM workflows WHERE domain=? AND intent=? AND structure=?').all(url.origin,intent,structure);
+    const rows=this.store.db.prepare('SELECT id,workflow FROM workflows WHERE domain=? AND intent=? AND structure=?').all(url.origin,intent,structure);
     for(const row of rows){
       let workflow:Workflow;
       try{
         workflow=JSON.parse(row.workflow as string) as Workflow;
-        if(workflow.path!==url.pathname)continue;
+        if(workflow.id!==row.id||workflow.origin!==url.origin||workflow.path!==url.pathname||workflow.intent!==intent||workflow.structure!==structure)continue;
         PlanSchema.parse(workflow.plan);
       }catch{continue;}
-      this.store.db.prepare('UPDATE workflows SET hits=hits+1 WHERE id=?').run(workflow.id);return workflow;
+      this.store.db.prepare('UPDATE workflows SET hits=hits+1 WHERE id=?').run(row.id);return workflow;
     }return;
   }
   learn(trace:Trace,initial:PageState){

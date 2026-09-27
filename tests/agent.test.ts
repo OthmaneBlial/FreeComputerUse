@@ -85,6 +85,7 @@ test('invalid learned workflows fall back to the planner',async()=>{
     const insert=store.db.prepare('INSERT INTO workflows(id,domain,intent,structure,workflow) VALUES(?,?,?,?,?)');
     insert.run('broken-json',...identity,'{invalid');
     insert.run('stale-plan',...identity,JSON.stringify({path:'/demo',plan:{}}));
+    insert.run('mismatched-metadata',...identity,JSON.stringify({id:'another-row',origin:'https://other.test',path:'/demo',intent:'delete the account',structure:'stale',plan:{goal:'Delete the account',steps:['Extract visible text'],actions:[{type:'extract',key:'text',format:'text'}],completion:[{type:'extraction_created',key:'text'}],continue:false}}));
     const trace=await agent.run(goal,url);
     assert.equal(trace.status,'completed',trace.error??'Task failed');
     assert.equal(planCalls,1);
