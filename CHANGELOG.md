@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.2.9 - 2026-09-27
+
+### Fixed
+
+- Give repeated state/action loops one bounded provider repair chance before
+  stopping, without retrying the same loop indefinitely.
+
+### Performance
+
+- Check independent task completion conditions concurrently.
+
 ## 0.2.8 - 2026-09-27
 
 ### Fixed
