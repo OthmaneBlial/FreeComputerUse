@@ -39,7 +39,7 @@ export class DomExtractor {
           const [visible] = [(el: Element) => {
             if(modalVisible&&modal&&!composedContains(modal,el))return false;
             let parent:Element|null=el;
-            while(parent){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return false;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;parent=composedParent(parent);}
+            while(parent){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return false;const style=getComputedStyle(parent);if(style.display==='none'||style.opacity==='0'||parent===el&&style.visibility!=='visible')return false;parent=composedParent(parent);}
             return el.getClientRects().length>0;
           }];
           const [visibleText] = [(el:Element,max=180)=>{
