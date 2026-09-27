@@ -66,48 +66,6 @@ interrupt browser tasks or block later subscribers from receiving events.
 
 [Read the full 0.2.20 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.20).
 
-## New in 0.2.19
-
-Event subscribers are isolated from browser execution. A failing listener no
-longer fails the task or prevents other listeners from receiving events.
-
-[Read the full 0.2.19 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.19).
-
-## New in 0.2.18
-
-Page observation and repair context now agree on visibility. Visible descendants
-inside hidden ancestors are retained when their own styles make them visible;
-collapsed content, blocked background text, and hidden shadow content stay out
-of repair snippets. Visible controls inside open shadow roots are included.
-
-[Read the full 0.2.18 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.18).
-
-## New in 0.2.17
-
-DOM size and compression metrics now include markup inside open shadow roots,
-so the reported page size reflects content the agent can inspect.
-
-[Read the full 0.2.17 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.17).
-
-## New in 0.2.16
-
-This patch follows assigned slot ancestry when deciding what page content is hidden.
-
-- Exclude slotted text, tables, links, and records inside hidden or inert ancestors.
-- Preserve visible slotted content while omitting hidden branches.
-
-[Read the full 0.2.16 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.16).
-
-## New in 0.2.15
-
-This patch extends sensitive-action approval and extraction checks into open shadow DOM.
-
-- Use shadow-root labels to identify sensitive controls and recheck them after approval.
-- Redact labeled payment values and omit hidden shadow content from extraction and repair context.
-- Keep text, tables and links inside the visible modal boundary.
-
-[Read the full 0.2.15 release notes](https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.15).
-
 ## Choose a model
 
 Use an API key or authenticate through a supported provider CLI. API usage and consumer subscriptions have separate billing and limits.
