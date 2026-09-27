@@ -25,12 +25,21 @@ export class DomExtractor {
         const data = await evaluateWhilePageOpen(page,frame.evaluate(({ index, region,documentId }) => {
           // Array destructuring avoids tsx's named-function helper in browser serialization.
           const [clean] = [(s: string | null | undefined, max = 180) => (s ?? '').replace(/\s+/g,' ').trim().slice(0,max)];
-          const modal=document.querySelector('dialog:modal,[role=dialog][aria-modal=true]'),modalVisible=!!modal&&modal.getClientRects().length>0;
+          const roots: (Document|ShadowRoot)[] = [document];
+          const all: Element[] = [];
+          for (let rootIndex = 0; rootIndex < roots.length; rootIndex++) {
+            for (const el of roots[rootIndex]!.querySelectorAll('*')) {
+              all.push(el);
+              if (el.shadowRoot) roots.push(el.shadowRoot);
+            }
+          }
+          const modal=roots.flatMap(root=>[...root.querySelectorAll('dialog:modal,[role=dialog][aria-modal=true]')]).find(el=>el.getClientRects().length>0),modalVisible=!!modal;
+          const [composedParent]=[(el:Element):Element|null=>{const root=el.getRootNode();return el.parentElement??(root instanceof ShadowRoot?root.host:null);}];
+          const [composedContains]=[(ancestor:Element,el:Element)=>{for(let parent:Element|null=el;parent;parent=composedParent(parent))if(parent===ancestor)return true;return false;}];
           const [visible] = [(el: Element) => {
-            if (el.closest('[hidden],[inert],[aria-hidden="true"]')) return false;
-            if(modalVisible&&modal&&!modal.contains(el)&&modal!==el)return false;
+            if(modalVisible&&modal&&!composedContains(modal,el))return false;
             let parent:Element|null=el;
-            while(parent){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;parent=parent.parentElement;}
+            while(parent){if(parent.matches('[hidden],[inert],[aria-hidden="true"]'))return false;const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||style.opacity==='0')return false;parent=composedParent(parent);}
             return el.getClientRects().length>0;
           }];
           const [visibleText] = [(el:Element,max=180)=>{
@@ -41,14 +50,6 @@ export class DomExtractor {
             for(let index=source.length-1;index>=0;index--)if(hidden[index])copies[index]!.remove();
             return clean(clone.textContent,max);
           }];
-          const roots: (Document|ShadowRoot)[] = [document];
-          const all: Element[] = [];
-          for (let rootIndex = 0; rootIndex < roots.length; rootIndex++) {
-            for (const el of roots[rootIndex]!.querySelectorAll('*')) {
-              all.push(el);
-              if (el.shadowRoot) roots.push(el.shadowRoot);
-            }
-          }
           const formRefs=new Map(all.filter(el=>el.tagName==='FORM').map((form,formIndex)=>[form,`${index}:${formIndex}`]));
           const scope = region ? all.find(el => el.id === region || el.getAttribute('aria-label') === region || el.tagName.toLowerCase() === region || el.getAttribute('role') === region) : undefined;
           if (region && !scope) return { elements: [], headings: [], text: '', tables: [], dialogs: [], htmlBytes: 0, truncated: false };

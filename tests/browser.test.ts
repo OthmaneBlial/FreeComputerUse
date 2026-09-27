@@ -44,6 +44,29 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
   }finally{await browser.close();}
 });
 
+test('shadow DOM respects hidden hosts and visible modal ancestry',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<button>Background action</button><div id="aria-hidden" aria-hidden="true"></div><div id="inert" inert></div><dialog id="light-modal"><div id="modal-content"></div></dialog><div id="shadow-modal"></div>');
+    for(const [id,content] of [['aria-hidden','<button>Hidden aria action</button><p>Hidden aria secret</p>'],['inert','<button>Hidden inert action</button><p>Hidden inert secret</p>'],['modal-content','<button>Visible modal action</button>']] as const)
+      await browser.page.locator(`#${id}`).evaluate((host,html)=>{host.attachShadow({mode:'open'}).innerHTML=html;},content);
+    await browser.page.locator('#shadow-modal').evaluate(host=>{
+      const root=host.attachShadow({mode:'open'});root.innerHTML='<dialog><div id="nested-content"></div></dialog>';
+      root.querySelector('#nested-content')!.attachShadow({mode:'open'}).innerHTML='<button>Visible shadow modal action</button>';
+    });
+    const observer=new Observer(),hidden=await observer.inspect(browser.page),hiddenNames=hidden.elements.map(element=>element.name).join(' ');
+    assert(!hiddenNames.includes('Hidden aria action'));assert(!hidden.text.includes('Hidden aria secret'));
+    assert(!hiddenNames.includes('Hidden inert action'));assert(!hidden.text.includes('Hidden inert secret'));
+    await browser.page.locator('#light-modal').evaluate(dialog=>(dialog as HTMLDialogElement).showModal());
+    const visible=await observer.inspect(browser.page),visibleNames=visible.elements.map(element=>element.name).join(' ');
+    assert(visibleNames.includes('Visible modal action'));
+    await browser.page.locator('#light-modal').evaluate(dialog=>(dialog as HTMLDialogElement).close());
+    await browser.page.locator('#shadow-modal').evaluate(host=>(host.shadowRoot!.querySelector('dialog') as HTMLDialogElement).showModal());
+    const shadowModal=await observer.inspect(browser.page),shadowModalNames=shadowModal.elements.map(element=>element.name).join(' ');
+    assert(!shadowModalNames.includes('Background action'));assert(shadowModalNames.includes('Visible shadow modal action'));
+  }finally{await browser.close();}
+});
+
 test('accessibility snapshots retain labels but omit current form values',async()=>{
   const browser=await new Browser().launch();
   try{
