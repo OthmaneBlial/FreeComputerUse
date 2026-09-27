@@ -35,7 +35,9 @@ export class Agent extends EventEmitter {
   private watchedContexts=new WeakSet<BrowserContext>();
   constructor(readonly options:AgentOptions){
     super();this.variables=new VariableResolver(options.vault);
-    this.browser=new Browser({...options.browser,allowExternal:options.mode==='ultra'||options.browser?.allowExternal,beforeNavigate:url=>this.authorizeSite(url)});
+    const allowedOrigins=[...(options.browser?.allowedOrigins??[])],blockedOrigins=[...(options.browser?.blockedOrigins??[])];
+    this.options.browser={...options.browser,allowedOrigins,blockedOrigins};
+    this.browser=new Browser({...this.options.browser,allowedOrigins:[...allowedOrigins],blockedOrigins:[...blockedOrigins],allowExternal:options.mode==='ultra'||options.browser?.allowExternal,beforeNavigate:url=>this.authorizeSite(url)});
     this.budget=options.budget??new TokenBudget();this.workflows=new WorkflowEngine(options.store);
     this.executor=new Executor(this.browser,this.observer,this.variables,this.control,{confirmation:options.mode==='ultra'?'never':options.confirmation,downloadDir:options.downloadDir});
     this.control.on('approval',data=>this.event('HUMAN','Human confirmation required',data));
@@ -256,14 +258,18 @@ export class Agent extends EventEmitter {
   }
   async prepareForNextRun(options:Partial<Omit<AgentOptions,'store'>>={}){
     if(this.active||this.control.pending)throw new Error('Cannot prepare an active browser task for another run');
+    const browserOptions={...this.options.browser,...options.browser,
+      allowedOrigins:[...(options.browser?.allowedOrigins??this.options.browser?.allowedOrigins??[])],
+      blockedOrigins:[...(options.browser?.blockedOrigins??this.options.browser?.blockedOrigins??[])]};
     Object.assign(this.options,options);
+    this.options.browser=browserOptions;
     this.control.reset();
     if(Object.hasOwn(options,'vault'))this.variables.vault=options.vault??{profile:{},files:{}};
     if(options.budget)this.budget=options.budget;
-    Object.assign(this.browser.options,options.browser);
-    this.browser.options.allowedOrigins=[...(options.browser?.allowedOrigins??[])];
-    this.browser.options.blockedOrigins=[...(options.browser?.blockedOrigins??[])];
-    this.browser.options.allowExternal=this.options.mode==='ultra'||options.browser?.allowExternal===true;
+    Object.assign(this.browser.options,browserOptions);
+    this.browser.options.allowedOrigins=[...browserOptions.allowedOrigins];
+    this.browser.options.blockedOrigins=[...browserOptions.blockedOrigins];
+    this.browser.options.allowExternal=this.options.mode==='ultra'||browserOptions.allowExternal===true;
     this.executor.options.confirmation=this.options.mode==='ultra'?'never':this.options.confirmation;
     this.executor.options.downloadDir=this.options.downloadDir;
     this.state=undefined;this.trace=undefined;this.events=[];this.permittedSites.clear();

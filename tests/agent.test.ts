@@ -11,6 +11,23 @@ import type { LLMProvider } from '../src/llm/LLMProvider.js';
 import { normalizeIntent,structureHash } from '../src/workflows/WorkflowEngine.js';
 import type { PageElement,PageState } from '../src/browser/types.js';
 
+test('preparing another run preserves configured origins and clears run-scoped origin changes',async()=>{
+  const store=new TraceStore(':memory:'),configured={allowedOrigins:['https://trusted.example'],blockedOrigins:['https://blocked.example']};
+  const agent=new Agent({store,browser:{...configured,headless:true}});
+  try{
+    agent.browser.options.allowedOrigins?.push('https://approved-for-one-run.example');
+    agent.browser.options.blockedOrigins?.push('https://revoked-for-one-run.example');
+    await agent.prepareForNextRun({browser:{headless:false}});
+    assert.deepEqual(agent.browser.options.allowedOrigins,configured.allowedOrigins);
+    assert.deepEqual(agent.browser.options.blockedOrigins,configured.blockedOrigins);
+    assert.equal(agent.browser.options.headless,false);
+    agent.browser.options.allowedOrigins?.push('https://another-run.example');
+    await agent.prepareForNextRun();
+    assert.deepEqual(agent.browser.options.allowedOrigins,configured.allowedOrigins);
+    assert.deepEqual(agent.browser.options.blockedOrigins,configured.blockedOrigins);
+  }finally{await agent.close();store.close();}
+});
+
 test('workflow fingerprints track action-relevant structure but ignore transient form state',()=>{
   const elements:PageElement[]=[
     {ref:'select',tag:'select',role:'combobox',name:'Country',type:'select',options:['France','Germany'],optionValues:['fr','de'],frame:0,path:'select',selectors:{role:'combobox',name:'Country'}},
