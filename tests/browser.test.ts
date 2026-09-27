@@ -44,6 +44,20 @@ test('real Chromium extracts visible controls, frames, shadow DOM and stable ref
   }finally{await browser.close();}
 });
 
+test('accessibility snapshots retain labels but omit current form values',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<p>Public page context</p><label for="password">Password</label><input id="password" type="password"><label for="card">Card number</label><input id="card" autocomplete="cc-number"><label for="notes">Notes</label><textarea id="notes"></textarea><label for="country">Country</label><select id="country"><option value="secret-country">Private country</option></select>');
+    await browser.page.locator('#password').fill('synthetic-password-123');
+    await browser.page.locator('#card').fill('4111111111111111');
+    await browser.page.locator('#notes').fill('private line one\nprivate line two');
+    const snapshot=await new Observer().accessibility(browser.page);
+    for(const label of ['Password','Card number','Notes','Country','Public page context'])assert(snapshot.includes(label),`Missing accessible context: ${label}`);
+    for(const value of ['synthetic-password-123','4111111111111111','private line one','private line two','Private country','secret-country'])assert(!snapshot.includes(value),`Leaked form value: ${value}`);
+    assert(snapshot.includes('[current value omitted]'));assert(snapshot.includes('[selected value omitted]'));
+  }finally{await browser.close();}
+});
+
 test('state hash changes when observed headings, dialog labels, options or links change',async()=>{
   const browser=await new Browser().launch();
   try{

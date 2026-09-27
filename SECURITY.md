@@ -117,8 +117,9 @@ Recognized GitHub, GitLab and Slack token prefixes and `sk-`-shaped keys are als
 redacted. These filters do not identify every possible secret in arbitrary
 website content. Records extraction omits password, payment-card and
 one-time-code values identified from input type, autofill metadata and common
-labels, names or placeholders. Do not publish local traces, browser profiles
-or screenshots from a real account.
+labels, names or placeholders. Accessibility snapshots preserve roles and labels
+but omit current editable-control values and selected option values. Do not
+publish local traces, browser profiles or screenshots from a real account.
 Replays that depended on a redacted URL credential need a fresh starting URL.
 
 ## Dashboard boundary

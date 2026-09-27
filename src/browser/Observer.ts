@@ -12,7 +12,19 @@ export class Observer {
     return state;
   }
   async accessibility(page:Page,region?:string) {
-    return (await (region?page.locator(region):page.locator('body')).ariaSnapshot()).slice(0,10000);
+    return (await (region?page.locator(region):page.locator('body')).ariaSnapshot()).split('\n').map(line=>{
+      if(/^\s*-\s*option\b/.test(line))return line.replace(/^(\s*-\s*option\s+)"(?:\\.|[^"])*"(\s+\[selected\].*)$/,'$1"[selected value omitted]"$2');
+      if(!/^\s*-\s*(textbox|searchbox|combobox|spinbutton|slider)\b/.test(line))return line;
+      let quoted=false,escaped=false;
+      for(let index=0;index<line.length;index++){
+        const char=line[index]!;
+        if(escaped){escaped=false;continue;}
+        if(char==='\\'&&quoted){escaped=true;continue;}
+        if(char==='"'){quoted=!quoted;continue;}
+        if(char===':'&&!quoted)return `${line.slice(0,index+1)} [current value omitted]`;
+      }
+      return line.replace(/\[value=[^\]]*\]/g,'[value omitted]');
+    }).join('\n').slice(0,10000);
   }
   async fragment(page:Page,selector:string) {
     return page.locator(selector).evaluate(el=>{
