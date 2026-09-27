@@ -73,10 +73,10 @@ test('a failed dashboard preview capture returns no frame',async()=>{
   }finally{await session.close();}
 });
 
-test('dashboard and provider context redact credentials in the active page URL',{timeout:30000},async()=>{
+test('dashboard and provider context redact authentication and CSRF values in page URLs',{timeout:30000},async()=>{
   const dir=await mkdtemp(join(tmpdir(),'fcu-url-redaction-')),oldDir=process.env.FCU_DATA_DIR;process.env.FCU_DATA_DIR=dir;
   const fixture=await startFixtures();let prompt='';
-  const legacySecret='legacy-access-secret-that-must-not-be-shown',legacyFragment='legacy-fragment-token-that-must-not-be-shown',legacyCode='legacy-oauth-code-that-must-not-be-shown',legacyURL=`${fixture.url}/demo?access_token=${legacySecret}&search=Paris#access_token=${legacyFragment}&code=${legacyCode}&state=keep`;
+  const legacySecret='legacy-access-secret-that-must-not-be-shown',legacyFragment='legacy-fragment-token-that-must-not-be-shown',legacyCode='legacy-oauth-code-that-must-not-be-shown',legacyState='legacy-oauth-state-that-must-not-be-shown',legacyNonce='legacy-oidc-nonce-that-must-not-be-shown',legacyURL=`${fixture.url}/demo?access_token=${legacySecret}&search=Paris&state=${legacyState}#access_token=${legacyFragment}&code=${legacyCode}&state=${legacyState}&nonce=${legacyNonce}`;
   const oldStore=new TraceStore(join(dir,'history.sqlite'));
   const oldTrace:Trace={version:1,id:'legacy-redaction',goal:'Open the old trace',url:legacyURL,status:'completed',startedAt:1,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
   oldStore.save(oldTrace);oldStore.close();
@@ -85,11 +85,11 @@ test('dashboard and provider context redact credentials in the active page URL',
     const page=await fetch(dashboard.url),html=await page.text(),token=html.match(/<meta name="csrf-token" content="([^"]+)"/)?.[1],cookie=page.headers.get('set-cookie')?.split(';')[0];
     assert(token);assert(cookie);
     const initial=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}}),initialState=await initial.json() as {trace?:{url:string};history?:{id:string;url:string}[]};
-    assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
-    assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
-    for(const secret of [legacySecret,legacyFragment,legacyCode])assert(!JSON.stringify(initialState).includes(secret));
-    const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist',fragmentToken='dashboard-oauth-fragment-that-must-not-persist',oauthCode='dashboard-oauth-code-that-must-not-persist';
-    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris#access_token=${fragmentToken}&code=${oauthCode}&state=keep`;
+    assert.equal(initialState.trace?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris&state=REDACTED#access_token=REDACTED&code=REDACTED&state=REDACTED&nonce=REDACTED`);
+    assert.equal(initialState.history?.find(run=>run.id==='legacy-redaction')?.url,`${fixture.url}/demo?access_token=REDACTED&search=Paris&state=REDACTED#access_token=REDACTED&code=REDACTED&state=REDACTED&nonce=REDACTED`);
+    for(const secret of [legacySecret,legacyFragment,legacyCode,legacyState,legacyNonce])assert(!JSON.stringify(initialState).includes(secret));
+    const accessToken='dashboard-access-secret-that-must-not-persist',apiKey='dashboard-api-secret-that-must-not-persist',fragmentToken='dashboard-oauth-fragment-that-must-not-persist',oauthCode='dashboard-oauth-code-that-must-not-persist',oauthState='dashboard-oauth-state-that-must-not-persist',oidcNonce='dashboard-oidc-nonce-that-must-not-persist',csrf='dashboard-csrf-that-must-not-persist',xsrf='dashboard-xsrf-that-must-not-persist';
+    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris&state=${oauthState}&nonce=${oidcNonce}&csrf=${csrf}#access_token=${fragmentToken}&code=${oauthCode}&state=${oauthState}&nonce=${oidcNonce}&xsrf=${xsrf}`;
     const started=await fetch(dashboard.url+'/api/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':dashboard.url,'Cookie':cookie,'X-FCU-Token':token},body:JSON.stringify({goal:'Summarize the page',url,mode:'ultra'})});
     assert.equal(started.status,202);
     let state:{active:boolean;trace?:{id:string;status:string;url:string};state?:{url:string};browserUrl?:string;history?:{id:string;url:string}[]}={active:true};
@@ -98,10 +98,10 @@ test('dashboard and provider context redact credentials in the active page URL',
       const response=await fetch(dashboard.url+'/api/state',{headers:{Cookie:cookie}});state=await response.json() as typeof state;
       if(state.trace?.status==='failed'&&!state.active)break;
     }
-    assert.equal(state.trace?.status,'failed');assert(!prompt.includes(accessToken));assert(!prompt.includes(apiKey));assert(!prompt.includes(fragmentToken));assert(!prompt.includes(oauthCode));
-    assert.equal(state.trace?.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep`);
+    assert.equal(state.trace?.status,'failed');for(const secret of [accessToken,apiKey,fragmentToken,oauthCode,oauthState,oidcNonce,csrf,xsrf])assert(!prompt.includes(secret));
+    assert.equal(state.trace?.url,`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris&state=REDACTED&nonce=REDACTED&csrf=REDACTED#access_token=REDACTED&code=REDACTED&state=REDACTED&nonce=REDACTED&xsrf=REDACTED`);
     assert.equal(state.state?.url,state.trace.url);assert.equal(state.browserUrl,state.trace.url);
-    assert(!JSON.stringify(state.history).includes(fragmentToken));assert(!JSON.stringify(state.history).includes(oauthCode));
+    for(const secret of [fragmentToken,oauthCode,oauthState,oidcNonce,csrf,xsrf])assert(!JSON.stringify(state.history).includes(secret));
     assert.equal(state.history?.find(run=>run.id===state.trace?.id)?.url,state.trace.url);
   }finally{await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});if(oldDir===undefined)delete process.env.FCU_DATA_DIR;else process.env.FCU_DATA_DIR=oldDir;}
 });

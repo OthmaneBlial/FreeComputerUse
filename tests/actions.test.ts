@@ -582,14 +582,14 @@ test('redaction masks URL-encoded profile values',()=>{
 });
 
 test('redaction masks credential query values and bearer tokens but keeps ordinary query values',()=>{
-  const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris#access_token=fragment-secret&code=oauth-secret&state=keep',authorization:'Bearer abcdefghijklmnop'});
+  const resolver=new VariableResolver(),input=JSON.stringify({url:'https://example.test/?access_token=access-secret&api_key=provider-secret&search=Paris&state=oauth-state-secret#access_token=fragment-secret&code=oauth-secret&nonce=oidc-nonce-secret',authorization:'Bearer abcdefghijklmnop'});
   const result=resolver.redact(input);
-  assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('fragment-secret'));assert(!result.includes('oauth-secret'));assert(!result.includes('abcdefghijklmnop'));
-  assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris#access_token=REDACTED&code=REDACTED&state=keep',authorization:'Bearer [redacted]'});
+  assert(!result.includes('access-secret'));assert(!result.includes('provider-secret'));assert(!result.includes('fragment-secret'));assert(!result.includes('oauth-secret'));assert(!result.includes('oauth-state-secret'));assert(!result.includes('oidc-nonce-secret'));assert(!result.includes('abcdefghijklmnop'));
+  assert.deepEqual(JSON.parse(result),{url:'https://example.test/?access_token=REDACTED&api_key=REDACTED&search=Paris&state=REDACTED#access_token=REDACTED&code=REDACTED&nonce=REDACTED',authorization:'Bearer [redacted]'});
 });
 
-test('redaction masks common authentication and payment query parameters',()=>{
-  const resolver=new VariableResolver(),names=['auth_code','verification_code','otp','cvv','cvc','card_number','security_code','password_confirmation','account_number','routing_number','iban','swift'];
+test('redaction masks common authentication, CSRF and payment query parameters',()=>{
+  const resolver=new VariableResolver(),names=['auth_code','verification_code','otp','state','nonce','csrf','xsrf','sid','cvv','cvc','card_number','security_code','password_confirmation','account_number','routing_number','iban','swift'];
   const input=`https://example.test/?${names.map((name,index)=>`${name}=private-${index}`).join('&')}&search=Paris&country_code=GB`;
   const result=resolver.redact(input);
   for(const name of names)assert.match(result,new RegExp(`${name}=REDACTED`));

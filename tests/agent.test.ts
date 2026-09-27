@@ -323,17 +323,17 @@ test('provider errors containing profile values are redacted from events and sav
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
-test('credential query and fragment values are redacted before trace save and provider prompt',async()=>{
+test('authentication query and fragment values are redacted before trace save and provider prompt',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let firstSaved='',prompt='';
   const save=store.save.bind(store);store.save=trace=>{if(!firstSaved)firstSaved=JSON.stringify(trace);save(trace);};
   const provider:LLMProvider={name:'fixture',plan:async context=>{prompt=JSON.stringify(context);throw new Error('Synthetic provider failure');},repair:async()=>{throw new Error('Unexpected repair');}};
   const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
-  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist',otp='otp-query-secret-that-must-not-persist',verificationCode='verification-code-secret-that-must-not-persist',fragmentToken='oauth-fragment-token-that-must-not-persist',oauthCode='oauth-code-that-must-not-persist';
+  const accessToken='access-query-secret-that-must-not-persist',apiKey='query-api-secret-that-must-not-persist',otp='otp-query-secret-that-must-not-persist',verificationCode='verification-code-secret-that-must-not-persist',fragmentToken='oauth-fragment-token-that-must-not-persist',oauthCode='oauth-code-that-must-not-persist',oauthState='oauth-state-secret-that-must-not-persist',oidcNonce='oidc-nonce-secret-that-must-not-persist',csrf='csrf-token-that-must-not-persist',xsrf='xsrf-token-that-must-not-persist';
   try{
-    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris&otp=${otp}&verification_code=${verificationCode}#access_token=${fragmentToken}&code=${oauthCode}&state=keep`,secrets=[accessToken,apiKey,otp,verificationCode,fragmentToken,oauthCode];
+    const url=`${fixture.url}/demo?access_token=${accessToken}&api_key=${apiKey}&search=Paris&otp=${otp}&verification_code=${verificationCode}&state=${oauthState}&nonce=${oidcNonce}&csrf=${csrf}#access_token=${fragmentToken}&code=${oauthCode}&state=${oauthState}&nonce=${oidcNonce}&xsrf=${xsrf}`,secrets=[accessToken,apiKey,otp,verificationCode,fragmentToken,oauthCode,oauthState,oidcNonce,csrf,xsrf];
     const trace=await agent.run('Summarize the page',url);
     assert.equal(trace.status,'failed');for(const secret of secrets)assert(!firstSaved.includes(secret));
-    const safeURL=`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris&otp=REDACTED&verification_code=REDACTED#access_token=REDACTED&code=REDACTED&state=keep`;
+    const safeURL=`${fixture.url}/demo?access_token=REDACTED&api_key=REDACTED&search=Paris&otp=REDACTED&verification_code=REDACTED&state=REDACTED&nonce=REDACTED&csrf=REDACTED#access_token=REDACTED&code=REDACTED&state=REDACTED&nonce=REDACTED&xsrf=REDACTED`;
     assert.equal((JSON.parse(firstSaved) as {url:string}).url,safeURL);
     for(const secret of secrets)assert(!prompt.includes(secret));
     for(const secret of secrets)assert(!JSON.stringify(agent.events).includes(secret));
