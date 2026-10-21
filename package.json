@@ -76,7 +76,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "2.3.0",
     "commander": "15.0.0",
     "playwright": "1.63.0",
     "zod": "4.6.5"
