@@ -145,12 +145,12 @@ export class WorkflowEngine {
       parameters:procedure.parameters,preconditions:procedure.preconditions,keywords:procedure.keywords,version:1,versions:[]});
   }
   /** Saves recorded, written or completed-run steps. A parameter given with a value replaces that literal value in the steps. */
-  saveSteps(input:{name:string;description?:string;keywords?:string[];startUrl:string;actions:Action[];completion?:Condition[];parameters?:(Parameter&{value?:string})[];expectText?:string},source:Source,options:{structure?:string;learnedFrom?:string}={}){
+  saveSteps(input:{name:string;description?:string;keywords?:string[];startUrl:string;actions:Action[];completion?:Condition[];preconditions?:Condition[];parameters?:(Parameter&{value?:string})[];expectText?:string},source:Source,options:{structure?:string;learnedFrom?:string}={}){
     const declared=input.parameters??[],literals=Object.fromEntries(declared.filter(param=>param.value).map(param=>[param.name,param.value!]));
     const completion:Condition[]=[...input.completion??[],...(input.expectText?[{type:'text_exists' as const,value:input.expectText}]:[])];
     const plan=parameterize({goal:input.name,steps:[input.description||input.name],actions:input.actions,completion,continue:false},literals),used=JSON.stringify(plan);
     const parameters=declared.map(({value:_value,...param})=>param).filter(param=>used.includes(`{{params.${param.name}}}`));
-    return this.create({name:input.name,description:input.description??'',keywords:input.keywords??[],startUrl:input.startUrl,parameters,plan},source,options);
+    return this.create({name:input.name,description:input.description??'',keywords:input.keywords??[],startUrl:input.startUrl,parameters,preconditions:input.preconditions,plan},source,options);
   }
   /** Stores a changed procedure as a new version; the previous steps stay restorable. */
   update(id:string,patch:Partial<ProcedureInput>,reason:string,source:Source='edited'){

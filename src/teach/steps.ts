@@ -14,7 +14,7 @@ Explicit steps, one per line, in English or French. Quoted names; "|" separates 
   expect "Release sent for review"                 vérifie "Version envoyée pour examen"
   click "Save and publish" (sensitive)             clique sur "Publier" (sensible)
 */
-const verbs:[RegExp,Action['type']|'expect'][]=[
+const verbs:[RegExp,Action['type']|'expect'|'require'][]=[
   [/^(?:open|go to|navigate to|visit|ouvre|ouvrir|va sur|aller sur|aller a|aller à|navigue vers)\s+/i,'navigate'],
   [/^(?:upload|attach|televerse|téléverse|televerser|téléverser|importe|importer|joins|joindre)\s+/i,'upload'],
   [/^(?:type|fill|enter|write|tape|taper|saisis|saisir|ecris|écris|écrire|remplis|remplir)\s+/i,'fill'],
@@ -23,6 +23,8 @@ const verbs:[RegExp,Action['type']|'expect'][]=[
   [/^(?:check|tick|coche|cocher)\s+/i,'check'],
   [/^(?:press|appuie sur la touche|appuie sur|appuyer sur)\s+(?=(?:enter|entrée|entree|tab|escape|échap|echap|space|espace|arrow\w+)\b)/i,'press'],
   [/^(?:wait for|wait until|attends que|attendre que|attends|attendre|patiente jusqu'à)\s+/i,'wait'],
+  // A required text must be on the starting page, e.g. a page only signed-in users see; otherwise the run pauses.
+  [/^(?:require|requires|needs|exige|nécessite|necessite)\s+/i,'require'],
   [/^(?:expect|verify|confirm|vérifie|verifie|vérifier|verifier|s'assurer que|assure-toi que)\s+(?:that\s+|que\s+)?/i,'expect'],
   [/^(?:click on|click|tap on|tap|clique sur|cliquer sur|clique|cliquer|appuie sur|appuyer sur)\s+/i,'click'],
 ];
@@ -50,9 +52,9 @@ function takeTarget(text:string):{target:SemanticTarget;alternatives:SemanticTar
   return{target:targets[0]!,alternatives:targets.slice(1)};
 }
 const separator=/^\s*(?:into|in|to|from|on|dans|sur|vers|depuis|du champ|au champ)\s+/i;
-export interface ParsedSteps {plan:Plan;parameters:Parameter[];startUrl?:string}
+export interface ParsedSteps {plan:Plan;parameters:Parameter[];preconditions:Condition[];startUrl?:string}
 export function parseSteps(source:string,goal='Taught procedure'):ParsedSteps{
-  const actions:Action[]=[],completion:Condition[]=[],errors:string[]=[];
+  const actions:Action[]=[],completion:Condition[]=[],preconditions:Condition[]=[],errors:string[]=[];
   source.split(/\r?\n/).forEach((raw,index)=>{
     let line=raw.trim();if(!line||line.startsWith('#'))return;
     line=line.replace(/^\d+[.)]\s*|^[-*]\s+/,'');
@@ -60,12 +62,12 @@ export function parseSteps(source:string,goal='Taught procedure'):ParsedSteps{
       const flags:{sensitive?:boolean;timeoutMs?:number}={};
       line=line.replace(/\s*\((sensitive|sensible|confirm|confirmer)\)\s*$/i,()=>{flags.sensitive=true;return '';});
       line=line.replace(/\s*\((?:timeout|délai|delai)\s+(\d+)\s*(s|ms)?\)\s*$/i,(_match,amount:string,unit?:string)=>{flags.timeoutMs=Math.min(30000,Number(amount)*(unit==='ms'?1:1000));return '';});
-      const verb=verbs.find(([pattern])=>pattern.test(line));if(!verb)throw new Error('Unknown step; start with open, click, type, select, upload, check, press, wait for or expect');
+      const verb=verbs.find(([pattern])=>pattern.test(line));if(!verb)throw new Error('Unknown step; start with open, click, type, select, upload, check, press, wait for, expect or require');
       const rest=line.replace(verb[0],''),type=verb[1];
       if(type==='navigate'){actions.push(ActionSchema.parse({type,url:takeValue(rest).value}));return;}
-      if(type==='wait'||type==='expect'){
+      if(type==='wait'||type==='expect'||type==='require'){
         const [value,...alternatives]=rest.split(/\s+\|\s+|\s+ou\s+(?=["“«])/).map(part=>takeValue(part).value);
-        const condition:Condition={type:'text_exists',value:value!,...(alternatives.length?{alternatives}:{})};if(type==='expect')completion.push(condition);else actions.push(ActionSchema.parse({type:'wait',condition,...flags}));return;}
+        const condition:Condition={type:'text_exists',value:value!,...(alternatives.length?{alternatives}:{})};if(type==='expect')completion.push(condition);else if(type==='require')preconditions.push(condition);else actions.push(ActionSchema.parse({type:'wait',condition,...flags}));return;}
       if(type==='press'){
         const key=/^(\S+)/.exec(rest)![1]!,after=rest.slice(key.length),target=separator.test(after)?takeTarget(after.replace(separator,'')):undefined;
         if(!target)throw new Error('Say where to press the key, e.g. press Enter in "Search"');
@@ -88,5 +90,5 @@ export function parseSteps(source:string,goal='Taught procedure'):ParsedSteps{
     if(!parameters.has(used[1]!)||kind==='file')parameters.set(used[1]!,{name:used[1]!,kind,required:true});
   }
   const first=actions[0]!;
-  return{plan:PlanSchema.parse({goal,steps:['Follow the taught steps'],actions,completion,continue:false}),parameters:[...parameters.values()],startUrl:first.type==='navigate'?first.url:undefined};
+  return{plan:PlanSchema.parse({goal,steps:['Follow the taught steps'],actions,completion,continue:false}),parameters:[...parameters.values()],preconditions,startUrl:first.type==='navigate'?first.url:undefined};
 }

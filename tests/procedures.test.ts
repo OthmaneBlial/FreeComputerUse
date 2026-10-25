@@ -84,13 +84,15 @@ test('explicit steps in English and French become a validated plan with paramete
 6. press Enter in "Release name"
 7. attends "Prêt"
 8. click "Save and publish" (sensitive)
-9. vérifie "In review" | "En cours d'examen"`);
+9. vérifie "In review" | "En cours d'examen"
+10. exige "All apps" | "Toutes les applications"`);
   assert.equal(parsed.startUrl,'https://console.example.test/play/console');
   assert.deepEqual(parsed.plan.actions.map(action=>action.type),['navigate','click','click','upload','fill','press','wait','click']);
   assert.deepEqual(parsed.plan.actions[1],{type:'click',target:{name:'View app: {{params.app}}'},alternatives:[{name:"Afficher l'application: {{params.app}}"}]});
   assert.deepEqual(parsed.plan.actions[2],{type:'click',target:{role:'button',name:'Tester et publier'}});
   assert.equal(parsed.plan.actions[3]?.timeoutMs,20000);assert.equal(parsed.plan.actions[7]?.sensitive,true);
   assert.deepEqual(parsed.plan.completion,[{type:'text_exists',value:'In review',alternatives:["En cours d'examen"]}]);
+  assert.deepEqual(parsed.preconditions,[{type:'text_exists',value:'All apps',alternatives:['Toutes les applications']}]);
   assert.deepEqual(parsed.parameters.map(param=>[param.name,param.kind]),[['app','text'],['bundle','file'],['notes','text']]);
   assert.throws(()=>parseSteps('click View app\nfrobnicate "x"'),/Line 1: Put the element name in quotes[\s\S]*Line 2: Unknown step/);
 });
@@ -228,7 +230,7 @@ click "Next"
 click "Save and publish" (sensitive)
 click "Send changes for review"
 expect "({{params.version}}) · In review"`);
-  const saved=engine.create({name:'Publish a Play release',startUrl:`${fixture.url}/play/console?accounts=2`,parameters:parsed.parameters,plan:parsed.plan},'taught');
+  const saved=engine.saveSteps({name:'Publish a Play release',startUrl:`${fixture.url}/play/console?accounts=2`,actions:parsed.plan.actions,completion:parsed.plan.completion,preconditions:parsed.preconditions,parameters:parsed.parameters},'taught');
   const agent=new Agent({store,browser:{headless:true,allowedOrigins:[fixture.url]}});let approvals=0;agent.control.on('approval',(pending:{action:unknown})=>{if(typeof pending.action==='string')approvals++;agent.control.approve();});
   const [snake,budget]=fixture.play.apps;
   try{
@@ -240,6 +242,25 @@ expect "({{params.version}}) · In review"`);
     assert.equal(blocked.status,'failed');
     assert.match(blocked.error??'',/The control is disabled\. The page says: Fix this error .*Data safety form/,'The failure says why');assert(!snake!.releases.some(item=>item.status==='in_review'),'Nothing was sent for review');
   }finally{await agent.close();store.close();await fixture.close();await rm(directory,{recursive:true,force:true});}
+});
+
+test('a procedure whose required text is missing pauses until the person prepares the page, then continues without the model',{timeout:120000},async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);
+  const parsed=parseSteps(`require "All apps"
+click "View app: {{params.app}}"
+click button "Test and release"
+click "Production"
+expect "Create new release"`);
+  const saved=engine.saveSteps({name:'Open the production track',startUrl:`${fixture.url}/play/console?accounts=2`,actions:parsed.plan.actions,completion:parsed.plan.completion,preconditions:parsed.preconditions,parameters:parsed.parameters},'taught');
+  assert.deepEqual(engine.get(saved.id)!.preconditions,[{type:'text_exists',value:'All apps'}]);
+  const agent=new Agent({store,browser:{headless:true,allowedOrigins:[fixture.url]}});const paused:string[]=[];agent.control.on('approval',()=>agent.control.approve());
+  // The run starts on the account chooser; the person picks an account while it waits, then resumes.
+  agent.on('event',(event:{phase:string;message:string})=>{if(event.phase!=='HUMAN'||!/starting state/.test(event.message))return;paused.push(event.message);
+    const page=agent.browser.page;void page.getByRole('link',{name:'Example Games'}).click().then(()=>page.getByText('All apps').first().waitFor()).then(()=>agent.control.resume());});
+  try{
+    const trace=await agent.runProcedure(saved.id,{app:'Snake Arena'});
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(paused.length,1);assert.equal(trace.metrics.llmCalls,0);
+  }finally{await agent.close();store.close();await fixture.close();}
 });
 
 test('a model that names a procedure file parameter as a vault file still uploads that file, and cannot replace the saved check',async()=>{

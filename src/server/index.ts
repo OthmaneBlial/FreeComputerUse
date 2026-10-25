@@ -176,12 +176,12 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='POST'&&path==='/api/procedures/create'){
         const input=SaveTeaching.and(z.object({expectText:z.string().max(2000).optional()})).parse(await body(req));
-        let actions:Action[],startUrl:string,structure='',source:'taught'|'learned'='taught',completion:Condition[]=[],found:Parameter[]=[];
-        if(input.steps){const parsed=parseSteps(input.steps,input.name);if(!parsed.startUrl)throw new Error('Start the steps with: open <url>');({actions,completion}=parsed.plan);startUrl=parsed.startUrl;found=parsed.parameters;}
+        let actions:Action[],startUrl:string,structure='',source:'taught'|'learned'='taught',completion:Condition[]=[],preconditions:Condition[]=[],found:Parameter[]=[];
+        if(input.steps){const parsed=parseSteps(input.steps,input.name);if(!parsed.startUrl)throw new Error('Start the steps with: open <url>');({actions,completion}=parsed.plan);({preconditions}=parsed);startUrl=parsed.startUrl;found=parsed.parameters;}
         else if(input.runId){const trace=store.get(input.runId);if(trace?.status!=='completed')throw new Error('Only a completed run can become a procedure');actions=trace.actions.filter(result=>result.success).map(result=>result.action);startUrl=trace.url;source='learned';completion=trace.completion;}
         else{if(!recording)throw new Error('Teach the procedure first');({actions,startUrl,structure}=recording);found=recording.parameters;}
         const parameters=[...input.parameters,...found.filter(param=>!input.parameters.some(item=>item.name===param.name))];
-        const created=procedures.saveSteps({...input,startUrl,actions,completion,parameters},source,{structure,learnedFrom:input.runId});
+        const created=procedures.saveSteps({...input,startUrl,actions,completion,preconditions,parameters},source,{structure,learnedFrom:input.runId});
         if(!input.steps&&!input.runId)recording=undefined;
         send(200,{procedure:created});return;
       }

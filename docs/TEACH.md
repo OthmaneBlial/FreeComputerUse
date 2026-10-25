@@ -64,6 +64,7 @@ parameter.
 
 ```text
 open https://console.example.test/play/console
+require "All apps" | "Toutes les applications"
 click "View app: {{params.app}}" | "Afficher l'application: {{params.app}}"
 click button "Test and release" | button "Tester et publier"
 click "Production"
@@ -88,9 +89,12 @@ expect "In review" | "En cours d'examen"
 | Key | `press Enter in "Label"` | `appuie sur Entrée dans "Libellé"` |
 | Wait | `wait for "text"` | `attends "texte"` |
 | Success check | `expect "text"` | `vérifie "texte"` |
+| Starting check | `require "text"` | `exige "texte"` |
 
-`wait for` and `expect` take `|` alternatives too; any one of the texts is
-enough. Add `(sensitive)` to always ask before a step, and `(timeout 20s)` to wait
+`wait for`, `expect` and `require` take `|` alternatives too; any one of the
+texts is enough. `require` checks the starting page before the first step. When
+the text is missing, for example because you are signed out, the run pauses and
+asks you to prepare the page, then checks again when you resume. Add `(sensitive)` to always ask before a step, and `(timeout 20s)` to wait
 longer. Save with **Write steps** in the dashboard, or:
 
 ```sh

@@ -146,7 +146,7 @@ procedures.command('create').description('Save a procedure written as steps in a
   .option('--description <text>','What it does').option('--param <name=value>','Replace a literal value with a parameter (repeatable)',collect,[]).action(async(options:{name:string;steps:string;description?:string;param:string[]})=>{
   const parsed=parseSteps(await readFile(resolve(options.steps),'utf8'),options.name);if(!parsed.startUrl)throw new Error('Start the steps with: open <url>');
   const declared=Object.entries(pairs(options.param)).map(([name,value])=>({name,value,kind:'text' as const,required:true}));
-  const saved=withProcedures(engine=>engine.saveSteps({name:options.name,description:options.description,startUrl:parsed.startUrl!,actions:parsed.plan.actions,completion:parsed.plan.completion,parameters:[...declared,...parsed.parameters]},'taught'));
+  const saved=withProcedures(engine=>engine.saveSteps({name:options.name,description:options.description,startUrl:parsed.startUrl!,actions:parsed.plan.actions,completion:parsed.plan.completion,preconditions:parsed.preconditions,parameters:[...declared,...parsed.parameters]},'taught'));
   console.log(`Saved ${saved.id} “${saved.name}”${saved.parameters?.length?`; asks for ${saved.parameters.map(param=>param.name).join(', ')}`:''}.`);
 });
 procedures.command('rename <id> <name>').action((id:string,name:string)=>withProcedures(engine=>console.log(`Renamed to “${engine.rename(id,name).name}”.`)));

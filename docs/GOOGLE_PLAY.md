@@ -52,6 +52,7 @@ In the dashboard, press **Write steps** and paste:
 
 ```text
 open http://127.0.0.1:3000/play/console
+require "All apps" | "Toutes les applications"
 click "View app: {{params.app}}" | "Afficher l'application: {{params.app}}"
 click button "Test and release" | button "Tester et publier"
 click "Production"
@@ -150,6 +151,12 @@ a policy form is incomplete, the step fails and nothing is sent. The error says
 why and quotes the console, as in "The control is disabled. The page says: Fix
 this error before you send changes for review: complete the Data safety form in
 App content." Fix it in the console, then run the procedure again.
+
+**Signed out.** On 25 October 2026, opening `https://play.google.com/console`
+signed out led to Google's marketing page (`google.play/business`), not to a
+sign-in form. The `require "All apps"` line makes the run pause there with
+"This procedure expects another starting state" instead of failing on the first
+click. Sign in with **Take control**, open the app list and press **Resume agent**.
 
 When the session expires, the run pauses on the sign-in page. Sign in yourself
 and press **Resume agent**. If the console shows a new screen, such as a policy

@@ -22,6 +22,8 @@
 - Teach mode: record a demonstration, write steps in English or French, or save
   a completed run. When stuck, a run can pause and record a human demonstration
   of the failing step.
+- `require "text"` (`exige`) in written steps checks the starting page; when
+  it is missing, for example when signed out, the run pauses for you.
 - Requests in other words or in French find a procedure and fill in its
   parameters; only missing values are asked for.
 - Replays try recorded alternative targets first, repair a single changed step
