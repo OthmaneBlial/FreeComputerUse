@@ -197,7 +197,7 @@ test('a replay whose steps mostly broke re-plans once and saves a version, with 
   const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);let plans=0,repairs=0;
   const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
   const provider:LLMProvider={name:'fixture',
-    repair:async context=>{repairs++;if(context.failedAction.type==='verification')return RepairSchema.parse({actions:[],completion:[{type:'text_exists',value:'Terminé'}]});
+    repair:async context=>{repairs++;if((context.failedAction as {type:string}).type==='verification')return RepairSchema.parse({actions:[],completion:[{type:'text_exists',value:'Terminé'}]});
       const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
     plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);assert.deepEqual(context.savedSteps,[{type:'click',target:{role:'button',name:'Three'}}],'The planner sees the saved steps not done yet');assert.deepEqual(context.savedChecks,[{type:'text_exists',value:'All done'}]);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'All done'}],continue:false};}};
   const agent=new Agent({store,provider,mode:'ultra'});  try{
