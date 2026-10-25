@@ -31,4 +31,5 @@ $('example-tabs').addEventListener('keydown',event=>{
   event.preventDefault();selectTab(next);next.focus();
 });
 for(const button of document.querySelectorAll('[data-category]'))button.onclick=()=>{category=button.dataset.category;for(const peer of document.querySelectorAll('[data-category]'))peer.setAttribute('aria-pressed',String(peer===button));render();};
+for(const button of document.querySelectorAll('[data-copy]'))button.onclick=async()=>{try{await navigator.clipboard.writeText($(button.dataset.copy).textContent);message('Copied.');}catch{message('Select the text to copy it.');}};
 render();

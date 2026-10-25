@@ -4,23 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101612">
-  <meta name="description" content="Give the web a task and keep control. FreeComputerUse runs Playwright locally, asks before new sites, and checks the result.">
+  <meta name="description" content="An open-source browser agent that runs Playwright on your machine. Teach it a task once and it replays locally without the model, repairs only what changed, and asks before anything sensitive.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="FreeComputerUse">
-  <meta property="og:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta property="og:description" content="Try useful browser tasks without a model key. For open-ended work, choose a provider, approve site access, and inspect each result.">
+  <meta property="og:title" content="FreeComputerUse — Teach it once. Replay it without the model.">
+  <meta property="og:description" content="A local browser agent you can teach. Saved procedures replay with zero model calls, repair only what changed, and still ask before every sensitive step.">
   <meta property="og:url" content="https://othmaneblial.github.io/FreeComputerUse/">
   <meta property="og:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
-  <meta property="og:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
+  <meta property="og:image:alt" content="FreeComputerUse: teach it once, replay it without the model, approve what matters.">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FreeComputerUse — Your browser. Your model. Your call.">
-  <meta name="twitter:description" content="Try useful browser tasks without a model key. Choose a provider for open-ended work, approve site access, and inspect every result.">
+  <meta name="twitter:title" content="FreeComputerUse — Teach it once. Replay it without the model.">
+  <meta name="twitter:description" content="A local browser agent you can teach. Saved procedures replay with zero model calls and still ask before every sensitive step.">
   <meta name="twitter:image" content="https://othmaneblial.github.io/FreeComputerUse/social-preview.png">
-  <meta name="twitter:image:alt" content="FreeComputerUse: choose a model, approve the site, watch browser actions and verify the result.">
-  <title>FreeComputerUse — Local-first AI browser automation</title>
+  <meta name="twitter:image:alt" content="FreeComputerUse: teach it once, replay it without the model, approve what matters.">
+  <title>FreeComputerUse — a local browser agent you can teach</title>
   <link rel="canonical" href="https://othmaneblial.github.io/FreeComputerUse/">
   <link rel="icon" type="image/svg+xml" href="brand-mark.svg">
   <link rel="stylesheet" href="lab/lab.css">
@@ -35,127 +35,198 @@
       <span>FreeComputerUse<small>LOCAL BROWSER AGENT</small></span>
     </a>
     <nav aria-label="Main navigation">
-      <a href="#how">How it works</a>
-      <a href="#models">Models</a>
-      <a href="#library">Task library</a>
+      <a href="#watch">Demo</a>
+      <a href="#modes">Teach &amp; replay</a>
+      <a href="#play">Google Play</a>
+      <a href="#savings">Measured</a>
       <a href="#faq">FAQ</a>
-      <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.23">Release v0.2.23 <span aria-hidden="true">↗</span></a>
       <a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
-    <a class="header-cta" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Get started <span aria-hidden="true">↗</span></a>
+    <a class="header-cta" href="#start">Get started <span aria-hidden="true">↓</span></a>
   </header>
 
   <main id="main">
     <section class="home-hero" id="top" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow"><span></span> OPEN-SOURCE · PLAYWRIGHT · LOCAL-FIRST · V0.2.23</p>
-        <h1 id="hero-title">Give the web<br>a task.<br><em>Keep control.</em></h1>
-        <p class="hero-lead">FreeComputerUse reads the page, asks your chosen model for a small action plan, then runs Playwright on your machine. Approve each new site. Check what changed.</p>
+        <p class="eyebrow"><span></span> OPEN SOURCE · RUNS ON YOUR MACHINE · PLAYWRIGHT</p>
+        <h1 id="hero-title">Teach it once.<br><em>Replay it without the model.</em></h1>
+        <p class="hero-lead">FreeComputerUse is a browser agent that runs Playwright on your computer. Give it a goal with the model you choose, or show it a task once. It saves the steps as a procedure, replays them locally, calls the model only to repair what changed, and asks you before anything is submitted.</p>
         <div class="hero-buttons">
-          <a class="button-primary" href="#library">Explore browser tasks <span aria-hidden="true">↓</span></a>
+          <a class="button-primary" href="#watch">Watch a real run <span aria-hidden="true">↓</span></a>
           <a class="button-quiet" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Read the quick start <span aria-hidden="true">↗</span></a>
         </div>
-        <p class="hero-caption"><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.23"><strong>NEW RELEASE · V0.2.23</strong> OAuth state and CSRF values stay out of prompts and saved history.</a></p>
+        <p class="hero-caption"><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/TEACH.md"><strong>ON MAIN · NOT YET IN NPM V0.2.23</strong> Procedures, teach mode and smart replay run from source.</a></p>
       </div>
 
-      <div class="run-card" aria-label="Illustration of a local browser automation run">
-        <div class="run-top"><div><i></i><i></i><i></i></div><span>FREECOMPUTERUSE / LOCAL RUN</span><b>ON YOUR MACHINE</b></div>
-        <div class="run-goal"><span>GOAL</span><strong>Compare three options and save the evidence</strong></div>
+      <div class="run-card" aria-label="Illustration of a saved procedure found from a French request">
+        <div class="run-top"><div><i></i><i></i><i></i></div><span>FREECOMPUTERUSE / PROCEDURE</span><b>ON YOUR MACHINE</b></div>
+        <div class="run-goal"><span>REQUEST</span><strong>Publie la version 1.5 de l'app "Snake Arena" avec ./build/snake-1.5.aab</strong></div>
         <ol class="run-steps">
-          <li class="step-done"><span class="step-index">01</span><span><b>Observe</b><small>Read page structure and controls</small></span><i>✓</i></li>
-          <li class="step-done"><span class="step-index">02</span><span><b>Plan</b><small>Use a bounded page and evidence snapshot</small></span><i>✓</i></li>
-          <li class="step-current"><span class="step-index">03</span><span><b>Execute</b><small>Use the approved browser tab</small></span><i>•••</i></li>
-          <li><span class="step-index">04</span><span><b>Verify</b><small>Check results before you reuse them</small></span></li>
+          <li class="step-done"><span class="step-index">01</span><span><b>Found a saved procedure</b><small>Publish a Play production release</small></span><i>✓</i></li>
+          <li class="step-done"><span class="step-index">02</span><span><b>Read app, version and bundle</b><small>Asked only for the release notes</small></span><i>✓</i></li>
+          <li class="step-current"><span class="step-index">03</span><span><b>Replay the saved steps</b><small>11 browser actions · 0 model calls</small></span><i>•••</i></li>
+          <li><span class="step-index">04</span><span><b>Ask before submitting</b><small>Save and publish · Send changes for review</small></span></li>
         </ol>
-        <div class="run-footer"><span><i></i> SITE ACCESS APPROVED</span><span>PAGE + EVIDENCE / CAPPED</span></div>
-        <div class="run-stamp"><span>YOU STAY</span><strong>IN CONTROL</strong></div>
+        <div class="run-footer"><span><i></i> MODEL ONLY FOR REPAIRS</span><span>LOCAL PLAY CONSOLE SIMULATOR</span></div>
+        <div class="run-stamp"><span>YOU</span><strong>APPROVE</strong></div>
       </div>
 
       <div class="hero-proof" aria-label="Product principles">
-        <div><span>01</span><b>Runs locally</b><small>Playwright drives your browser</small></div>
-        <div><span>02</span><b>Bounded page context</b><small>Recent evidence stays within budget</small></div>
-        <div><span>03</span><b>Asks before direct navigation</b><small>Approve a new origin before it opens</small></div>
+        <div><span>01</span><b>Runs locally</b><small>Playwright drives a browser on your machine</small></div>
+        <div><span>02</span><b>Zero-call replays</b><small>A saved procedure needs no model when the page still matches</small></div>
+        <div><span>03</span><b>You approve what matters</b><small>New sites and sensitive steps ask on every run</small></div>
       </div>
-    </section>
-
-    <section class="how-section page-section" id="keyless" aria-labelledby="keyless-title">
-      <div class="section-heading">
-        <p class="eyebrow">V0.2.23 · NO PROVIDER REQUIRED</p>
-        <h2 id="keyless-title">Useful browser work.<br><em>No model key needed.</em></h2>
-        <p>Start with local, deterministic tasks. Add a model only when the job needs open-ended planning.</p>
-      </div>
-      <div>
-        <div class="how-grid">
-          <article><span>01 / PAGE TEXT</span><h3>Read the page</h3><p>Extract visible text from the current page. Goal: “Read the page”.</p></article>
-          <article><span>02 / LINK LIST</span><h3>Extract the links</h3><p>Collect visible link labels and URLs. Goal: “Extract the links”.</p></article>
-          <article><span>03 / BOUNDED LINKS</span><h3>Choose a limit</h3><p>Extract the first N visible links and verify the requested count. Goal: “Extract the first 5 links”.</p></article>
-          <article><span>04 / PRACTICE DATA</span><h3>Try the sample table</h3><p>Extract three synthetic revenue rows from the <a href="lab/reports.html">practice page</a>.</p></article>
-        </div>
-        <p class="how-note"><span aria-hidden="true">↳</span> These exact workflows make zero model calls. Goals longer than 4,000 characters are rejected before browser work starts. The <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.23">v0.2.23 release notes</a> cover OAuth and CSRF URL value redaction.</p>
-      </div>
-    </section>
-
-    <section class="how-section page-section" id="how" aria-labelledby="how-title">
-      <div class="section-heading">
-        <p class="eyebrow">A SMALL, CHECKABLE LOOP</p>
-        <h2 id="how-title">You set the goal.<br><em>The agent handles the clicks.</em></h2>
-        <p>The model suggests browser actions. Your local app executes them, checks what changed and shows you the run.</p>
-      </div>
-      <div class="how-grid">
-        <article><span>01 / OBSERVE</span><h3>Understand the page</h3><p>Read the DOM and accessible controls instead of guessing from screenshots.</p></article>
-        <article><span>02 / PLAN</span><h3>Keep each batch small</h3><p>Ask your chosen model for the next bounded set of browser actions.</p></article>
-        <article><span>03 / EXECUTE</span><h3>Act in your browser</h3><p>Playwright runs locally. Direct navigation to a new origin asks for approval.</p></article>
-        <article><span>04 / VERIFY</span><h3>Check before reuse</h3><p>Review the result, repair failures and replay compatible learned workflows later.</p></article>
-      </div>
-      <p class="how-note"><span aria-hidden="true">↳</span> Learned repeats can run with zero model calls when the workflow still matches.</p>
     </section>
 
     <section class="film-section" id="watch" aria-labelledby="film-title">
       <div class="film-heading">
-        <div><p class="eyebrow">ONE RECORDED RUN · NOT A GENERAL SUCCESS CLAIM</p><h2 id="film-title">See what the steps<br><em>look like in practice.</em></h2><p>A local browser run investigates a synthetic API incident, checks six pages and saves a report.</p></div>
-        <span class="film-index">RUN<br><b>204</b></span>
+        <div><p class="eyebrow">ONE UNCUT DASHBOARD SESSION · REAL TIME</p><h2 id="film-title">Write it once.<br><em>Ask for it in French.</em></h2><p>The steps of a Google Play release are written once, with English and French labels. A request in other words finds them, fills in the values and replays them on the local Play Console simulator, with zero model calls.</p></div>
+        <span class="film-index">MODEL CALLS<br><b>0</b></span>
       </div>
       <div class="film-layout">
         <div class="video-frame">
-          <div class="video-label"><span><i></i> RECORDED PLAYWRIGHT SESSION</span><span>APPROVAL SHOWN</span></div>
-          <video controls playsinline preload="metadata" poster="lab/media/incident-poster.jpg" aria-label="FreeComputerUse investigating synthetic incident INC-204 in a local browser">
+          <div class="video-label"><span><i></i> RECORDED DASHBOARD SESSION</span><span>APPROVALS SHOWN</span></div>
+          <video controls playsinline preload="metadata" poster="lab/media/procedure-poster.jpg" aria-label="FreeComputerUse saving a Play release procedure and replaying it from a French request">
+            <source src="lab/media/procedure-demo.mp4" type="video/mp4">
+            Your browser does not support this video. <a href="lab/media/procedure-demo.mp4">Open the recording</a>.
+          </video>
+          <div class="video-caption"><span>11 browser actions · 0 model calls · 3 approvals · checked in the simulator's state</span><a href="lab/media/procedure-demo.mp4">Open full recording ↗</a></div>
+        </div>
+        <aside class="film-facts" aria-label="Recording details">
+          <div><span>01 / TEACH</span><b>Steps in plain words</b><p>Thirteen written lines, each with its French label after a <code>|</code>, and four named values.</p></div>
+          <div><span>02 / ASK</span><b>A request in French</b><p>It finds the procedure, reads the app, version and bundle, and asks only for the notes.</p></div>
+          <div><span>03 / APPROVE</span><b>Three decisions</b><p>The site once, then Save and publish and Send changes for review.</p></div>
+          <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/GOOGLE_PLAY.md">Try it on the simulator <span aria-hidden="true">↗</span></a>
+        </aside>
+      </div>
+      <div class="film-more">
+        <div>
+          <p class="eyebrow">AN OPEN-ENDED TASK, PLANNED BY A MODEL</p>
+          <h3>Six pages of evidence, one checked brief.</h3>
+          <p>DeepSeek Flash plans a synthetic incident investigation: filter the alerts, read the timeline, metrics, deployments and runbook, then fill in and download a brief. 19 browser actions, 9 model calls, 28,680 tokens. Nothing is rolled back and no one is contacted. One recorded run, not a success rate.</p>
+        </div>
+        <div class="video-frame">
+          <video controls playsinline preload="none" poster="lab/media/incident-poster.jpg" aria-label="FreeComputerUse investigating synthetic incident INC-204">
             <source src="lab/media/incident-demo.mp4" type="video/mp4">
             Your browser does not support this video. <a href="lab/media/incident-demo.mp4">Open the recording</a>.
           </video>
-          <div class="video-caption"><span>21 successful actions · 10 model calls · $0.00650 configured estimate</span><a href="lab/media/incident-demo.mp4">Open full recording ↗</a></div>
         </div>
-        <aside class="film-facts" aria-label="Recording details">
-          <div><span>01 / PERMISSION</span><b>Website access first</b><p>The local app requests approval before opening the practice site.</p></div>
-          <div><span>02 / RESEARCH</span><b>Follow the evidence</b><p>Alert → timeline → metrics → deployment comparison → runbook.</p></div>
-          <div><span>03 / RESULT</span><b>A report you can inspect</b><p>The agent checks its findings and downloads a synthetic incident brief.</p></div>
-          <a href="lab/workspace.html?view=incident">Explore the practice pages <span aria-hidden="true">↗</span></a>
-        </aside>
       </div>
+    </section>
+
+    <section class="how-section page-section" id="modes" aria-labelledby="modes-title">
+      <div class="section-heading">
+        <p class="eyebrow">THREE WAYS TO WORK</p>
+        <h2 id="modes-title">Let it explore.<br><em>Or show it once.</em></h2>
+        <p>Start with a goal and a model. When a task repeats, save it as a procedure with named values, so later runs replay locally and cost nothing.</p>
+      </div>
+      <div class="how-grid">
+        <article><span>01 / AUTONOMOUS</span><h3>Give it a goal</h3><p>It reads the page structure, asks your model for a small batch of typed actions, runs them and checks the result. Screenshots are an opt-in fallback.</p></article>
+        <article><span>02 / TEACH ME</span><h3>Show or write the steps</h3><p>Record what you do in the browser, write the steps in English or French, or keep a run the model completed. Passwords and files become values, never stored.</p></article>
+        <article><span>03 / SMART REPLAY</span><h3>Replay, repair one step</h3><p>Saved alternatives are tried first. If a button was renamed, the model repairs that step only, and the fix is saved as a new version.</p></article>
+        <article><span>04 / WHEN STUCK</span><h3>It asks you to show it</h3><p>A step that still fails can pause the run. Do it yourself in the live browser and resume: your action is saved with the next version.</p></article>
+      </div>
+      <p class="how-note"><span aria-hidden="true">↳</span> Requests in other words or another language find the right procedure and fill in its values. <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/TEACH.md">How teaching works</a>.</p>
+    </section>
+
+    <section class="play-section page-section" id="play" aria-labelledby="play-title">
+      <div>
+        <div class="section-heading">
+          <p class="eyebrow">THE FLAGSHIP PROCEDURE</p>
+          <h2 id="play-title">A Google Play release.<br><em>Without surprises.</em></h2>
+          <p>Upload a bundle, add the release notes and send the release for review. The steps work on the English and French console, and every run stops for you where it matters.</p>
+        </div>
+        <ul class="play-list">
+          <li><b>You sign in</b>It never types your Google password, never answers 2-Step Verification and never solves a CAPTCHA. On a sign-in page it pauses for you.</li>
+          <li><b>You approve the submission</b>Save and publish and Send changes for review ask every time, with the release summary in the prompt. A recording is never a standing approval.</li>
+          <li><b>"In review" is not "published"</b>The run reports what the console says. Google still reviews the release.</li>
+          <li><b>Several accounts, blocking errors</b>A value can pick the developer account. When the console refuses a submission, the run fails and quotes the console's message.</li>
+        </ul>
+      </div>
+      <div class="code-card">
+        <pre class="terminal"><span>WRITTEN STEPS · PASTE INTO "WRITE STEPS"</span><code id="play-steps">open http://127.0.0.1:3000/play/console
+require "All apps" | "Toutes les applications"
+click "View app: {{params.app}}" | "Afficher l'application: {{params.app}}"
+click button "Test and release" | button "Tester et publier"
+click "Production"
+click button "Create new release" | button "Créer une release"
+upload {{params.bundle}} to "Upload app bundle" | "Importer un app bundle"
+wait for "({{params.version}})" (timeout 20s)
+type "{{params.notes}}" into field "Release notes" | field "Notes de version"
+click "Next" | "Suivant"
+click "Save and publish" | "Enregistrer et publier" (sensitive)
+click "Send changes for review" | "Envoyer les modifications pour examen"
+expect "In review" | "En cours d'examen"</code><small>Runs against the local simulator in <b>fixtures/playConsole.ts</b>, which is not Google software.</small></pre>
+        <button class="copy-button" type="button" data-copy="play-steps">Copy steps</button>
+        <p class="status-note"><b>Tested on:</b> the local simulator, in English and French, with several accounts and a blocking policy error. On the real Play Console, only the signed-out start was checked on 25 October 2026: the run paused, with no action and no model call. <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/GOOGLE_PLAY.md">Full walkthrough</a>.</p>
+      </div>
+    </section>
+
+    <section class="savings-section page-section" id="savings" aria-labelledby="savings-title">
+      <div class="section-heading models-heading">
+        <p class="eyebrow">MEASURED ON 25 OCTOBER 2026 · LOCAL PLAY CONSOLE SIMULATOR</p>
+        <h2 id="savings-title">Pay for the first run.<br><em>Replays are free.</em></h2>
+        <p>The same release, nine times: explore, replay, change the UI, switch to French and back. A run counts only if the simulator holds the new version in review.</p>
+      </div>
+      <div class="bench-cards">
+        <article><span>DEEPSEEK FLASH · 3 TRIALS</span><b>27 / 27</b><p>runs correct, 18 to 20 model calls and $0.0052 to $0.0057 per nine-run trial</p></article>
+        <article><span>CLAUDE CODE · OPUS 5.5</span><b>9 / 9</b><p>runs correct, 20 model calls in total, through a Claude subscription</p></article>
+        <article><span>CODEX CLI · GPT-6.1-SOL</span><b>9 / 9</b><p>runs correct, 24 model calls in total, through a ChatGPT plan</p></article>
+      </div>
+      <div class="table-wrap">
+        <table class="bench-table">
+          <caption>DeepSeek Flash, three trials. Each cell lists the trials in order.</caption>
+          <thead><tr><th scope="col">Run</th><th scope="col">Interface</th><th scope="col" class="num">Model calls</th><th scope="col" class="num">Tokens</th></tr></thead>
+          <tbody>
+            <tr><td>1. First run, the model explores</td><td>English</td><td class="num">9, 8, 8</td><td class="num">19,521 · 17,360 · 17,433</td></tr>
+            <tr class="zero"><td>2. Replay with new values</td><td>English</td><td class="num">0, 0, 0</td><td class="num">0</td></tr>
+            <tr><td>3. Replay after a UI change</td><td>Renamed buttons</td><td class="num">3, 4, 4</td><td class="num">6,456 · 8,839 · 8,786</td></tr>
+            <tr class="zero"><td>4. Replay again</td><td>Renamed buttons</td><td class="num">0, 0, 0</td><td class="num">0</td></tr>
+            <tr><td>5. First run in French</td><td>French</td><td class="num">6, 8, 7</td><td class="num">13,970 · 18,613 · 16,085</td></tr>
+            <tr class="zero"><td>6 to 9. French, English, French, English</td><td>Both</td><td class="num">0</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="model-note"><span aria-hidden="true">i</span> One task on one simulator, a small sample. Claude Code and Codex count the CLI's own instructions as input, so their token totals are larger. <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/BENCHMARKS.md#procedures-and-token-savings">Method, raw results and limits</a>.</p>
     </section>
 
     <section class="models-section page-section" id="models" aria-labelledby="models-title">
       <div class="section-heading models-heading">
-        <p class="eyebrow">PICK THE MODEL THAT FITS YOU</p>
-        <h2 id="models-title">One browser agent.<br><em>More than one way to connect.</em></h2>
-        <p>Use provider API keys for flexible model access, or authenticate with a supported local CLI subscription. The available choices depend on your configuration.</p>
+        <p class="eyebrow">YOUR MODEL, YOUR BILL</p>
+        <h2 id="models-title">Bring a key.<br><em>Or a subscription.</em></h2>
+        <p>Pick a provider per task. Keys go to the macOS Keychain or a private file. Retries, fallback providers and escalation to a stronger model are built in.</p>
       </div>
       <div class="provider-grid">
         <article class="provider-card provider-wide">
           <div class="provider-label"><span>01</span> API KEY</div>
           <h3>Connect a model API</h3>
-          <p>Set the provider endpoint, model and key in your local environment.</p>
-          <div class="provider-tags"><span>OpenAI</span><span>Anthropic</span><span>Grok</span><span>DeepSeek</span><span>Gemini</span><span>Mistral</span><span>OpenRouter</span></div>
-          <small>OpenAI-compatible endpoints work through a configurable base URL. Anthropic has its own API mode.</small>
+          <p>Claude (default <code>claude-opus-5-5</code>), DeepSeek, OpenAI, or any OpenAI-compatible endpoint.</p>
+          <div class="provider-tags"><span class="live">DeepSeek · live-tested</span><span>Claude API</span><span>OpenAI</span><span>xAI</span><span>Gemini</span><span>Mistral</span><span>OpenRouter</span></div>
+          <small>The Claude and OpenAI API routes have contract tests but no live run yet: no key was available. <code>agent providers test &lt;id&gt;</code> sends one real request to check yours.</small>
         </article>
         <article class="provider-card subscription-card">
-          <div class="provider-label"><span>02</span> SUPPORTED CLI SIGN-IN</div>
+          <div class="provider-label"><span>02</span> SIGNED-IN CLI</div>
           <h3>Use a subscription</h3>
-          <p>Sign in locally with the provider CLI, then select its subscription mode.</p>
-          <div class="subscription-options"><div><b>ChatGPT plan</b><span>Codex CLI</span></div><div><b>Claude Pro / Max</b><span>Claude Code</span></div></div>
-          <small>CLI sign-in uses that provider’s own plan limits. API billing and subscription usage are separate.</small>
+          <p>Sign in with the provider's CLI, then pick its route. Both were run live on the benchmark above.</p>
+          <div class="subscription-options"><div><b>Claude Pro / Max</b><span>Claude Code 2.1.310+ · live</span></div><div><b>ChatGPT plan</b><span>Codex CLI · live</span></div></div>
+          <small>A subscription uses that plan's own limits. Slow CLI calls are retried once; <code>FCU_CLI_TIMEOUT_MS</code> raises the 60 s limit.</small>
         </article>
       </div>
-      <p class="model-note"><span aria-hidden="true">i</span> Provider setup and evidence: <a href="https://github.com/OthmaneBlial/FreeComputerUse#pick-your-model">model guide</a> · <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">support matrix</a>. Some provider routes have not been live-tested in this project.</p>
+      <p class="model-note"><span aria-hidden="true">i</span> Dated evidence for every route is in the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">support matrix</a>. Setup: <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/PROVIDERS.md">provider guide</a>. MCP hosts can drive it too: <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/MCP.md"><code>agent mcp</code></a>.</p>
+    </section>
+
+    <section class="how-section page-section" id="keyless" aria-labelledby="keyless-title">
+      <div class="section-heading">
+        <p class="eyebrow">NO PROVIDER REQUIRED</p>
+        <h2 id="keyless-title">Try it first.<br><em>No model key needed.</em></h2>
+        <p>These narrow page-reading jobs run locally with zero model calls. Open-ended tasks need a configured model.</p>
+      </div>
+      <div class="how-grid">
+        <article><span>01 / PAGE TEXT</span><h3>Read the page</h3><p>Extract the visible text of the current page. Goal: “Read the page”.</p></article>
+        <article><span>02 / LINK LIST</span><h3>Extract the links</h3><p>Collect visible link labels and URLs. Goal: “Extract the links”.</p></article>
+        <article><span>03 / BOUNDED LINKS</span><h3>Choose a limit</h3><p>Extract the first N links and check the count. Goal: “Extract the first 5 links”.</p></article>
+        <article><span>04 / PRACTICE DATA</span><h3>Try the sample table</h3><p>Extract three synthetic revenue rows from the <a href="lab/reports.html">practice page</a>.</p></article>
+      </div>
     </section>
 
     <section class="library-section page-section" id="library" aria-labelledby="library-title">
@@ -181,10 +252,10 @@
 
     <section class="control-section" aria-labelledby="control-title">
       <div class="control-inner">
-        <div><p class="eyebrow">LOCAL CONTROL, MADE VISIBLE</p><h2 id="control-title">The browser stays yours.</h2><p>Browser execution, profiles, history and downloads stay on your machine. The goal and page context needed to plan a task go to the model provider you chose.</p></div>
-        <ul><li>Approve each website origin</li><li>Confirm sensitive actions separately</li><li>Inspect action history, checks and repairs</li><li>Replay compatible workflows without model calls</li></ul>
+        <div><p class="eyebrow">SAFETY YOU CAN SEE</p><h2 id="control-title">The browser stays yours.</h2><p>Execution, browser profiles, history and downloads stay on your machine. The goal and the page context needed to plan go to the provider you chose. The model cannot run shell commands or arbitrary JavaScript.</p></div>
+        <ul><li>Approve each new website</li><li>Confirm sensitive steps on every run</li><li>No CAPTCHA solving, no 2-Step Verification bypass</li><li>Keys in the Keychain; secret values never saved in procedures or exports</li><li><span>Screenshots only with <code>FCU_VISION=1</code>, form fields masked</span></li></ul>
       </div>
-      <p class="control-footnote">Local storage is not encrypted. A loopback-only proxy pins resolved addresses for browser HTTP(S) and WebSocket connections; system Chrome 154 tests cover simulated DNS rebinding, popup redirects, and approved or blocked plain WebSockets and WSS. The WSS fixture ignores its generated local certificate error; a separate opt-in smoke verifies Chrome TLS and an echo with one public WSS endpoint. Other WSS endpoints, network-specific NAT64, and other browser builds remain unverified. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> before using personal or sensitive data.</p>
+      <p class="control-footnote">Sensitive-step detection relies on heuristics and cannot recognise every deceptive page. Local data is not encrypted and does not expire on its own. Normal mode blocks private and reserved network addresses unless you approve them; ultra mode is opt-in and skips those checks. Read the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/SECURITY.md">security boundaries</a> and <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/LOCAL_DATA.md">local data</a> before using personal data.</p>
     </section>
 
     <section class="faq-section page-section" id="faq" aria-labelledby="faq-title">
@@ -195,33 +266,42 @@
       </div>
       <div class="faq-list">
         <details>
-          <summary>Can I try FreeComputerUse without a model key?</summary>
-          <p>Yes. Run <code>Read the page</code>, <code>Extract the links</code>, <code>Extract the first 5 links</code>, or try <code>Extract the table</code> on the <a href="lab/reports.html">practice revenue table</a>. These narrow workflows make zero model calls. General tasks need a configured provider.</p>
+          <summary>Are procedures in the npm package?</summary>
+          <p>Not yet. The npm release <code>0.2.23</code> predates procedures, teach mode and smart replay. They are on <code>main</code>: <a href="#start">run from source</a> until the next release.</p>
         </details>
         <details>
-          <summary>Which model connections have live evidence?</summary>
-          <p>The current support matrix records one DeepSeek Flash planning run and one synthetic Codex CLI/ChatGPT plan. Contract tests are not live certifications; other provider routes remain unverified or contract-tested only. See the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">dated support matrix</a>.</p>
+          <summary>Will it publish my app to Google Play by itself?</summary>
+          <p>No. You sign in, and Save and publish and Send changes for review ask you on every run. The procedure ends when the release is in review, which is not published. On the real console, only the signed-out start has been checked so far.</p>
         </details>
         <details>
-          <summary>Does the model receive screenshots or browser profiles?</summary>
-          <p>No screenshots are sent. The task and selected page context go to the provider you choose; browser execution, profiles, history and downloads stay local. Local data is not encrypted.</p>
+          <summary>Which models have live evidence?</summary>
+          <p>DeepSeek Flash (API), Claude Opus 5.5 through Claude Code, and <code>gpt-6.1-sol</code> through Codex CLI each completed the nine-run procedure benchmark. The Claude and OpenAI API routes have contract tests only. See the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">dated support matrix</a>.</p>
         </details>
         <details>
-          <summary>Which operating systems and browsers are verified?</summary>
-          <p>Full local validation passed on macOS 26.6/Apple Silicon with Node 22.13.0 and 25.9.0 and system Chrome 154. Windows/Linux, other Node versions and browser builds remain unverified; check the <a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/docs/SUPPORT_MATRIX.md">support matrix</a>.</p>
+          <summary>What has been verified, and on what?</summary>
+          <p>The full local gate (TypeScript, 221 tests, build, credential scan, dependency audit) passed on 25 October 2026 on macOS 26.6 with Node 25.9.0 and Chrome 155. Windows, Linux and other browser builds are unverified, and no result predicts success on arbitrary websites.</p>
         </details>
       </div>
     </section>
 
     <section class="start-section page-section" id="start" aria-labelledby="start-title">
-      <div class="start-copy"><p class="eyebrow">V0.2.23 · GET RUNNING LOCALLY</p><h2 id="start-title">Try it without a key.<br><em>Add a model when ready.</em></h2><p>Requires Node.js 22.13+, npm and an installed browser. Use an API or supported CLI sign-in for open-ended tasks. The verified setup selects system Chrome without a separate browser download.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
-      <pre class="terminal"><span>01 / TERMINAL</span><code>npm install --global free-computer-use@0.2.23
-FCU_BROWSER_CHANNEL=chrome agent doctor
-FCU_BROWSER_CHANNEL=chrome agent ui</code><small>Then open <b>http://127.0.0.1:4318</b></small><small>npm download unavailable? <a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/download/v0.2.23/free-computer-use-0.2.23.tgz">Download the tested tarball</a>, then run npm install --global ./free-computer-use-0.2.23.tgz.</small></pre>
+      <div class="start-copy"><p class="eyebrow">GET RUNNING LOCALLY</p><h2 id="start-title">Try it without a key.<br><em>Teach it from source.</em></h2><p>Requires Node.js 22.13+, npm and an installed browser. The npm release covers goal-driven tasks; procedures and teach mode run from <code>main</code> until the next release. Add a model key or a signed-in CLI for open-ended work.</p><a class="button-primary" href="https://github.com/OthmaneBlial/FreeComputerUse#quick-start">Open setup instructions <span aria-hidden="true">↗</span></a></div>
+      <div class="code-card">
+        <pre class="terminal"><span>01 / TERMINAL</span><code id="start-commands"># From source, with procedures
+git clone https://github.com/OthmaneBlial/FreeComputerUse.git
+cd FreeComputerUse && npm ci
+cp .env.example .env && chmod 600 .env
+FCU_BROWSER_CHANNEL=chrome npm run dev
+
+# Or the npm release, without procedures
+npm install --global free-computer-use@0.2.23
+FCU_BROWSER_CHANNEL=chrome agent ui</code><small>Then open <b>http://127.0.0.1:4318</b></small></pre>
+        <button class="copy-button" type="button" data-copy="start-commands">Copy commands</button>
+      </div>
     </section>
   </main>
 
-  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/releases/tag/v0.2.23">Release v0.2.23 ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
+  <footer class="site-footer"><a class="footer-brand" href="#top">FreeComputerUse<span> /</span></a><span>Free, open-source browser automation built with TypeScript and Playwright.</span><div><a href="#faq">FAQ</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/CHANGELOG.md">Changelog ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse">GitHub ↗</a><a href="https://github.com/OthmaneBlial/FreeComputerUse/blob/main/LICENSE">MIT License</a></div></footer>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

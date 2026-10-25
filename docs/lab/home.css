@@ -80,3 +80,56 @@
 }
 @media(max-width:370px){.home-page .home-hero h1{font-size:45px;letter-spacing:-2.8px}.home-page .home-hero h1 em{letter-spacing:-2.5px}}
 @media(prefers-reduced-motion:reduce){.home-page .button-primary{transition:none}}
+/* October 2026: procedures, Google Play, measured replays, and larger text. */
+/* The full-width dark band is a ::before; the same colour on the boxes keeps contrast checks and no-pseudo renderers right. */
+.home-page .site-header,.home-page .home-hero{background-color:#101812}
+.home-page .hero-lead{max-width:540px;font-size:16px;line-height:1.7}
+.home-page .hero-caption{font-size:11px}
+.home-page .site-header nav a{font-size:13px}
+.home-page .hero-proof b{font-size:13px}.home-page .hero-proof small{font-size:12px}
+.home-page .run-goal strong{font-size:15px}.home-page .run-steps b{font-size:13px}.home-page .run-steps small{font-size:11.5px}
+.home-page .section-heading>p:last-child,.home-page .library-intro>p,.home-page .start-copy>p:not(.eyebrow),.home-page .control-inner>div>p:last-child,.home-page .film-heading>div>p:last-child{max-width:520px;font-size:15px;line-height:1.7}
+.home-page .eyebrow{font-size:11px}
+.home-page .how-grid h3{font-size:19px}.home-page .how-grid p{max-width:310px;font-size:14px}
+.home-page .how-note,.home-page .model-note{font-size:13px;line-height:1.6}
+.home-page .film-facts b{font-size:15px}.home-page .film-facts p{font-size:13px}.home-page .film-facts>a{font-size:12px}
+.home-page .film-layout{grid-template-columns:minmax(0,1fr) 250px}
+.home-page .video-label,.home-page .video-caption{font-size:10px}
+.home-page .provider-card>p{font-size:14px}.home-page .provider-tags span{font-size:12px}.home-page .provider-card>small,.home-page .subscription-options span{font-size:12px;line-height:1.6}.home-page .subscription-options b{font-size:14px}
+.home-page .provider-tags .live{background:#283428;border-color:#283428;color:var(--green)}
+.home-page .control-inner li{font-size:14px}.home-page .control-footnote{font-size:12px;line-height:1.7}
+.home-page .terminal code{font-size:12px}.home-page .terminal small{font-size:11px}
+.home-page main code{font-family:var(--mono);font-size:.92em}
+.film-more{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:34px;align-items:center;margin-top:34px;padding-top:30px;border-top:1px solid #313a2f}
+.film-more .eyebrow{color:#b5ca94}
+.film-more h3{margin:0 0 12px;color:#f4f1e7;font:500 30px/1.12 "Iowan Old Style",Baskerville,Georgia,serif;letter-spacing:-.8px}
+.film-more p:last-child{margin:0;color:#b5beb1;font-size:14px;line-height:1.7}
+.play-section{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:64px;align-items:start;border-top:1px solid var(--line)}
+.play-list{list-style:none;padding:0;margin:30px 0 0;border-top:1px solid var(--line)}
+.play-list li{padding:15px 0;border-bottom:1px solid var(--line);color:var(--muted);font-size:14px;line-height:1.6}
+.play-list b{display:block;margin-bottom:3px;color:var(--ink);font-size:15px}
+.code-card{position:relative;min-width:0}
+.code-card .terminal{padding-top:22px}
+.copy-button{position:absolute;top:14px;right:14px;padding:7px 11px;border:1px solid #4a5744;border-radius:3px;background:#202b21;color:var(--green);font:11px var(--mono);cursor:pointer}
+.copy-button:hover,.copy-button:focus-visible{background:var(--green);color:#172019}
+.status-note{margin:18px 0 0;padding:15px 17px;border-left:3px solid #5b7e2d;background:#e8eddc;color:#47513f;font-size:13.5px;line-height:1.65}
+.status-note a{color:#4b712e}
+.savings-section{border-top:1px solid var(--line)}
+.bench-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.bench-cards article{padding:22px 22px 20px;background:#fbfbf5;border:1px solid var(--line)}
+.bench-cards span{display:block;color:var(--muted);font:10px var(--mono);letter-spacing:.6px}
+.bench-cards b{display:block;margin:16px 0 8px;color:#3f6320;font:500 46px/1 "Iowan Old Style",Baskerville,Georgia,serif;letter-spacing:-1.5px}
+.bench-cards p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);background:#fbfbf5}
+.bench-table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px}
+.bench-table caption{padding:14px 16px;text-align:left;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line)}
+.bench-table th,.bench-table td{padding:12px 16px;border-bottom:1px solid var(--line);text-align:left}
+.bench-table th{background:#f0f1e9;color:var(--muted);font:500 10px var(--mono);letter-spacing:.6px;text-transform:uppercase}
+.bench-table .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bench-table tr:last-child td{border-bottom:0}
+.bench-table tr.zero td{background:#f2f6e8;color:#365a1a;font-weight:600}
+.home-page .model-note{display:block}.home-page .model-note>span{display:inline-grid;width:16px;margin-right:8px;vertical-align:-3px}
+.play-section{grid-template-columns:minmax(0,.92fr) minmax(0,1.12fr)}
+#play .terminal code{font-size:11px;line-height:1.95}
+@media(max-width:900px){.play-section,.film-more{grid-template-columns:1fr;gap:34px}.bench-cards{grid-template-columns:1fr}.home-page .film-layout{grid-template-columns:1fr}}
+@media(max-width:680px){.home-page .site-header nav a{font-size:10.5px}.home-page .hero-lead{font-size:15px}.film-more h3{font-size:25px}.copy-button{top:10px;right:10px}}
