@@ -42,8 +42,10 @@ try{
       {name:'notes',value:'Bug fixes',kind:'text',required:true},{name:'version',value:'1.4',kind:'text',required:true,pattern:'^\\d+(\\.\\d+){0,3}$'},{name:'code',value:'14',kind:'text',required:true,pattern:'^\\d+$'}]},'learned',{learnedFrom:first.id});
   await writeFile(join(folder,'procedure-v1.json'),JSON.stringify(engine.export(saved.id),null,2));
   const replay=async(run:string,ui:string,code:number,version:string,query='')=>{
-    const path=await bundle(code,version);
-    await measure(run,ui,code,agent=>agent.runProcedure(saved.id,{app:'Snake Arena',bundle:path,notes:`Release ${version}`,version,code:String(code)},query?`${start}?${query}`:undefined));
+    const path=await bundle(code,version),values:Record<string,string>={app:'Snake Arena',bundle:path,notes:`Release ${version}`,version,code:String(code)};
+    // saveSteps keeps only parameters whose value appears in the learned steps.
+    const declared=new Set((engine.get(saved.id)?.parameters??[]).map(param=>param.name));
+    await measure(run,ui,code,agent=>agent.runProcedure(saved.id,Object.fromEntries(Object.entries(values).filter(([name])=>declared.has(name))),query?`${start}?${query}`:undefined));
     rows.at(-1)!.procedureVersion=engine.get(saved.id)?.version;
   };
   await replay('2. Replay, new values','English',15,'1.5');
@@ -52,10 +54,12 @@ try{
   await replay('5. Replay on a French UI','French',18,'1.8','lang=fr');
   await replay('6. Replay again','French',19,'1.9','lang=fr');
   await replay('7. Back to the original UI','English',20,'2.0');
+  await replay('8. French again','French',21,'2.1','lang=fr');
+  await replay('9. English again','English',22,'2.2');
   await writeFile(join(folder,'procedure-final.json'),JSON.stringify(engine.export(saved.id),null,2));
 }finally{
   const config=runtimeConfig(),report={date:new Date().toISOString(),provider:config.provider?.name,simulator:'fixtures/playConsole.ts (local, not Google software)',rows};
-  await writeFile(join(folder,'results.json'),JSON.stringify(report,null,2));
-  console.table(rows.map(({error:_error,...row})=>row));console.log(`Saved ${join(folder,'results.json')}`);
+  await mkdir('artifacts',{recursive:true});await writeFile('artifacts/benchmark-procedures.json',JSON.stringify(report,null,2)+'\n');
+  console.table(rows.map(({error:_error,...row})=>row));console.log('Saved artifacts/benchmark-procedures.json');
   store.close();await fixture.close();
 }

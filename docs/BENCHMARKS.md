@@ -26,6 +26,69 @@ Public suite measured 2026-09-18T16:52:19.246Z using real deepseek-flash, Node v
 | Multiple tabs / public Northstar lab | Pass | 5 | 3 | 4936 | 1 | Pass / 0 |
 | DOM repair / public Northstar lab | Pass | 1 | 2 | 3068 | 1 | Pass / 0 |
 
+## Procedures and token savings
+
+Measured 2026-10-25T13:44Z with real deepseek-flash (DeepSeek API), Node v25.9.0,
+Playwright 1.63.0 and Chrome, on the local Play Console simulator
+(`fixtures/playConsole.ts`, not Google software). Run it with
+`npm run benchmark:procedures`. The report is in
+[`artifacts/benchmark-procedures.json`](../artifacts/benchmark-procedures.json).
+Costs use DeepSeek's peak prices ($0.30 per million input tokens on a cache
+miss, $0.006 on a cache hit, $1.20 per million output tokens) and the cache hits
+the API reported.
+
+The task publishes a production release: open the app, Test and release,
+Production, create a release, upload the bundle, add the notes, review, Save and
+publish, then Send changes for review. The model explores the first run. Its
+steps are saved as a procedure with three parameters (app, bundle, notes), and
+every later run replays it with a new bundle and new notes. A run counts as
+correct only if the simulator holds that version code in review. That is read
+from the simulator's state, not from the agent's report.
+
+| Run | Interface | Result | Model calls | Input / output tokens | Cost | Time |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 1. First run, the model explores | English | In review | 8 | 16,735 / 619 | $0.00208 | 45.8 s |
+| 2. Replay with new values | English | In review | 0 | 0 | $0 | 2.7 s |
+| 3. Replay after a minor UI change | English, variant 2 | In review | 4 | 8,601 / 192 | $0.00097 | 17.8 s |
+| 4. Replay again | English, variant 2 | In review | 0 | 0 | $0 | 2.7 s |
+| 5. Replay on a French interface | French | In review | 7 | 15,732 / 480 | $0.00221 | 31.6 s |
+| 6. Replay again | French | In review | 0 | 0 | $0 | 2.8 s |
+| 7. Back to the original interface | English | In review | 0 | 0 | $0 | 2.6 s |
+| 8. French again | French | In review | 0 | 0 | $0 | 2.7 s |
+| 9. English again | English | In review | 0 | 0 | $0 | 2.6 s |
+
+All nine runs were correct. Together they used 19 model calls and cost $0.0053.
+
+- **Replay:** zero model calls and zero tokens, against 17,354 tokens for the
+  first run.
+- **Minor UI change** (variant 2 renames "Next" to "Review release", changes a
+  label, capitalisation and an id, and adds a banner): the model repaired only the
+  broken steps. That took 4 calls and 50% of the first run's tokens. The repaired
+  version then replayed with zero calls.
+- **Another language:** the first French run repaired two steps, then planned
+  the rest from the page, guided by the saved steps. That took 7 calls and 93% of
+  the first run's tokens. The saved version then kept both targets for every step
+  and both success texts ("In review" or "En cours d'examen"). Runs 6 to 9 switch
+  languages with zero calls.
+- **Approvals:** every run asked before Save and publish and before Send changes
+  for review. A saved procedure does not pre-authorize them. The benchmark
+  approves them automatically because the simulator is local.
+
+Variance and earlier trials: three earlier full trials that day used 8 or 9
+calls and 16,767 to 19,121 input tokens for the first run, 4 or 5 calls for the
+minor UI change, and 7 or 8 calls for the first French run. Those trials also
+exposed two bugs, both now fixed and covered by tests:
+
+- French replays were marked failed although the release was in review. The
+  re-plan had copied the English success text, and a correction of it was
+  ignored.
+- Switching back and forth between languages kept needing 3 to 5 calls, because
+  versions were merged only when their steps had exactly the same shape.
+
+Limits: this is one task on one simulator with one model. Each row is a single
+trial. The times come from a laptop and include the simulator's 1.2 s bundle
+processing. The real Play Console has not been tested.
+
 ## Local integration suite
 
 Measured 2026-09-18T16:52:23.922Z: 6/6 tasks and 6/6 provider-free learned repeats passed. First runs used 31 actions, 10 model calls and 16,392 tokens. Cases include synthetic search, contact form, travel wizard, product filtering, a multi-page application with upload/approval, and changed-control recovery.

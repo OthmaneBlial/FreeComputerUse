@@ -38,7 +38,13 @@
   repair that drops a duplicate step lets the completion checks decide.
 - A procedure replay with two broken steps plans the rest from the current page
   instead of repairing step by step, and still requires the procedure's checks.
-  A new version with the same steps keeps the old targets as alternatives.
+  Each new version keeps the old targets as alternatives, step by step, even
+  when a repair added or dropped a step.
+- Success texts can list the same text in another language. After a re-plan,
+  the verified translation is added to the saved check; the model cannot
+  replace that check.
+- `npm run benchmark:procedures` measures a first run, replays, a minor UI
+  change and a French UI against the Play simulator with a real model.
 
 ### Safety
 

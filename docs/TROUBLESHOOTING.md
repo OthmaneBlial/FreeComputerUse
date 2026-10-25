@@ -49,8 +49,9 @@ observe, plan, act, verify and repair event.
   point can hit something else next time. Only the visible viewport is sent.
 - **Other interface languages.** A procedure works in a second language without
   the model only if its steps have `|` alternatives, written by you or merged
-  after a successful run there. A merge only happens when the new run has the
-  same steps in the same order.
+  after a successful run there. Steps are matched by type and role, in order. A
+  run that reorders similar steps can pair the wrong two, and the extra
+  alternative is then tried only when the main target is missing.
 - **Recording.** Teach mode records clicks, checkboxes, selections, typed text,
   uploads, Enter in a field and address-bar navigation. It does not record
   drag and drop, hovering, other keys or canvas drawing. Write those steps, or

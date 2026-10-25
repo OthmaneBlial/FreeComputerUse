@@ -138,6 +138,9 @@ pause and ask me to show the step** on, the run pauses so you can handle it.
 
 ## Measured on the simulator
 
-Real model calls and token counts for a first run, replays, a minor UI change
-and a French UI are in
+With `deepseek-flash` on 25 October 2026, the first run took 8 model calls and
+17,354 tokens. Replays with new values took none. A minor UI change took 4 calls
+once, and the first French run took 7. After that, the procedure ran in both
+languages with no model calls. Every run asked before Save and publish and before
+Send changes for review. Details and limits are in
 [BENCHMARKS.md](BENCHMARKS.md#procedures-and-token-savings).
