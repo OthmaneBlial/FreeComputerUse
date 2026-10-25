@@ -63,7 +63,9 @@ export function parseSteps(source:string,goal='Taught procedure'):ParsedSteps{
       const verb=verbs.find(([pattern])=>pattern.test(line));if(!verb)throw new Error('Unknown step; start with open, click, type, select, upload, check, press, wait for or expect');
       const rest=line.replace(verb[0],''),type=verb[1];
       if(type==='navigate'){actions.push(ActionSchema.parse({type,url:takeValue(rest).value}));return;}
-      if(type==='wait'||type==='expect'){const condition:Condition={type:'text_exists',value:takeValue(rest).value};if(type==='expect')completion.push(condition);else actions.push(ActionSchema.parse({type:'wait',condition,...flags}));return;}
+      if(type==='wait'||type==='expect'){
+        const [value,...alternatives]=rest.split(/\s+\|\s+|\s+ou\s+(?=["“«])/).map(part=>takeValue(part).value);
+        const condition:Condition={type:'text_exists',value:value!,...(alternatives.length?{alternatives}:{})};if(type==='expect')completion.push(condition);else actions.push(ActionSchema.parse({type:'wait',condition,...flags}));return;}
       if(type==='press'){
         const key=/^(\S+)/.exec(rest)![1]!,after=rest.slice(key.length),target=separator.test(after)?takeTarget(after.replace(separator,'')):undefined;
         if(!target)throw new Error('Say where to press the key, e.g. press Enter in "Search"');

@@ -23,8 +23,10 @@ export const ConditionSchema = z.discriminatedUnion('type', [
   z.object({type:z.literal('extraction_count'),key:text.optional(),min:z.number().int().min(0).max(1000),max:z.number().int().min(0).max(1000).optional()}).strict(),
   ...(['element_exists', 'element_visible', 'element_not_visible', 'checkbox_checked', 'form_submitted'] as const)
     .map(type => z.object({ type: z.literal(type), target: TargetSchema }).strict()),
-  ...(['url_equals', 'url_contains', 'text_exists', 'text_disappeared', 'title_changed'] as const)
+  ...(['url_equals', 'url_contains', 'text_disappeared', 'title_changed'] as const)
     .map(type => z.object({ type: z.literal(type), value: text }).strict()),
+  // Alternatives are the same text in another interface language; any one is enough.
+  z.object({ type: z.literal('text_exists'), value: text, alternatives: z.array(text).max(6).optional() }).strict(),
   z.object({ type: z.literal('network_response'), value: text, status: z.number().int().min(100).max(599).optional() }).strict(),
   z.object({ type: z.literal('download_created'), value: text.optional() }).strict(),
   z.object({ type: z.literal('page_changed'), value: text }).strict(),

@@ -84,13 +84,13 @@ test('explicit steps in English and French become a validated plan with paramete
 6. press Enter in "Release name"
 7. attends "Prêt"
 8. click "Save and publish" (sensitive)
-9. vérifie "In review"`);
+9. vérifie "In review" | "En cours d'examen"`);
   assert.equal(parsed.startUrl,'https://console.example.test/play/console');
   assert.deepEqual(parsed.plan.actions.map(action=>action.type),['navigate','click','click','upload','fill','press','wait','click']);
   assert.deepEqual(parsed.plan.actions[1],{type:'click',target:{name:'View app: {{params.app}}'},alternatives:[{name:"Afficher l'application: {{params.app}}"}]});
   assert.deepEqual(parsed.plan.actions[2],{type:'click',target:{role:'button',name:'Tester et publier'}});
   assert.equal(parsed.plan.actions[3]?.timeoutMs,20000);assert.equal(parsed.plan.actions[7]?.sensitive,true);
-  assert.deepEqual(parsed.plan.completion,[{type:'text_exists',value:'In review'}]);
+  assert.deepEqual(parsed.plan.completion,[{type:'text_exists',value:'In review',alternatives:["En cours d'examen"]}]);
   assert.deepEqual(parsed.parameters.map(param=>[param.name,param.kind]),[['app','text'],['bundle','file'],['notes','text']]);
   assert.throws(()=>parseSteps('click View app\nfrobnicate "x"'),/Line 1: Put the element name in quotes[\s\S]*Line 2: Unknown step/);
 });
@@ -189,24 +189,40 @@ test('a taught Play release survives restart, replays with new parameters, stops
   }finally{await fixture.close();await rm(directory,{recursive:true,force:true});}
 });
 
-test('a replay whose steps mostly broke re-plans once, keeps the procedure checks, and saves a version that runs on both interfaces',async()=>{
+test('a replay whose steps mostly broke re-plans once and saves a version, with both texts and targets, that runs on both interfaces',async()=>{
   const labels={en:['One','Two','Three'],fr:['Un','Deux','Trois']};
-  const server=createServer((req,res)=>{const lang=new URL(req.url??'/','http://x').searchParams.get('lang')==='fr'?'fr':'en';res.writeHead(200,{'content-type':'text/html'});
-    res.end(`<p id="log"></p>${labels[lang].map((label,i)=>`<button onclick="log.textContent+='${i+1}';if(log.textContent==='123')document.body.insertAdjacentHTML('beforeend','<p>All done</p>')">${label}</button>`).join('')}`);});
+  const server=createServer((req,res)=>{const lang=new URL(req.url??'/','http://x').searchParams.get('lang')==='fr'?'fr':'en';res.writeHead(200,{'content-type':'text/html; charset=utf-8'});
+    res.end(`<p id="log"></p>${labels[lang].map((label,i)=>`<button onclick="log.textContent+='${i+1}';if(log.textContent==='123')document.body.insertAdjacentHTML('beforeend','<p>${lang==='fr'?'Terminé':'All done'}</p>')">${label}</button>`).join('')}`);});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
   const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);let plans=0,repairs=0;
   const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
   const provider:LLMProvider={name:'fixture',
     repair:async context=>{repairs++;const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
-    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'3'}],continue:false};}};
-  const agent=new Agent({store,provider,mode:'ultra'});
-  try{
+    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'Terminé'}],continue:false};}};
+  const agent=new Agent({store,provider,mode:'ultra'});  try{
     const french=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
     assert.equal(french.status,'completed',french.error??'Task failed');assert.deepEqual([repairs,plans],[2,1],'Two repairs, then one plan for the rest');
-    assert(french.completion.some(condition=>condition.type==='text_exists'&&condition.value==='All done'),'The procedure check was still required');
     const version=engine.get(saved.id)!;assert.equal(version.version,2);
+    assert.deepEqual(version.plan.completion,[{type:'text_exists',value:'All done',alternatives:['Terminé']}],'The English check gains the verified French text');
     assert.deepEqual(version.plan.actions.map(action=>'alternatives'in action?action.alternatives:undefined),labels.en.map(name=>[{role:'button',name}]),'Each French step keeps its English target');
     const english=await agent.runProcedure(saved.id,{},origin+'/');
-    assert.equal(english.status,'completed',english.error??'Task failed');assert.equal(english.metrics.llmCalls,0);assert.deepEqual([repairs,plans],[2,1]);
+    assert.equal(english.status,'completed',english.error??'Task failed');assert.equal(english.metrics.llmCalls,0);
+    const again=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
+    assert.equal(again.status,'completed',again.error??'Task failed');assert.equal(again.metrics.llmCalls,0);assert.deepEqual([repairs,plans],[2,1]);
   }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
+test('a model that names a procedure file parameter as a vault file still uploads that file',async()=>{
+  const server=createServer((_req,res)=>{res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end('<input type="file" aria-label="Attachment" onchange="document.body.insertAdjacentHTML(\'beforeend\',\'<p>Attached \'+this.files[0].name+\'</p>\')">');});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
+  const directory=await mkdtemp(join(tmpdir(),'fcu-file-param-')),doc=join(directory,'notes.txt');await writeFile(doc,'notes');
+  const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);
+  const saved=engine.create({name:'Attach notes',startUrl:origin+'/',parameters:[{name:'doc',kind:'file',required:true}],plan:{goal:'Attach',steps:['Attach'],actions:[{type:'upload',target:{label:'Old attachment'},file:'{{params.doc}}',timeoutMs:100}],completion:[{type:'text_exists',value:'Attached notes.txt'}],continue:false}},'taught');
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>RepairSchema.parse({actions:[{type:'upload',target:{label:'Attachment'},file:'{{files.doc}}'}],replace:1})};
+  const agent=new Agent({store,provider});agent.control.on('approval',()=>agent.control.approve());
+  try{
+    const trace=await agent.runProcedure(saved.id,{doc},origin+'/');
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
+    assert(JSON.stringify(trace.actions.at(-1)!.action).includes('{{params.doc}}'));
+  }finally{await agent.close();store.close();await rm(directory,{recursive:true,force:true});await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

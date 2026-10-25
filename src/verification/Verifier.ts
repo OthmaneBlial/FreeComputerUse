@@ -51,7 +51,7 @@ export class Verifier {
       case 'url_equals':return page.url()===this.variables.resolve(condition.value);
       case 'url_contains':return page.url().includes(this.variables.resolve(condition.value));
       case 'title_changed':return await page.title()!==condition.value;
-      case 'text_exists':for(const frame of page.frames())if(await frame.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()>0)return true;return false;
+      case 'text_exists':for(const value of [condition.value,...condition.alternatives??[]])for(const frame of page.frames())if(await frame.getByText(this.variables.resolve(value),{exact:false}).filter({visible:true}).count()>0)return true;return false;
       case 'text_disappeared':for(const frame of page.frames())if(await frame.getByText(this.variables.resolve(condition.value),{exact:false}).filter({visible:true}).count()>0)return false;return true;
       case 'download_created':return this.browser.downloads.some(d=>!condition.value||d.filename===condition.value);
       case 'network_response':return this.browser.responses.some(r=>r.time>=since&&r.url.includes(condition.value)&&(!condition.status||r.status===condition.status));

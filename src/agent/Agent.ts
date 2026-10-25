@@ -140,7 +140,7 @@ export class Agent extends EventEmitter {
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);this.active=true;
     const repeated=new Map<string,number>(),repeatRecoveries=new Set<string>(),navigations=new Map<string,number>(),completed:string[]=[];
-    let revision=this.control.revision,completionReplans=0,replanned=false,procedureChecks:Condition[]=[];
+    let revision=this.control.revision,completionReplans=0,replanned=false,replacedChecks:Condition[]=[];
     try{
       if(!this.browser.context)await this.browser.launch();
       this.watchLastPageClose();
@@ -188,7 +188,7 @@ export class Agent extends EventEmitter {
           plan=await provider.plan(this.context(goal,this.state!,completed,previous));
         }
         const batchState=this.state!;
-        plan=PlanSchema.parse(plan);trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
+        plan=PlanSchema.parse(this.fileParams(plan));trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
         let actions=[...plan.actions];let index=0;
         while(index<actions.length){
           await this.control.checkpoint();
@@ -233,8 +233,9 @@ export class Agent extends EventEmitter {
             actions.splice(index,1);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);await this.observe();continue;
           }
           // Several saved steps no longer match (e.g. another interface language): one fresh plan from here costs less than a repair per step.
+          // The new plan's checks decide, since the saved success text may be in the other language; the saved checks are merged on save.
           if(this.procedure&&!replanned&&repairs>=2){
-            replanned=true;procedureChecks=plan.completion;previous=batchState;plan=undefined;
+            replanned=true;replacedChecks=plan.completion;previous=batchState;plan=undefined;
             this.event('PLAN','The saved steps no longer match this page; planning the rest from here');break;
           }
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
@@ -249,7 +250,7 @@ export class Agent extends EventEmitter {
             context.page+=`\nSCREENSHOT attached: the visible viewport${size?`, ${size.width}x${size.height} CSS pixels`:''}, field contents masked. Only if no DOM target works, use a target {"x":number,"y":number} in those pixels.`;
             this.event('REPAIR','Sending a masked screenshot of the viewport with this repair');
           }
-          const repaired=RepairSchema.parse(await provider.repair({...context,screenshot,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)}));
+          const repaired=RepairSchema.parse(this.fileParams(await provider.repair({...context,screenshot,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)})));
           // The failed action never stays, and only pending actions can be replaced. An empty repair (e.g. the step was a duplicate of
           // one already done) drops it; the schema then requires completion conditions, which are verified below.
           const replace=Math.min(Math.max(1,repaired.replace),actions.length-index);
@@ -266,7 +267,7 @@ export class Agent extends EventEmitter {
           actions.splice(index,replace,...added);
         }
         if(!plan)continue;
-        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...procedureChecks,...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
+        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);
         if(!verification.success){
@@ -298,7 +299,7 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs,procedureChecks);
+      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs,replacedChecks);
       else if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
       this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
@@ -321,6 +322,11 @@ export class Agent extends EventEmitter {
     this.variables.params=resolved;this.procedure=workflow;this.demonstrated=[];
     try{return await this.run(this.workflows.label(workflow),url??this.workflows.startUrl(workflow),workflow.plan);}
     finally{this.procedure=undefined;}
+  }
+  /** Models sometimes name a procedure's file parameter as a vault file alias; both mean the same local file. */
+  private fileParams<T>(output:T):T{
+    if(!this.procedure)return output;const vaultFiles=this.variables.aliases().files;
+    return JSON.parse(JSON.stringify(output).replace(/\{\{\s*files\.([\w-]+)\s*\}\}/g,(ref,name:string)=>this.variables.params[name]?.kind==='file'&&!vaultFiles.includes(name)?`{{params.${name}}}`:ref)) as T;
   }
   private textParams(){return Object.fromEntries(Object.entries(this.variables.params).filter(([,param])=>param.kind==='text').map(([name,param])=>[name,param.value]));}
   /** Pauses on a step the agent cannot do and records the person doing it. Resuming ends the demonstration. */
@@ -347,8 +353,11 @@ export class Agent extends EventEmitter {
         const others=[...(step.alternatives??[]),prev.target,...(prev.alternatives??[])].filter(target=>key(target)!==key(step.target));
         if(others.length)step.alternatives=[...new Map(others.map(target=>[key(target),target])).values()].slice(0,6);
       });
-      // After a re-plan, the procedure's own checks stay alongside the new plan's.
-      const completion=[...new Map(parameterize([...kept,...(raw.plans.at(-1)?.completion??workflow.plan.completion)],values).map(condition=>[key(condition),condition])).values()].slice(0,12);
+      // After a re-plan, the saved success text gains the text this run verified as an alternative (e.g. its translation).
+      const latest=raw.plans.at(-1)?.completion??workflow.plan.completion,fresh=latest.filter(condition=>condition.type==='text_exists');
+      const merged=!kept.length?latest:kept.map(condition=>condition.type!=='text_exists'||fresh.length!==1?condition:{...condition,
+        alternatives:[...new Set([...condition.alternatives??[],fresh[0]!.value,...fresh[0]!.alternatives??[]])].filter(value=>value!==condition.value).slice(0,6)});
+      const completion=parameterize(merged,values);
       const parameters=[...workflow.parameters??[],...this.demonstrated.filter(param=>!workflow.parameters?.some(known=>known.name===param.name))];
       const updated=this.workflows.update(workflow.id,{plan:{...workflow.plan,actions,completion},parameters},`${demonstrated?'Demonstrated':'Repaired'} during ${safe.id}`,'repaired');
       this.event('CACHE',`Saved procedure version ${updated.version}`);
