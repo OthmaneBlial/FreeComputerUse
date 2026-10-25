@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title description">
-  <title id="title">FreeComputerUse — give the web a task. Keep control.</title>
-  <desc id="description">Choose a model to plan a browser task. Approve the website. Playwright acts locally, verifies the result and can replay a compatible workflow without model calls.</desc>
+  <title id="title">FreeComputerUse — teach it once, replay it without the model.</title>
+  <desc id="description">A local browser agent. Saved procedures replay with zero model calls, repair only what changed and ask before every sensitive step. Here a French request finds a Google Play release procedure.</desc>
   <defs>
     <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="#ffffff09"/></pattern>
     <linearGradient id="wash" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#18251f"/><stop offset="1" stop-color="#101a24"/></linearGradient>
@@ -19,33 +19,33 @@
       <path d="M25 25v25l7.4-7.1 6.2 12.2 5.4-2.8-6.2-12.2 11-.4z" fill="#c9ed72" stroke="#18231a" stroke-linejoin="round" stroke-width="2.4"/>
     </g>
     <text x="94" y="67" fill="#eff4eb" font-family="Manrope,Arial,sans-serif" font-size="23" font-weight="700" letter-spacing="-.6">FreeComputerUse</text>
-    <text x="48" y="132" fill="#aabbb0" font-family="monospace" font-size="11" letter-spacing="2.5">LOCAL-FIRST BROWSER AUTOMATION</text>
-    <text x="44" y="203" fill="#f5f5ec" font-family="Manrope,Arial,sans-serif" font-size="51" font-weight="700" letter-spacing="-2.3">Give the web a task.</text>
-    <text x="43" y="262" fill="#c8f169" font-family="Georgia,serif" font-size="54" font-style="italic" letter-spacing="-1.4">Keep control.</text>
-    <text x="48" y="314" fill="#c2cec4" font-family="Manrope,Arial,sans-serif" font-size="16">Choose your model. Approve each site. Check the result.</text>
+    <text x="48" y="132" fill="#aabbb0" font-family="monospace" font-size="11" letter-spacing="2.5">LOCAL BROWSER AGENT · OPEN SOURCE</text>
+    <text x="44" y="203" fill="#f5f5ec" font-family="Manrope,Arial,sans-serif" font-size="51" font-weight="700" letter-spacing="-2.3">Teach it once.</text>
+    <text x="43" y="262" fill="#c8f169" font-family="Georgia,serif" font-size="47" font-style="italic" letter-spacing="-1.4">Replay it without the model.</text>
+    <text x="48" y="314" fill="#c2cec4" font-family="Manrope,Arial,sans-serif" font-size="16">Saved steps replay locally. The model fixes only what changed.</text>
     <g transform="translate(48 354)" font-family="monospace" font-size="10" letter-spacing=".7">
       <rect width="142" height="32" rx="16" fill="#293d31" stroke="#718d52"/><text x="17" y="21" fill="#def1bc">PLAYWRIGHT · LOCAL</text>
-      <rect x="154" width="155" height="32" rx="16" fill="#202f3f" stroke="#476482"/><text x="171" y="21" fill="#c5dcf5">MODEL-AGNOSTIC</text>
-      <rect x="321" width="171" height="32" rx="16" fill="#293d31" stroke="#718d52"/><text x="338" y="21" fill="#def1bc">REPEAT · ZERO CALLS</text>
+      <rect x="154" width="155" height="32" rx="16" fill="#202f3f" stroke="#476482"/><text x="168" y="21" fill="#c5dcf5">ANY MODEL</text>
+      <rect x="321" width="171" height="32" rx="16" fill="#293d31" stroke="#718d52"/><text x="338" y="21" fill="#def1bc">REPLAY · ZERO CALLS</text>
     </g>
     <g transform="translate(738 43)" font-family="Manrope,Arial,sans-serif">
       <rect width="412" height="340" rx="11" fill="#f4f3e9" stroke="#ffffff33"/>
       <path d="M0 43H412" stroke="#d9ded2"/>
       <circle cx="20" cy="22" r="4" fill="#d76250"/><circle cx="35" cy="22" r="4" fill="#d9b857"/><circle cx="50" cy="22" r="4" fill="#75a66b"/>
-      <text x="70" y="26" fill="#5f7167" font-family="monospace" font-size="10">local session / invoices</text>
+      <text x="70" y="26" fill="#5f7167" font-family="monospace" font-size="10">local session / play console</text>
       <rect x="269" y="12" width="126" height="21" rx="10" fill="#e2efcf"/><circle cx="281" cy="22" r="3" fill="#518751"/><text x="290" y="26" fill="#416b43" font-family="monospace" font-size="8">SITE APPROVED</text>
-      <text x="21" y="71" fill="#75857a" font-family="monospace" font-size="9" letter-spacing="1.4">TASK / OVERDUE INVOICE</text>
-      <text x="20" y="96" fill="#1c2b25" font-size="18" font-weight="700">Find and verify INV-2609-04</text>
+      <text x="21" y="71" fill="#75857a" font-family="monospace" font-size="9" letter-spacing="1.4">REQUEST / IN FRENCH</text>
+      <text x="20" y="96" fill="#1c2b25" font-size="18" font-weight="700">Publie la version 1.5 de Snake Arena</text>
       <rect x="18" y="115" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
       <circle cx="42" cy="141" r="12" fill="#253d33"/><text x="38.5" y="145" fill="#d8f28f" font-family="monospace" font-size="10">01</text>
-      <text x="65" y="137" fill="#213229" font-size="12" font-weight="700">Observe the page</text><text x="65" y="154" fill="#75857a" font-family="monospace" font-size="9">DOM + accessible controls</text>
+      <text x="65" y="137" fill="#213229" font-size="12" font-weight="700">Find the saved procedure</text><text x="65" y="154" fill="#75857a" font-family="monospace" font-size="9">Publish a Play production release</text>
       <rect x="18" y="178" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
       <circle cx="42" cy="204" r="12" fill="#253d33"/><text x="38.5" y="208" fill="#d8f28f" font-family="monospace" font-size="10">02</text>
-      <text x="65" y="200" fill="#213229" font-size="12" font-weight="700">Plan a safe batch</text><text x="65" y="217" fill="#75857a" font-family="monospace" font-size="9">OpenAI · Claude · Grok · more</text>
+      <text x="65" y="200" fill="#213229" font-size="12" font-weight="700">Read the values</text><text x="65" y="217" fill="#75857a" font-family="monospace" font-size="9">app · version · bundle · asks for notes</text>
       <rect x="18" y="241" width="376" height="53" rx="6" fill="#fff" stroke="#dce1d7"/>
       <circle cx="42" cy="267" r="12" fill="#253d33"/><text x="38.5" y="271" fill="#d8f28f" font-family="monospace" font-size="10">03</text>
-      <text x="65" y="263" fill="#213229" font-size="12" font-weight="700">Execute and verify</text><text x="65" y="280" fill="#75857a" font-family="monospace" font-size="9">Visible actions · checked result</text>
-      <rect x="18" y="307" width="376" height="20" rx="4" fill="#dff0bb"/><text x="29" y="321" fill="#34553b" font-family="monospace" font-size="9">COMPATIBLE REPEAT</text><text x="366" y="323" text-anchor="end" fill="#34553b" font-size="17" font-weight="700">0 CALLS</text>
+      <text x="65" y="263" fill="#213229" font-size="12" font-weight="700">Replay, then ask before submitting</text><text x="65" y="280" fill="#75857a" font-family="monospace" font-size="9">Save and publish · Send for review</text>
+      <rect x="18" y="307" width="376" height="20" rx="4" fill="#dff0bb"/><text x="29" y="321" fill="#34553b" font-family="monospace" font-size="9">LOCAL REPLAY · IN REVIEW</text><text x="366" y="323" text-anchor="end" fill="#34553b" font-size="17" font-weight="700">0 CALLS</text>
       <path d="M401 267c22-3 22-41 1-44" fill="none" stroke="#c8f169" stroke-width="2"/><path d="M397 220l8 2-4 7" fill="none" stroke="#c8f169" stroke-width="2"/>
     </g>
     <path d="M1139 348c-2-.8-3.6.7-2.8 2.7l8.1 20.5c.9 2.2 4 2 4.7-.4l2.4-8.1 8.1-2.4c2.3-.7 2.5-3.8.3-4.7Z" fill="#3264f6" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>

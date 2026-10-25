@@ -71,7 +71,7 @@
     "docs/*.md",
     "docs/brand-mark.svg",
     "assets/readme/hero.svg",
-    "assets/readme/incident-demo.gif",
+    "assets/readme/procedure-demo.gif",
     "assets/readme/incident-evidence.json",
     "artifacts/benchmark-public.json"
   ],

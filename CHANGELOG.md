@@ -62,6 +62,14 @@
 - Sign-in pages, "Verify it's you" and 2-Step Verification pages pause the run
   for the user.
 
+### Site, README and demos
+
+- The project site and README lead with procedures, the Google Play walkthrough,
+  measured replays and live provider evidence.
+- New recorded demo: a Play release procedure written once, then replayed from a
+  French request with zero model calls (`scripts/capture-procedure-video.ts`).
+  The incident investigation was recorded again on the current dashboard.
+
 ## 0.2.23 - 2026-09-27
 
 ### Security

@@ -21,7 +21,7 @@ parameters, endpoint and terms before use.
 
 | Service named in project docs | Implemented route | Live model/date/result | Still unverified |
 | --- | --- | --- | --- |
-| DeepSeek | OpenAI-compatible | `deepseek-flash`; 25 October 2026: nine runs of the Play simulator procedure benchmark, all verified in review ([benchmarks](BENCHMARKS.md#procedures-and-token-savings)), and the vision canvas task. 23 September 2026: one synthetic plan in one request. | Real websites beyond the local lab, other model aliases and live `json_schema` behavior. |
+| DeepSeek | OpenAI-compatible | `deepseek-flash`; 25 October 2026: three trials of the nine-run Play simulator procedure benchmark, 27 of 27 runs verified in review ([benchmarks](BENCHMARKS.md#procedures-and-token-savings)), and the vision canvas task. 23 September 2026: one synthetic plan in one request. | Real websites beyond the local lab, other model aliases and live `json_schema` behavior. |
 | OpenAI | OpenAI-compatible | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
 | xAI / Grok | OpenAI-compatible | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
 | Google Gemini | OpenAI-compatible endpoint | No live model request recorded. | Model access, request acceptance, output/usage shape and browser task behavior. |
