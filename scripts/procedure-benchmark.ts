@@ -1,6 +1,6 @@
 // Real model measurements for the Play Console simulator: one exploration, then replays with new values,
 // a minor UI change and a French UI. Every number printed comes from the run's own trace.
-import {mkdir,rm,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,rm,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {Agent} from '../src/agent/Agent.js';
 import {TraceStore,type Trace} from '../src/history/TraceStore.js';
@@ -18,7 +18,7 @@ interface Row {run:string;ui:string;status:string;verified:boolean;llmCalls:numb
 const rows:Row[]=[];
 async function measure(run:string,ui:string,code:number,work:(agent:Agent)=>Promise<Trace>,files:Record<string,string>={}){
   const config=runtimeConfig();let approvals=0;
-  const agent=new Agent({store,provider:config.provider,budget:config.budget,vault:{profile:{},files},confirmation:'sensitive',maxRepairs:12,maxDurationMs:300000,browser:{headless:true,allowedOrigins:[fixture.url]}});
+  const agent=new Agent({store,provider:config.provider,budget:config.budget,vault:{profile:{},files},confirmation:'sensitive',maxRepairs:12,maxDurationMs:config.maxDurationMs??300000,browser:{headless:true,allowedOrigins:[fixture.url]}});
   // The simulator is local and harmless, so the benchmark approves; it still counts every approval the agent asked for.
   agent.control.on('approval',pending=>{if(typeof pending.action==='string')approvals++;agent.control.approve();});
   try{
@@ -59,7 +59,10 @@ try{
   await writeFile(join(folder,'procedure-final.json'),JSON.stringify(engine.export(saved.id),null,2));
 }finally{
   const config=runtimeConfig(),report={date:new Date().toISOString(),provider:config.provider?.name,simulator:'fixtures/playConsole.ts (local, not Google software)',rows};
-  await mkdir('artifacts',{recursive:true});await writeFile('artifacts/benchmark-procedures.json',JSON.stringify(report,null,2)+'\n');
-  console.table(rows.map(({error:_error,...row})=>row));console.log('Saved artifacts/benchmark-procedures.json');
+  // One file per model; each run adds a trial, so the spread across trials stays visible.
+  const path=`artifacts/benchmark-procedures-${(config.provider?.name??'none').replace(/[^\w.-]/g,'-')}.json`;
+  const trials=await readFile(path,'utf8').then(text=>(JSON.parse(text) as {trials:unknown[]}).trials,()=>[]);
+  await mkdir('artifacts',{recursive:true});await writeFile(path,JSON.stringify({trials:[...trials,report]},null,2)+'\n');
+  console.table(rows.map(({error:_error,...row})=>row));console.log(`Saved ${path}`);
   store.close();await fixture.close();
 }

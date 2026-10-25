@@ -1,0 +1,26 @@
+{
+  "trials": [
+    {
+      "date": "2026-10-25T14:35:18.701Z",
+      "provider": "Codex subscription",
+      "simulator": "fixtures/playConsole.ts (local, not Google software)",
+      "rows": [
+        {
+          "run": "1. Exploration with the model",
+          "ui": "English",
+          "status": "failed",
+          "verified": false,
+          "llmCalls": 7,
+          "inputTokens": 63114,
+          "outputTokens": 361,
+          "estimatedCostUSD": null,
+          "usageEstimated": true,
+          "durationMs": 153271,
+          "approvals": 0,
+          "repairs": 0,
+          "error": "Codex CLI timed out"
+        }
+      ]
+    }
+  ]
+}

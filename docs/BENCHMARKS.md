@@ -28,12 +28,14 @@ Public suite measured 2026-09-18T16:52:19.246Z using real deepseek-flash, Node v
 
 ## Procedures and token savings
 
-Measured 2026-10-25T13:44Z with real deepseek-flash (DeepSeek API), Node v25.9.0,
-Playwright 1.63.0 and Chrome, on the local Play Console simulator
-(`fixtures/playConsole.ts`, not Google software). Run it with
-`npm run benchmark:procedures`. The report is in
-[`artifacts/benchmark-procedures.json`](../artifacts/benchmark-procedures.json).
-Costs use DeepSeek's peak prices ($0.30 per million input tokens on a cache
+Measured on 25 October 2026 with Node v25.9.0, Playwright 1.63.0 and Chrome, on
+the local Play Console simulator (`fixtures/playConsole.ts`, not Google
+software). Run it with `npm run benchmark:procedures`. Each run of the script
+adds a trial to `artifacts/benchmark-procedures-<model>.json`:
+[DeepSeek](../artifacts/benchmark-procedures-deepseek-flash.json),
+[Claude](../artifacts/benchmark-procedures-Claude-subscription.json),
+[Codex](../artifacts/benchmark-procedures-Codex-subscription.json).
+DeepSeek costs use its peak prices ($0.30 per million input tokens on a cache
 miss, $0.006 on a cache hit, $1.20 per million output tokens) and the cache hits
 the API reported.
 
@@ -45,49 +47,85 @@ every later run replays it with a new bundle and new notes. A run counts as
 correct only if the simulator holds that version code in review. That is read
 from the simulator's state, not from the agent's report.
 
-| Run | Interface | Result | Model calls | Input / output tokens | Cost | Time |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| 1. First run, the model explores | English | In review | 8 | 16,735 / 619 | $0.00208 | 45.8 s |
-| 2. Replay with new values | English | In review | 0 | 0 | $0 | 2.7 s |
-| 3. Replay after a minor UI change | English, variant 2 | In review | 4 | 8,601 / 192 | $0.00097 | 17.8 s |
-| 4. Replay again | English, variant 2 | In review | 0 | 0 | $0 | 2.7 s |
-| 5. Replay on a French interface | French | In review | 7 | 15,732 / 480 | $0.00221 | 31.6 s |
-| 6. Replay again | French | In review | 0 | 0 | $0 | 2.8 s |
-| 7. Back to the original interface | English | In review | 0 | 0 | $0 | 2.6 s |
-| 8. French again | French | In review | 0 | 0 | $0 | 2.7 s |
-| 9. English again | English | In review | 0 | 0 | $0 | 2.6 s |
+### DeepSeek (`deepseek-flash`), three trials
 
-All nine runs were correct. Together they used 19 model calls and cost $0.0053.
+Each cell lists the three trials in order.
 
-- **Replay:** zero model calls and zero tokens, against 17,354 tokens for the
-  first run.
+| Run | Interface | Correct | Model calls | Input + output tokens | Cost |
+| --- | --- | :---: | ---: | ---: | ---: |
+| 1. First run, the model explores | English | 3 of 3 | 9, 8, 8 | 19,521, 17,360, 17,433 | $0.0025, $0.0021, $0.0021 |
+| 2. Replay with new values | English | 3 of 3 | 0, 0, 0 | 0 | $0 |
+| 3. Replay after a minor UI change | English, variant 2 | 3 of 3 | 3, 4, 4 | 6,456, 8,839, 8,786 | $0.0007, $0.0010, $0.0010 |
+| 4. Replay again | English, variant 2 | 3 of 3 | 0, 0, 0 | 0 | $0 |
+| 5. Replay on a French interface | French | 3 of 3 | 6, 8, 7 | 13,970, 18,613, 16,085 | $0.0020, $0.0026, $0.0022 |
+| 6. Replay again | French | 3 of 3 | 0, 0, 0 | 0 | $0 |
+| 7. Back to the original interface | English | 3 of 3 | 0, 0, 0 | 0 | $0 |
+| 8. French again | French | 3 of 3 | 0, 0, 0 | 0 | $0 |
+| 9. English again | English | 3 of 3 | 0, 0, 0 | 0 | $0 |
+
+All 27 runs were correct. A trial used 18 to 20 model calls and cost $0.0052 to
+$0.0057. A first run took about 46 s; a replay took 2.6 to 2.8 s.
+
+### Claude (Claude Code subscription, `claude-opus-5-5`), one trial
+
+| Run | Correct | Model calls | Input + output tokens |
+| --- | :---: | ---: | ---: |
+| 1. First run, the model explores | Yes | 9 | 39,055 |
+| 3. Replay after a minor UI change | Yes | 4 | 17,709 |
+| 5. Replay on a French interface | Yes | 7 | 30,378 |
+| 2, 4, 6, 7, 8 and 9. Every other replay | Yes | 0 | 0 |
+
+All nine runs were correct, with 20 model calls in total. Claude Code reports
+more input tokens than DeepSeek for the same task, because its count includes
+the CLI's own instructions. A subscription has no per-token price here.
+
+### Codex (Codex CLI with a ChatGPT plan)
+
+With the default 60 s per call, the first run failed twice. Most calls answered
+in 5 to 9 s, but about one call in five waited 2.5 minutes or more. Reasoning
+effort was `none` and token counts were normal, so the wait was on the service
+side, and the retry of a stalled call waited too.
+
+With `FCU_CLI_TIMEOUT_MS=300000` and a 30-minute task limit, runs 1 to 4 were
+correct. The first run took 12 model calls (109,808 input and 1,002 output
+tokens, as Codex CLI counts them), the replay none, and the minor UI change 3.
+The French runs of this trial were still running when this was written.
+
+### What the numbers show
+
+- **Replay:** zero model calls and zero tokens, against 17,000 to 20,000 tokens
+  for a first run.
 - **Minor UI change** (variant 2 renames "Next" to "Review release", changes a
-  label, capitalisation and an id, and adds a banner): the model repaired only the
-  broken steps. That took 4 calls and 50% of the first run's tokens. The repaired
-  version then replayed with zero calls.
+  label, capitalisation and an id, and adds a banner): the model repaired only
+  the broken steps. That took 3 or 4 calls and 37% to 51% of the first run's
+  tokens. The repaired version then replayed with zero calls.
 - **Another language:** the first French run repaired two steps, then planned
-  the rest from the page, guided by the saved steps. That took 7 calls and 93% of
-  the first run's tokens. The saved version then kept both targets for every step
-  and both success texts ("In review" or "En cours d'examen"). Runs 6 to 9 switch
-  languages with zero calls.
+  the rest from the page, guided by the saved steps and checks. That took 6 to 8
+  calls, about as many tokens as a first run. The saved version then kept both
+  targets for every step and both success texts ("In review" or "En cours
+  d'examen"). Runs 6 to 9 switch languages with zero calls.
 - **Approvals:** every run asked before Save and publish and before Send changes
   for review. A saved procedure does not pre-authorize them. The benchmark
   approves them automatically because the simulator is local.
 
-Variance and earlier trials: three earlier full trials that day used 8 or 9
-calls and 16,767 to 19,121 input tokens for the first run, 4 or 5 calls for the
-minor UI change, and 7 or 8 calls for the first French run. Those trials also
-exposed two bugs, both now fixed and covered by tests:
+### Bugs these trials found, now fixed and covered by tests
 
-- French replays were marked failed although the release was in review. The
-  re-plan had copied the English success text, and a correction of it was
-  ignored.
+- French replays were marked failed although the release was in review. A
+  re-plan had copied the English success text and its correction was ignored.
+  With Claude, a repair handed over to new plans without a re-plan, so the
+  translated text never reached the saved check.
 - Switching back and forth between languages kept needing 3 to 5 calls, because
   versions were merged only when their steps had exactly the same shape.
+- A single hung Codex CLI call failed a whole run; it is now retried once.
 
-Limits: this is one task on one simulator with one model. Each row is a single
-trial. The times come from a laptop and include the simulator's 1.2 s bundle
-processing. The real Play Console has not been tested.
+Earlier trials on older code that day also had one DeepSeek run stopped by the
+repeated-action guard after the release was already in review. It was reported
+as failed, not as done. That did not recur in the trials above.
+
+Limits: one task on one simulator. Three DeepSeek trials and one Claude trial
+are a small sample. The times come from a laptop and include the simulator's
+1.2 s bundle processing. On the real Play Console, only the signed-out start has
+been checked (see [Google Play](GOOGLE_PLAY.md)).
 
 ## Local integration suite
 
