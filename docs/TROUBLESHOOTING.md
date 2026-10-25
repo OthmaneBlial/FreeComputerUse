@@ -12,6 +12,7 @@ observe, plan, act, verify and repair event.
 | `model not found` (404) | The account cannot use that model. Set `ANTHROPIC_MODEL`, `DEEPSEEK_MODEL`, `OPENAI_MODEL` or `--model`. `openai` has no default model. |
 | 429, 5xx or 529 after retries | Rate limit or overload. Requests are already retried twice. Set `LLM_FALLBACK_PROVIDERS=deepseek,anthropic` to try another provider. |
 | `Claude declined this request` | Claude refused the task. Rephrase it or use another provider. |
+| `Codex CLI timed out` or `Claude Code CLI timed out` | The CLI did not answer within 60 s, twice. With a ChatGPT plan, about one Codex call in five waited 2.5 minutes or more on 25 October 2026. Set `FCU_CLI_TIMEOUT_MS=300000`, and raise `FCU_MAX_DURATION_MS` for long tasks. |
 | `Not logged in` with `claude-subscription` | Run `claude auth login` with Claude Code 2.1.310 or newer. Older versions of this route used `--bare`, which skips the sign-in. |
 | `macOS Keychain did not store the API key` | Keychain access was refused. Allow it, or set `FCU_SECRET_STORE=file`. |
 | Budget limit reached | A `FCU_MAX_*` limit stopped the task. Raise it in `.env`, or pick a cheaper model. |

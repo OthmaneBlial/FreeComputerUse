@@ -54,6 +54,9 @@ only to that default provider. A key in the environment wins over a stored key.
   share one budget reservation, so a retry is not counted as a new model call.
 - 400, 401, 403 and 404 fail at once with a hint ("authentication failed; check
   the API key", "model not found", and so on).
+- The Claude Code and Codex CLI routes wait 60 s per call by default
+  (`FCU_CLI_TIMEOUT_MS`, 10 s to 10 min). A call that times out, or answers
+  with text that is not JSON, is tried once more.
 - A Claude refusal (`stop_reason: refusal`) is reported as "Claude declined
   this request" and never parsed as a plan.
 - `LLM_FALLBACK_PROVIDERS=deepseek,anthropic` tries those providers in order if
@@ -119,8 +122,8 @@ browser task.
 | Provider | Result |
 | --- | --- |
 | `deepseek`, `deepseek-flash` | Passed in 938 ms; 64 input and 5 output tokens reported |
-| `claude-subscription`, Claude Code 2.1.310 | Passed with `claude-opus-5-5`; 599 input and 9 output tokens reported by the CLI |
-| `codex-subscription`, Codex CLI 0.164.0 | Passed in 4,561 ms; usage estimated |
+| `claude-subscription`, Claude Code 2.1.310 | Passed with `claude-opus-5-5`; 599 input and 9 output tokens reported by the CLI. A full Play simulator benchmark trial was correct in 9 of 9 runs with 20 model calls |
+| `codex-subscription`, Codex CLI 0.164.0 | Passed in 4,561 ms; usage estimated. In the Play simulator benchmark about one call in five waited 2.5 minutes or more; with `FCU_CLI_TIMEOUT_MS=300000` the first run, a replay and a minor UI change were correct |
 | `deepseek`, vision fallback | A canvas-only START button task completed: 5 calls, 9,325 input and 216 output tokens; the screenshot repair returned the point that worked |
 | `anthropic` (API key) | **Not tested live**: no key was available. Covered by request-contract tests (headers, caching, retries, refusals) against a local server. |
 | `openai` (API key) | **Not tested live**: covered by request-contract tests only. |

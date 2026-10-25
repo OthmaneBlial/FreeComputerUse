@@ -13,6 +13,8 @@
   providers and escalation to a stronger model.
 - The Claude subscription route runs Claude Code with `--safe-mode` and needs
   2.1.310 or newer.
+- The Claude Code and Codex CLI routes retry a timed-out call or an answer that
+  is not JSON once. `FCU_CLI_TIMEOUT_MS` raises the 60 s limit per call.
 
 ### Procedures
 
