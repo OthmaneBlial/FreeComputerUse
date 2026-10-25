@@ -68,13 +68,13 @@ click "View app: {{params.app}}" | "Afficher l'application: {{params.app}}"
 click button "Test and release" | button "Tester et publier"
 click "Production"
 click button "Create new release" | button "Créer une release"
-upload {{params.bundle}} to "Upload app bundle"
+upload {{params.bundle}} to "Upload app bundle" | "Importer un app bundle"
 wait for "({{params.version}})" (timeout 20s)
-type "{{params.notes}}" into field "Release notes"
-click "Next"
-click "Save and publish" (sensitive)
-click "Send changes for review"
-expect "In review"
+type "{{params.notes}}" into field "Release notes" | field "Notes de version"
+click "Next" | "Suivant"
+click "Save and publish" | "Enregistrer et publier" (sensitive)
+click "Send changes for review" | "Envoyer les modifications pour examen"
+expect "In review" | "En cours d'examen"
 ```
 
 | Step | English | French |
@@ -89,7 +89,8 @@ expect "In review"
 | Wait | `wait for "text"` | `attends "texte"` |
 | Success check | `expect "text"` | `vérifie "texte"` |
 
-Add `(sensitive)` to always ask before a step, and `(timeout 20s)` to wait
+`wait for` and `expect` take `|` alternatives too; any one of the texts is
+enough. Add `(sensitive)` to always ask before a step, and `(timeout 20s)` to wait
 longer. Save with **Write steps** in the dashboard, or:
 
 ```sh

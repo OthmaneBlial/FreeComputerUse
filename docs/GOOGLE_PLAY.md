@@ -48,13 +48,13 @@ click "View app: {{params.app}}" | "Afficher l'application: {{params.app}}"
 click button "Test and release" | button "Tester et publier"
 click "Production"
 click button "Create new release" | button "Créer une release"
-upload {{params.bundle}} to "Upload app bundle"
+upload {{params.bundle}} to "Upload app bundle" | "Importer un app bundle"
 wait for "({{params.version}})" (timeout 20s)
-type "{{params.notes}}" into field "Release notes"
-click "Next"
-click "Save and publish" (sensitive)
-click "Send changes for review"
-expect "In review"
+type "{{params.notes}}" into field "Release notes" | field "Notes de version"
+click "Next" | "Suivant"
+click "Save and publish" | "Enregistrer et publier" (sensitive)
+click "Send changes for review" | "Envoyer les modifications pour examen"
+expect "In review" | "En cours d'examen"
 ```
 
 Name it "Publish a Play production release". Give these parameters a few
@@ -83,20 +83,21 @@ Publie la version 1.5 de l'app "Snake Arena" avec ./build/snake-1.5.aab
 
 The dashboard finds the procedure, fills in `app`, `version` and `bundle`, and
 asks for `notes`. Press **Run**. Approve the site once, then approve **Save and
-publish** after reading the summary in the prompt. The run ends on
-"Changes sent for review … In review", with zero model calls.
+publish** and **Send changes for review** after reading the summary in each
+prompt. The run ends on "Changes sent for review … In review", with zero model
+calls.
 
 Things to try:
 
 - Add `?variant=2` to the starting page. Buttons change ("Next" becomes "Review
   release") and the model repairs the one step that broke. The fix is saved as
   version 2 of the procedure and the old target is kept as an alternative.
-- Add `?lang=fr` for the French interface. The clicks with a `|` alternative
-  still match, but the notes field, **Next**, the publish buttons and the
-  `expect` text are different, so those steps need a model repair. `wait for` and
-  `expect` take a single text. For a console in another language, duplicate
-  the procedure and translate those steps, or add `|` alternatives to every
-  click and field.
+- Add `?lang=fr` for the French interface. Every step above has its French
+  label after `|`, so the release goes through without a model call. On a
+  procedure you taught in one language, the first run on the other language
+  repairs two steps, then plans the rest from the page in one request. When
+  the steps line up, the saved version keeps both labels and both success
+  texts.
 - Use a bundle whose `versionCode` was already used. The simulator rejects it,
   and the run fails at the `wait for` step, before anything is submitted.
 
