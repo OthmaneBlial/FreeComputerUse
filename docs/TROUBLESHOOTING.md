@@ -65,6 +65,10 @@ observe, plan, act, verify and repair event.
   `agent procedures run <id>`.
 - **Google Play.** The release procedure has run only against the local
   simulator, not the real Play Console. See [Google Play releases](GOOGLE_PLAY.md).
+- **Runs do not survive a restart.** Pause and resume work within a session. If
+  the dashboard or terminal stops mid-run, the history keeps the steps done so
+  far, but the run cannot continue. Check the site before running again; on
+  Google Play, a draft release may already exist.
 - **One task at a time** per dashboard. Local data, except keys stored in the
   Keychain, is not encrypted. See [Local data](LOCAL_DATA.md).
 - **Approvals cannot be pre-granted.** Sensitive steps ask on every run, even in
