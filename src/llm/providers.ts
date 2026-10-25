@@ -59,8 +59,10 @@ export function providerStatuses(env:NodeJS.ProcessEnv=process.env,secrets?:Secr
 const EffortSchema=z.enum(['low','medium','high','xhigh','max']);
 export function createProvider(id:ProviderId,budget:TokenBudget,env:NodeJS.ProcessEnv=process.env,secrets?:SecretStore,model?:string):LLMProvider|undefined{
   const value=settings(id,env,secrets,model),{preset}=value;
-  if(id==='codex-subscription')return new CodexSubscriptionProvider({command:env.CODEX_CLI_PATH,model:value.model},budget);
-  if(id==='claude-subscription')return new ClaudeSubscriptionProvider({command:env.CLAUDE_CLI_PATH,model:value.model},budget);
+  // A subscription CLI can wait minutes when the plan throttles it; FCU_CLI_TIMEOUT_MS lets that call finish.
+  const timeoutMs=z.coerce.number().int().min(10000).max(600000).optional().parse(env.FCU_CLI_TIMEOUT_MS||undefined);
+  if(id==='codex-subscription')return new CodexSubscriptionProvider({command:env.CODEX_CLI_PATH,model:value.model,timeoutMs},budget);
+  if(id==='claude-subscription')return new ClaudeSubscriptionProvider({command:env.CLAUDE_CLI_PATH,model:value.model,timeoutMs},budget);
   if(!value.key||!value.model)return;
   const configuredTokenParam=value.primary?env.LLM_MAX_OUTPUT_TOKENS_PARAM:undefined;
   if(configuredTokenParam&&configuredTokenParam!=='max_tokens'&&configuredTokenParam!=='max_completion_tokens')throw new Error('LLM_MAX_OUTPUT_TOKENS_PARAM must be max_tokens or max_completion_tokens');

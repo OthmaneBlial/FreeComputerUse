@@ -5,6 +5,7 @@ import {mkdtemp,rm,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {FlashProvider,retryDelay} from '../src/llm/FlashProvider.js';
+import {CodexSubscriptionProvider} from '../src/llm/CodexSubscriptionProvider.js';
 import {ProviderChain,createProvider,providerStatuses,resolveProvider} from '../src/llm/providers.js';
 import {FileSecretStore} from '../src/profile/SecretStore.js';
 import {TokenBudget} from '../src/agent/TokenBudget.js';
@@ -96,6 +97,8 @@ test('provider registry keeps generic settings on the selected provider and read
     assert.equal(createProvider('openai',new TokenBudget(),{...env,OPENAI_API_KEY:'openai-key-1234'},secrets),undefined,'OpenAI needs an explicit model');
     const openai=createProvider('openai',new TokenBudget(),{...env,OPENAI_API_KEY:'openai-key-1234',OPENAI_MODEL:'fixture-gpt'},secrets) as FlashProvider;
     assert.equal(openai.config.maxOutputTokensParam,'max_completion_tokens');
+    assert.equal((createProvider('codex-subscription',new TokenBudget(),{...env,FCU_CLI_TIMEOUT_MS:'300000'},secrets) as CodexSubscriptionProvider).config.timeoutMs,300000);
+    assert.throws(()=>createProvider('codex-subscription',new TokenBudget(),{...env,FCU_CLI_TIMEOUT_MS:'5'},secrets),/10000/,'A CLI timeout below 10 s is refused');
     assert.throws(()=>secrets.set('anthropic','has spaces in it'),/printable/);
     secrets.delete('anthropic');assert.equal(secrets.get('anthropic'),undefined);
     assert.throws(()=>providerStatuses({LLM_PROVIDER:'unknown'}),/LLM_PROVIDER must be one of/);
