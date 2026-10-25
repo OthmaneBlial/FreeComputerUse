@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { playConsole } from './playConsole.js';
 import { pathToFileURL } from 'node:url';
 
 export const shell=(title:string,body:string)=>`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · Northstar</title><link rel="icon" href="data:,"><style>/*${' fixture decorative css '.repeat(3500)}*/body{font:16px system-ui;margin:0;color:#1d302e;background:#f1f5f2}nav{padding:20px 8%;background:#163d34;color:white}nav a{color:white;margin-right:24px}main{max-width:780px;margin:40px auto;background:white;padding:36px;border-radius:16px}h1{font-size:36px}label{display:block;margin:16px 0 6px}input,textarea,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #becdc7;border-radius:6px;font:inherit}input[type=checkbox],input[type=radio]{width:auto}button,.button{background:#1b624f;color:white;padding:12px 20px;margin:18px 10px 0 0;border:0;border-radius:6px;font:inherit;cursor:pointer}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:14px;border-bottom:1px solid #ddd}p{line-height:1.6}small{color:#65736e}</style></head><body><nav><a href="/">Northstar</a><a href="/jobs">Careers</a><a href="/catalogue">Catalogue</a><a href="/demo">Contact</a></nav><main>${body}</main></body></html>`;
@@ -37,8 +38,10 @@ export const pages:Record<string,[string,string]>={
 };
 
 export async function startFixtures(port=0){
+  const play=playConsole();
   const server=createServer(async(req,res)=>{
     const url=new URL(req.url??'/','http://127.0.0.1');
+    if(await play.handle(req,res,url))return;
     if(url.pathname==='/api/contact'){
       req.resume();await new Promise(resolve=>setTimeout(resolve,80));res.writeHead(201,{'Content-Type':'application/json'});res.end('{"saved":true}');return;
     }
@@ -53,7 +56,7 @@ export async function startFixtures(port=0){
   });
   await new Promise<void>(resolve=>server.listen(port,'127.0.0.1',resolve));
   const address=server.address();if(!address||typeof address==='string')throw new Error('Fixture server failed');
-  return{server,url:`http://127.0.0.1:${address.port}`,close:()=>new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))};
+  return{server,play,url:`http://127.0.0.1:${address.port}`,close:()=>new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   const fixture=await startFixtures(Number(process.env.PORT??3000));console.log(`Local browser lab: ${fixture.url}`);

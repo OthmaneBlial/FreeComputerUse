@@ -6,9 +6,11 @@ export const selectorRanks = ['role','label','placeholder','testId','id','attrib
 const NAMED_ROLES=['button','link','menuitem','tab','option','checkbox','radio','switch','treeitem','textbox','combobox','spinbutton'] as const;
 export class SelectorEngine {
   private registry=new Map<string,PageElement>();
+  /** Fills {{params.*}} in semantic targets, so a procedure can open "the app named X". */
+  expand:(value:string)=>string=value=>value;
   remember(elements:PageElement[]) { for(const element of elements) this.registry.set(element.ref,element);while(this.registry.size>5000)this.registry.delete(this.registry.keys().next().value!); }
   descriptor(target:Target):SemanticTarget {
-    if(typeof target!=='string')return target;
+    if(typeof target!=='string')return Object.fromEntries(Object.entries(target).map(([key,value])=>[key,typeof value==='string'?this.expand(value):value])) as SemanticTarget;
     if(target.startsWith('css:'))return {css:target.slice(4)};
     const el=this.registry.get(target);
     if(!el)throw new Error(`Unknown semantic reference ${target}`);
@@ -53,7 +55,7 @@ export class SelectorEngine {
     const root=page.frames()[t.frame??0];
     if(!root)throw new Error('Target frame no longer exists');
     const deadline=Date.now()+timeoutMs;
-    const others=alternatives.map(alternative=>({target:alternative,root:page.frames()[alternative.frame??0]})).filter((item):item is {target:SemanticTarget;root:Frame}=>!!item.root);
+    const others=alternatives.map(alternative=>this.descriptor(alternative)).map(alternative=>({target:alternative,root:page.frames()[alternative.frame??0]})).filter((item):item is {target:SemanticTarget;root:Frame}=>!!item.root);
     while(true) {
       for(const candidate of this.candidates(root,t)) {
         const count=await candidate.locator.count();

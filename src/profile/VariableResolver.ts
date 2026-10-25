@@ -9,25 +9,38 @@ function encodedPattern(value:string){
   const hex=(digit:string)=>digit.toLowerCase()===digit.toUpperCase()?digit:`[${digit.toLowerCase()}${digit.toUpperCase()}]`;
   return value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%([0-9a-f])([0-9a-f])/gi,(_match,high:string,low:string)=>`%${hex(high)}${hex(low)}`);
 }
+export type ParameterKind='text'|'file'|'secret';
 export class VariableResolver {
+  /** Values for one procedure run, referenced as {{params.name}}. File and secret values are redacted like vault data. */
+  params:Record<string,{value:string;kind:ParameterKind}>={};
   constructor(public vault:Vault={profile:{},files:{}}) {}
   resolve(value:string):string {
     return value.replace(/\{\{([^}]+)\}\}/g,(_,path:string)=>{
       const [group,key,...extra]=path.trim().split('.');
-      if(extra.length||!['profile','files'].includes(group??'')||!key||['__proto__','constructor','prototype'].includes(key))throw new Error('Invalid local variable reference');
+      if(extra.length||!['profile','files','params'].includes(group??'')||!key||['__proto__','constructor','prototype'].includes(key))throw new Error('Invalid local variable reference');
+      if(group==='params'){if(!Object.hasOwn(this.params,key))throw new Error(`Missing procedure parameter ${key}`);return this.params[key]!.value;}
       const dictionary=group==='profile'?this.vault.profile:this.vault.files;
       if(!Object.hasOwn(dictionary,key))throw new Error(`Missing local variable ${group}.${key}`);
       return dictionary[key]!;
     });
   }
   file(value:string) {
-    if(!/^\{\{files\.[\w-]+\}\}$/.test(value))throw new Error('Uploads require an explicit {{files.alias}} from the local vault');
+    const param=/^\{\{params\.([\w-]+)\}\}$/.exec(value)?.[1];
+    if(param&&this.params[param]?.kind==='file')return this.resolve(value);
+    if(!/^\{\{files\.[\w-]+\}\}$/.test(value))throw new Error('Uploads require an explicit {{files.alias}} from the local vault or a file parameter');
     return this.resolve(value);
   }
-  aliases() {return {profile:Object.keys(this.vault.profile),files:Object.keys(this.vault.files)};}
+  /** Only procedure parameters may appear in element names; vault values never leave the vault through targets. */
+  target(value:string) {
+    if(!value.includes('{{'))return value;
+    if(/\{\{(?!\s*params\.)/.test(value))throw new Error('Targets may only reference {{params.name}}');
+    return this.resolve(value);
+  }
+  aliases() {return {profile:Object.keys(this.vault.profile),files:Object.keys(this.vault.files),...(Object.keys(this.params).length?{params:Object.keys(this.params)}:{})};}
   redact(value:string) {
     let result=value;
-    const secrets=Object.entries(this.vault).flatMap(([group,dictionary])=>Object.entries(dictionary).flatMap(([name,secret])=>{
+    const hidden={...this.vault,params:Object.fromEntries(Object.entries(this.params).filter(([,param])=>param.kind!=='text').map(([name,param])=>[name,param.value]))};
+    const secrets=Object.entries(hidden).flatMap(([group,dictionary])=>Object.entries(dictionary).flatMap(([name,secret])=>{
       if(secret.length<=1)return[];
       const alias=`{{${group}.${name}}}`,escaped=JSON.stringify(secret).slice(1,-1),formEncoded=new URLSearchParams([['value',secret]]).toString().slice('value='.length);
       return [...new Set([secret,escaped])].map(value=>({alias,value,encoded:false})).concat([...new Set([encodeURIComponent(secret),formEncoded])].map(value=>({alias,value,encoded:true})));

@@ -87,7 +87,9 @@ export class Executor {
             if(!same||current!==fingerprint)throw new Error('Approved target changed while awaiting approval; review a new action');
           }
         };
-        await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(receiptAction)));
+        // What the person is approving: an open dialog and the page behind it, e.g. a release summary.
+        const context=await approvedPage.evaluate(()=>{const [read]=[(el:Element|null)=>((el as HTMLElement|null)?.innerText??'').replace(/\s+/g,' ').trim()];const dialog=document.querySelector('dialog[open],[role=dialog]:not([hidden]),[aria-modal=true]');return [read(dialog),read(document.querySelector('main')??document.body)].filter(Boolean).join(' — ').slice(0,600);}).catch(()=>'');
+        await this.control.confirm(reason??'All-actions confirmation policy',this.variables.redact(JSON.stringify(context?{...receiptAction,pageContext:context}:receiptAction)));
         await assertApproved();
       }
       await this.control.checkpoint();

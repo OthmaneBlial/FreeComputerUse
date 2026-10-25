@@ -21,7 +21,8 @@ export async function sensitiveReason(action:Action,locator?:Locator):Promise<st
     };
   });
   if((fieldEntry||action.type==='press')&&facts.sensitiveField)return 'Sensitive field entry';
-  if(/\b(submit|purchase|buy|pay|checkout|delete|remove|send|confirm|transfer|publish|unsubscribe|register|create account|accept terms)\b/i.test(facts.text))return `Potentially irreversible control: ${facts.text.slice(0,80)}`;
+  if(/\b(submit|purchase|buy|pay|checkout|delete|remove|send|confirm|transfer|publish|unpublish|deploy|roll ?out|release to production|unsubscribe|register|create account|accept terms|grant|revoke|invite|share|change role|make owner)\b/i.test(facts.text)||
+    /(?:^|[^\p{L}])(soumettre|soumets|acheter|achat|payer|paiement|commander|supprimer|effacer|envoyer|envoie|confirmer|virement|transférer|publier|publie|dépublier|déployer|déploie|désinscrire|désabonner|s'inscrire|créer un compte|accepter les conditions|accorder|révoquer|inviter|partager|retirer l'accès|changer le rôle)(?:$|[^\p{L}])/iu.test(facts.text))return `Potentially irreversible control: ${facts.text.slice(0,80)}`;
   if(action.type==='press'&&action.value==='Enter'&&facts.type!=='search')return 'Enter may submit a form';
   if(facts.submit&&!/\b(search|find flights|find tickets|filter|continue|next|review|apply|sign in|log in)\b/i.test(facts.text))return 'Form submission';
 }

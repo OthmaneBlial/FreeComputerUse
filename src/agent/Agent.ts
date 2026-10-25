@@ -1,7 +1,10 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import { stat } from 'node:fs/promises';
+import { resolve as resolvePath } from 'node:path';
+import { homedir } from 'node:os';
 import type { BrowserContext, Page } from 'playwright';
-import { PlanSchema,RepairSchema,TaskGoalSchema,type Plan,type Condition } from '../actions/schema.js';
+import { PlanSchema,RepairSchema,TaskGoalSchema,type Action,type Plan,type Condition } from '../actions/schema.js';
 import { Executor,type ActionResult } from '../actions/executor.js';
 import { Browser,checkedHttpURL,type BrowserOptions } from '../browser/Browser.js';
 import { SecurityBoundaryError } from '../browser/SecurityBoundaryError.js';
@@ -12,7 +15,8 @@ import { Control } from './Control.js';
 import { TokenBudget } from './TokenBudget.js';
 import { VariableResolver,type Vault } from '../profile/VariableResolver.js';
 import { TraceStore,type Trace } from '../history/TraceStore.js';
-import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
+import { WorkflowEngine,parameterize,structureHash,type Parameter,type Workflow } from '../workflows/WorkflowEngine.js';
+import { Recorder,describeTarget,type Recording } from '../teach/Recorder.js';
 import type { LLMProvider,PlanningContext,LLMCall } from '../llm/LLMProvider.js';
 import { genericAdapter,type SiteAdapter } from '../adapters/generic.js';
 import type { ConfirmationPolicy } from '../actions/policy.js';
@@ -24,17 +28,23 @@ export interface AgentOptions {
   maxRepeatedStates?:number;maxNavigationLoops?:number;useWorkflows?:boolean;adapters?:SiteAdapter[];
   completionCriteria?:Condition[];
   mode?:'normal'|'ultra';
+  /** When a step fails and no repair is left, pause and record a human demonstration of that step. */
+  teachOnFailure?:boolean;
 }
 export interface AgentEvent {phase:string;message:string;time:number;data?:unknown}
 export class Agent extends EventEmitter {
-  readonly browser:Browser;readonly observer=new Observer();readonly control=new Control();
+  readonly browser:Browser;readonly observer=new Observer();readonly control=new Control();readonly recorder=new Recorder();
   readonly variables:VariableResolver;readonly executor:Executor;readonly workflows:WorkflowEngine;
   budget:TokenBudget;state?:PageState;trace?:Trace;events:AgentEvent[]=[];
   active=false;
+  /** The saved procedure the current run follows, if any. */
+  procedure?:Workflow;
+  private demonstrated:Parameter[]=[];
+  private teachStart?:PageState;
   private permittedSites=new Set<string>();
   private watchedContexts=new WeakSet<BrowserContext>();
   constructor(readonly options:AgentOptions){
-    super();this.variables=new VariableResolver(options.vault);
+    super();this.variables=new VariableResolver(options.vault);this.observer.selectors.expand=value=>this.variables.target(value);
     const allowedOrigins=[...(options.browser?.allowedOrigins??[])],blockedOrigins=[...(options.browser?.blockedOrigins??[])];
     this.options.browser={...options.browser,allowedOrigins,blockedOrigins};
     this.browser=new Browser({...this.options.browser,allowedOrigins:[...allowedOrigins],blockedOrigins:[...blockedOrigins],allowExternal:options.mode==='ultra'||options.browser?.allowExternal,beforeNavigate:url=>this.authorizeSite(url)});
@@ -42,6 +52,7 @@ export class Agent extends EventEmitter {
     this.executor=new Executor(this.browser,this.observer,this.variables,this.control,{confirmation:options.mode==='ultra'?'never':options.confirmation,downloadDir:options.downloadDir});
     this.control.on('approval',data=>this.event('HUMAN','Human confirmation required',data));
     this.control.on('change',()=>{if(this.control.stopped)this.options.provider?.cancel?.();});
+    this.recorder.onStep(step=>this.event('TEACH',`Recorded ${step.action.type}${'target'in step.action?' '+describeTarget(step.action.target):''}`,step.action));
   }
   private async authorizeSite(value:string){
     const origin=new URL(value).origin;
@@ -120,6 +131,7 @@ export class Agent extends EventEmitter {
     if(this.control.stopped)throw new Error('Create a new agent after stopping a task');
     if(url)checkedHttpURL(url,this.browser.page?.url());
     const startedAt=Date.now();const callStart=this.providerCalls().length;
+    if(!this.procedure)this.variables.params={};
     const provider=allowProvider?this.options.provider:undefined;provider?.reset?.();
     const withinTime=()=>{if(this.options.maxDurationMs&&Date.now()-startedAt>this.options.maxDurationMs)throw new Error('Task time budget reached');};
     const usageStart=this.budget.snapshot();let initial:PageState|undefined,repairs=0,cacheHits=0,planCalls=0;
@@ -136,6 +148,12 @@ export class Agent extends EventEmitter {
       if(initial.warnings.some(w=>w.includes('Human authentication'))){
         this.control.pause();this.event('HUMAN','Take control to complete authentication/security checks, then resume');
         await this.control.checkpoint();initial=await this.observe();revision=this.control.revision;
+      }
+      const preconditions=this.procedure?.preconditions??[];
+      if(preconditions.length&&!(await this.executor.verifier.check(preconditions,3000,startedAt)).success){
+        this.control.pause();this.event('HUMAN','This procedure expects another starting state, such as being signed in. Prepare the page, then resume.',{preconditions});
+        await this.control.checkpoint();initial=await this.observe();revision=this.control.revision;
+        if(!(await this.executor.verifier.check(preconditions,3000,startedAt)).success)throw new Error('Procedure preconditions are not met');
       }
       let learned=this.options.useWorkflows!==false&&!providedPlan?this.workflows.match(goal,initial):undefined;
       if(!learned&&this.options.useWorkflows!==false&&!providedPlan&&this.workflows.hasHydrationCandidate(goal,initial)){
@@ -177,7 +195,9 @@ export class Agent extends EventEmitter {
           if(trace.actions.length>=(this.options.maxSteps??120))throw new Error('Browser action limit reached');
           withinTime();
           const before=this.state!;const action=actions[index]!;
-          if(this.options.mode!=='ultra'&&/\{\{(?:profile|files)\./.test(JSON.stringify(action))&&!/\b(profile|personal details|my details|credentials|resume|cv|local file)\b/i.test(goal))throw new Error('The user goal does not authorize access to local profile/file aliases');
+          // A saved procedure authorizes the vault aliases its steps already use.
+          const vaultRefs=JSON.stringify(action).match(/\{\{\s*(?:profile|files)\.[\w-]+\s*\}\}/g)??[],savedSteps=this.procedure?JSON.stringify(this.procedure.plan):'';
+          if(this.options.mode!=='ultra'&&vaultRefs.length&&!/\b(profile|personal details|my details|credentials|resume|cv|local file)\b/i.test(goal)&&!vaultRefs.every(ref=>savedSteps.includes(ref)))throw new Error('The user goal does not authorize access to local profile/file aliases');
           const key=before.hash+JSON.stringify(action);const count=(repeated.get(key)??0)+1;repeated.set(key,count);
           if(count>(this.options.maxRepeatedStates??3)){
             if(!provider||repairs>=(this.options.maxRepairs??8)||repeatRecoveries.has(key))throw new Error('Repeated state/action loop detected');
@@ -204,7 +224,12 @@ export class Agent extends EventEmitter {
             await this.control.confirm('The previous action may already have happened. Approve a repair only after checking the browser.',result.action);
             after=await this.observe();
           }
-          if(!provider||repairs>=(this.options.maxRepairs??8))throw new Error(result.error??'Repair limit reached');
+          if(!provider||repairs>=(this.options.maxRepairs??8)){
+            const shown=this.options.teachOnFailure?await this.demonstrate(action,result.error??'Action failed'):[];
+            if(!shown.length)throw new Error(result.error??'Repair limit reached');
+            for(const step of shown)trace.actions.push({action:step,startedAt:Date.now(),durationMs:0,success:true,strategy:'human-demonstration'});
+            actions.splice(index,1);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);await this.observe();continue;
+          }
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
           const context=this.context(goal,after,completed,before);
           if(repairs>1)context.page+='\nACCESSIBILITY\n'+this.variables.redact(await this.observer.accessibility(this.browser.page));
@@ -213,6 +238,10 @@ export class Agent extends EventEmitter {
           if(repaired.replace<1||!repaired.actions.length||repaired.replace>actions.length-index)throw new Error('Repair attempted to replace actions outside the pending batch');
           if(repaired.completion)plan.completion=repaired.completion;
           if(repaired.continue!==undefined)plan.continue=repaired.continue;
+          // A one-for-one replacement keeps the old target as a fallback, e.g. for the other UI language.
+          const [replacement]=repaired.actions;
+          if(repaired.replace===1&&repaired.actions.length===1&&replacement&&replacement.type===action.type&&'target'in action&&typeof action.target==='object'&&'target'in replacement&&replacement.target)
+            replacement.alternatives=[action.target,...(action.alternatives??[])].filter(item=>JSON.stringify(item)!==JSON.stringify(replacement.target)).slice(0,6);
           actions.splice(index,repaired.replace,...repaired.actions);
         }
         const criteria=()=>[...plan!.completion,...(!plan!.continue?[...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
@@ -247,10 +276,68 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
+      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs);
+      else if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
       this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
     return this.trace!;
+  }
+  /** Runs a saved procedure with new parameter values. The model is only called if a step must be repaired. */
+  async runProcedure(id:string,values:Record<string,string>={},url?:string):Promise<Trace>{
+    const workflow=this.workflows.get(id);if(!workflow)throw new Error('Procedure not found');
+    if(this.active)throw new Error('An agent task is already running');
+    const params=workflow.parameters??[],known=new Set(params.map(param=>param.name));
+    const unknown=Object.keys(values).filter(name=>!known.has(name));if(unknown.length)throw new Error(`Unknown parameter(s): ${unknown.join(', ')}`);
+    const missing=params.filter(param=>param.required&&!values[param.name]);if(missing.length)throw new Error(`Missing parameter(s): ${missing.map(param=>param.name).join(', ')}`);
+    const resolved:VariableResolver['params']={};
+    for(const param of params){
+      let value=values[param.name];if(!value)continue;
+      if(param.pattern&&!new RegExp(param.pattern,'u').test(value))throw new Error(`Parameter ${param.name} does not have the expected format`);
+      if(param.kind==='file'){value=resolvePath(value.replace(/^~(?=$|[\\/])/,homedir()));if(!(await stat(value).catch(()=>undefined))?.isFile())throw new Error(`The file for ${param.name} was not found`);}
+      resolved[param.name]={value,kind:param.kind};
+    }
+    this.variables.params=resolved;this.procedure=workflow;this.demonstrated=[];
+    try{return await this.run(this.workflows.label(workflow),url??this.workflows.startUrl(workflow),workflow.plan);}
+    finally{this.procedure=undefined;}
+  }
+  private textParams(){return Object.fromEntries(Object.entries(this.variables.params).filter(([,param])=>param.kind==='text').map(([name,param])=>[name,param.value]));}
+  /** Pauses on a step the agent cannot do and records the person doing it. Resuming ends the demonstration. */
+  private async demonstrate(failed:Action,error:string){
+    this.event('TEACH',`I could not ${failed.type}${'target'in failed&&failed.target?' '+describeTarget(failed.target):''}. Show me this step in the browser, then resume.`,{action:failed,error});
+    await this.recorder.start(this.browser.context,this.browser.page);this.control.pause();
+    let recording:Recording|undefined;
+    try{await this.control.checkpoint();}finally{recording=this.recorder.stop();}
+    const steps=parameterize(recording.actions,this.textParams()).map(step=>step.type==='upload'&&failed.type==='upload'?{...step,file:failed.file}:step);
+    this.demonstrated.push(...recording.parameters.filter(param=>JSON.stringify(steps).includes(`{{params.${param.name}}}`)));
+    if(steps.length)this.event('TEACH',`Learned ${steps.length} demonstrated step(s)`,steps);
+    return steps;
+  }
+  private finishProcedure(workflow:Workflow,safe:Trace,raw:Trace,repairs:number){
+    const demonstrated=safe.actions.some(result=>result.strategy==='human-demonstration'),changed=repairs>0||demonstrated;
+    try{this.workflows.recordRun(workflow.id,safe,changed);}catch{this.event('CACHE','Procedure run history could not be saved');}
+    if(safe.status!=='completed'||!changed)return;
+    try{
+      const values=this.textParams(),actions=parameterize(safe.actions.filter(result=>result.success).map(result=>result.action),values);
+      const completion=parameterize(raw.plans.at(-1)?.completion??workflow.plan.completion,values);
+      const parameters=[...workflow.parameters??[],...this.demonstrated.filter(param=>!workflow.parameters?.some(known=>known.name===param.name))];
+      const updated=this.workflows.update(workflow.id,{plan:{...workflow.plan,actions,completion},parameters},`${demonstrated?'Demonstrated':'Repaired'} during ${safe.id}`,'repaired');
+      this.event('CACHE',`Saved procedure version ${updated.version}`);
+    }catch{this.event('CACHE','Procedure completed, but the repaired version could not be saved');}
+  }
+  /** Starts recording what the person does, to save as a new procedure. */
+  async startTeaching(url?:string){
+    if(this.active||this.recorder.active)throw new Error('Finish the current task before teaching');
+    if(!this.browser.context)await this.browser.launch();
+    if(url)await this.browser.navigate(url);
+    this.teachStart=await this.observe();
+    await this.recorder.start(this.browser.context,this.browser.page);
+    this.event('TEACH','Recording. Do the task in the browser, then save it as a procedure.');
+  }
+  finishTeaching(){
+    if(!this.recorder.active)throw new Error('Nothing is being recorded');
+    const recording=this.recorder.stop();
+    this.event('TEACH',`Recorded ${recording.actions.length} step(s)`);
+    return{...recording,startUrl:this.recorder.startUrl,structure:this.teachStart?structureHash(this.teachStart):''};
   }
   private providerCalls():LLMCall[]{return (this.options.provider as LLMProvider&{calls?:LLMCall[]})?.calls??[];}
   private safeTrace(trace:Trace):Trace{return JSON.parse(this.variables.redact(JSON.stringify(trace))) as Trace;}
@@ -275,7 +362,7 @@ export class Agent extends EventEmitter {
     this.browser.options.allowExternal=this.options.mode==='ultra'||browserOptions.allowExternal===true;
     this.executor.options.confirmation=this.options.mode==='ultra'?'never':this.options.confirmation;
     this.executor.options.downloadDir=this.options.downloadDir;
-    this.state=undefined;this.trace=undefined;this.events=[];this.permittedSites.clear();
+    this.state=undefined;this.trace=undefined;this.events=[];this.permittedSites.clear();this.variables.params={};
     this.browser.downloads.length=0;this.browser.extractions.length=0;this.browser.responses.length=0;this.browser.formReceipts.length=0;
     await this.browser.prepareForNextRun();
   }
