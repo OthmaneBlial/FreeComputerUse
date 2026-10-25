@@ -62,7 +62,7 @@ test('doctor keeps network checks opt-in and reports safe API failures',{timeout
   const server=createServer((req,res)=>{
     requests.push({path:req.url??'',authorization:req.headers.authorization});
     if(fail){res.writeHead(503,{'Content-Type':'application/json'});res.end('{"error":"synthetic private provider response"}');return;}
-    res.writeHead(200,{'Content-Type':'application/json'});res.end('{"data":[{"id":"fixture-model"}]}');
+    res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({usage:{prompt_tokens:20,completion_tokens:4},choices:[{finish_reason:'stop',message:{content:'{"ok":true}'}}]}));
   });
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
   const address=server.address() as {port:number};
@@ -81,16 +81,16 @@ test('doctor keeps network checks opt-in and reports safe API failures',{timeout
     const offline=await runDoctor();
     assert.equal(offline.code,0,offline.stderr);assert.match(offline.stdout,/Browser launch: passed/);assert.equal(requests.length,0);
     const online=await runDoctor(true);
-    assert.equal(online.code,0,online.stderr);assert.match(online.stdout,/Provider models: fixture-model/);
-    assert.deepEqual(requests,[{path:'/v1/models',authorization:'Bearer test-only-key'}]);
+    assert.equal(online.code,0,online.stderr);assert.match(online.stdout,/Provider openai-compatible: passed one real request with fixture-model in \d+ ms\. Reported usage: 20 input/);
+    assert.deepEqual(requests,[{path:'/v1/chat/completions',authorization:'Bearer test-only-key'}]);
     fail=true;
     const failed=await runDoctor(true);
-    assert.equal(failed.code,1);assert.match(failed.stderr,/Provider models HTTP 503/);
+    assert.equal(failed.code,1);assert.match(failed.stderr,/HTTP 503/);
     assert(!failed.stdout.includes('test-only-key'));assert(!failed.stderr.includes('test-only-key'));
     assert(!failed.stdout.includes('synthetic private provider response'));assert(!failed.stderr.includes('synthetic private provider response'));
     const missing=await runDoctor(true,{LLM_API_KEY:''});
     assert.equal(missing.code,1);assert.match(missing.stderr,/No model provider configured; set LLM_API_KEY or sign in with a supported CLI subscription/);
-    assert.equal(requests.length,2);
+    assert.equal(requests.length,4,"A 503 is retried twice; a missing key sends nothing");
   }finally{
     await new Promise<void>(resolve=>server.close(()=>resolve()));
     await rm(directory,{recursive:true,force:true});

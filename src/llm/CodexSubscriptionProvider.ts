@@ -47,6 +47,16 @@ export class CodexSubscriptionProvider implements LLMProvider {
     }catch{throw new Error('Codex is not signed in with ChatGPT. Run `codex login` and choose ChatGPT.');}
     return version;
   }
+  async testConnection(){
+    const version=await this.checkLogin(),started=Date.now(),controller=new AbortController();this.controllers.add(controller);
+    const schema=z.object({ok:z.literal(true)}).strict();
+    try{
+      const output=await this.run('Return exactly this JSON object and nothing else: {"ok":true}',schema,controller.signal);
+      let valid=false;try{valid=schema.safeParse(JSON.parse(output)).success;}catch{}
+      if(!valid)throw new Error('Codex returned an unexpected test response');
+      return{ok:true as const,provider:'codex-subscription',model:this.config.model??'Codex default',latencyMs:Date.now()-started,usage:{input:0,output:0,estimated:true},detail:`Codex CLI ${version}; subscription usage is not reported in tokens`};
+    }finally{this.controllers.delete(controller);}
+  }
   async plan(context:PlanningContext):Promise<Plan>{const goal=TaskGoalSchema.parse(context.goal),plan=await this.request('PLAN',context,PlannerOutputSchema,PLAN_FORMAT);return{...plan,goal};}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
@@ -70,11 +80,11 @@ export class CodexSubscriptionProvider implements LLMProvider {
       let value:unknown;try{value=JSON.parse(output);}catch{throw new Error('Codex returned invalid JSON');}
       const checked=schema.safeParse(normalizeProviderOutput(value));
       if(!checked.success){validationFailure=true;throw new Error('Codex response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
-      this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});return checked.data;
+      this.calls.push({operation,model:this.name,provider:'codex-subscription',durationMs:Date.now()-started,usage,success:true});return checked.data;
     }catch(error){
       const safeError=error instanceof Error?error.message:'Codex subscription request failed';
       if(!usage){usage={input:inputBound,output:0,estimated:true};this.budget.record(usage,reservation.id);}
-      this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:false,error:safeError});
+      this.calls.push({operation,model:this.name,provider:'codex-subscription',durationMs:Date.now()-started,usage,success:false,error:safeError});
       if(validationFailure&&!correcting)return this.request(operation,context,schema,format+suffix,true);
       throw error;
     }finally{this.controllers.delete(controller);}

@@ -11,9 +11,8 @@ import { VariableResolver } from '../profile/VariableResolver.js';
 import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
 import { Browser } from '../browser/Browser.js';
 import { Observer } from '../browser/Observer.js';
-import { FlashProvider } from '../llm/FlashProvider.js';
-import { CodexSubscriptionProvider } from '../llm/CodexSubscriptionProvider.js';
-import { ClaudeSubscriptionProvider } from '../llm/ClaudeSubscriptionProvider.js';
+import { PRESETS,PROVIDER_IDS,ProviderIdSchema,providerStatuses } from '../llm/providers.js';
+import { secretStore } from '../profile/SecretStore.js';
 import { ensureDataDirectory,loadEnvironment,runtimeConfig } from '../config.js';
 import type { ConfirmationPolicy } from '../actions/policy.js';
 import { z } from 'zod';
@@ -21,10 +20,10 @@ import { z } from 'zod';
 const packageManifest=JSON.parse(await readFile(new URL('../../package.json',import.meta.url),'utf8')) as {version:string};
 loadEnvironment();const program=new Command().name('agent').description('DOM-first browser automation: plan once, execute locally.').version(packageManifest.version);
 const policySchema=z.enum(['sensitive','always','never']);
-interface RunOptions {headed?:boolean;debug?:boolean;profile?:string;allowOrigin?:string[];allowExternal?:boolean;confirmation?:string;workflows?:boolean;maxSteps?:string;maxRepairs?:string;ephemeral?:boolean;expectText?:string;expectUrl?:string;ultra?:boolean}
-function runFlags(command:Command){return command.option('--headed','Show Chromium').option('--debug','Log all observe/plan/execute/verify/repair events').option('--profile <file>','Use a local profile JSON file').option('--allow-origin <url>','Allow another exact origin',(value:string,old:string[])=>[...old,new URL(value).origin],[]).option('--allow-external','Allow browser requests outside the origin allowlist').option('--confirmation <policy>','sensitive | always | never','sensitive').option('--no-workflows','Skip learned workflow lookup').option('--max-steps <n>','Maximum browser actions','120').option('--max-repairs <n>','Maximum model repairs','3').option('--ephemeral','Do not reuse saved browser cookies/session').option('--expect-text <text>','Trusted final text criterion the model cannot weaken').option('--expect-url <part>','Trusted final URL substring the model cannot weaken').option('--ultra','Explicit Ultra mode: skip website and sensitive-action approvals');}
+interface RunOptions {provider?:string;model?:string;headed?:boolean;debug?:boolean;profile?:string;allowOrigin?:string[];allowExternal?:boolean;confirmation?:string;workflows?:boolean;maxSteps?:string;maxRepairs?:string;ephemeral?:boolean;expectText?:string;expectUrl?:string;ultra?:boolean}
+function runFlags(command:Command){return command.option('--headed','Show Chromium').option('--debug','Log all observe/plan/execute/verify/repair events').option('--profile <file>','Use a local profile JSON file').option('--allow-origin <url>','Allow another exact origin',(value:string,old:string[])=>[...old,new URL(value).origin],[]).option('--allow-external','Allow browser requests outside the origin allowlist').option('--confirmation <policy>','sensitive | always | never','sensitive').option('--no-workflows','Skip learned workflow lookup').option('--max-steps <n>','Maximum browser actions','120').option('--max-repairs <n>','Maximum model repairs','3').option('--ephemeral','Do not reuse saved browser cookies/session').option('--expect-text <text>','Trusted final text criterion the model cannot weaken').option('--expect-url <part>','Trusted final URL substring the model cannot weaken').option('--ultra','Explicit Ultra mode: skip website and sensitive-action approvals').option('--provider <id>','Model provider for this task: '+PROVIDER_IDS.join(', ')).option('--model <model>','Model for this task');}
 async function makeAgent(url:string,options:RunOptions){
-  const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));
+  const config=runtimeConfig({provider:options.provider?ProviderIdSchema.parse(options.provider):undefined,model:options.model});ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));
   try{
     const vault=await new ProfileStore(options.profile?resolve(options.profile):join(config.dataDir,'profile.json')).load();
     const agent=new Agent({store,provider:config.provider,budget:config.budget,vault,useWorkflows:options.workflows,
@@ -105,18 +104,33 @@ program.command('workflows').option('--show <id>','Show a learned semantic workf
 program.command('config').option('--profile <file>','Import a profile/files JSON into the local vault').action(async(options:{profile?:string})=>{
   const config=runtimeConfig();ensureDataDirectory(config.dataDir);const profile=new ProfileStore(join(config.dataDir,'profile.json'));
   if(options.profile){await profile.save(JSON.parse(await readFile(resolve(options.profile),'utf8')));console.log('Local profile imported (mode 0600).');}
-  const vault=await profile.load();console.log(JSON.stringify({dataDir:config.dataDir,model:config.provider?.name??'not configured',apiKeyConfigured:!!process.env.LLM_API_KEY,budget:config.budget.limits,profileAliases:Object.keys(vault.profile),fileAliases:Object.keys(vault.files)},null,2));
+  const vault=await profile.load();console.log(JSON.stringify({dataDir:config.dataDir,model:config.provider?.name??'not configured',providers:Object.fromEntries(providerStatuses(process.env,config.secrets).map(status=>[status.id,status.configured])),budget:config.budget.limits,profileAliases:Object.keys(vault.profile),fileAliases:Object.keys(vault.files)},null,2));
 });
 program.command('doctor').option('--api','Validate provider credentials or subscription login').action(async(options:{api?:boolean})=>{
   const config=runtimeConfig();console.log(`Node ${process.version}; model ${config.provider?.name??'not configured'}; data ${config.dataDir}`);
   const browser=new Browser();try{await browser.launch();console.log('Browser launch: passed');}finally{await browser.close();}
   if(options.api){
     if(!config.provider)throw new Error('No model provider configured; set LLM_API_KEY or sign in with a supported CLI subscription');
-    if(config.provider instanceof CodexSubscriptionProvider){const version=await config.provider.checkLogin();console.log(`Codex ChatGPT login: passed (CLI ${version})`);return;}
-    if(config.provider instanceof ClaudeSubscriptionProvider){const version=await config.provider.checkLogin();console.log(`Claude subscription login: passed (CLI ${version})`);return;}
-    if(config.provider instanceof FlashProvider){const anthropic=config.provider.config.protocol==='anthropic';const response=await fetch(config.provider.config.baseURL.replace(/\/$/,'')+'/models',{headers:anthropic?{'x-api-key':config.provider.config.key,'anthropic-version':'2023-06-01'}:{Authorization:`Bearer ${config.provider.config.key}`},signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)throw new Error(`Provider models HTTP ${response.status}`);const data=await response.json() as {data?:{id:string}[]};console.log('Provider models:',data.data?.map(m=>m.id).join(', '));if(!data.data?.some(m=>m.id===config.provider!.name))throw new Error('Configured model is not advertised by this provider');}
+    const result=await config.provider.testConnection!();
+    console.log(`Provider ${result.provider}: passed one real request with ${result.model} in ${result.latencyMs} ms. ${result.detail}`);
   }
 });
+const providers=program.command('providers').description('List model providers and their configuration status');
+providers.action(()=>{const config=runtimeConfig();for(const status of providerStatuses(process.env,config.secrets))console.log(`${status.selected?'*':' '} ${status.id.padEnd(20)} ${status.configured?'ready  ':'missing'} ${status.model??''}\n    ${status.label}: ${status.detail}`);});
+providers.command('test <provider>').description('Send one minimal real request to a provider').option('--model <model>','Model to test').action(async(id:string,options:{model?:string})=>{
+  const config=runtimeConfig({provider:ProviderIdSchema.parse(id),model:options.model});
+  if(!config.provider)throw new Error(`${id} is not configured; run \`agent providers\` for the missing setting`);
+  const result=await config.provider.testConnection!();
+  console.log(`${result.provider}: passed one real request with ${result.model} in ${result.latencyMs} ms. ${result.detail}`);
+});
+providers.command('set-key <provider>').description('Store an API key from stdin in the local secret store').action(async(id:string)=>{
+  const provider=ProviderIdSchema.parse(id);if(PRESETS[provider].route!=='api'||!PRESETS[provider].keyEnv)throw new Error(`${id} does not use a stored API key`);
+  const config=runtimeConfig();ensureDataDirectory(config.dataDir);
+  // Read the key from stdin so it never appears in shell history or the process list.
+  let key='';if(stdin.isTTY){const reader=createInterface({input:stdin,output:stdout});key=await reader.question(`${PRESETS[provider].label} key: `);reader.close();}else for await(const chunk of stdin)key+=chunk;
+  secretStore(config.dataDir).set(provider,key.trim());console.log(`Stored the ${PRESETS[provider].label} key in the local ${secretStore(config.dataDir).kind} store.`);
+});
+providers.command('delete-key <provider>').action((id:string)=>{const config=runtimeConfig();secretStore(config.dataDir).delete(ProviderIdSchema.parse(id));console.log('Deleted the stored key, if any.');});
 program.command('ui').option('--port <n>','Loopback web UI port','4318').option('--headed','Show Chromium alongside preview').action(async options=>{
   const {startServer}=await import('../server/index.js');await startServer({port:z.coerce.number().int().min(0).max(65535).parse(options.port),headed:!!options.headed});
 });

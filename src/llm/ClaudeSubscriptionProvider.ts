@@ -34,8 +34,8 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
       try{
         const {stdout}=await execFile(this.config.command??'claude',['--version'],{encoding:'utf8',timeout:15000,cwd:tmpdir(),env:claudeEnvironment(),maxBuffer:4096});
         version=parseCliVersion(String(stdout),'Claude Code');
-      }catch{throw new Error('Claude Code CLI could not report its version. Install or update to 2.1.248 or newer, then verify `claude --version`.');}
-      if(!cliVersionAtLeast(version,'2.1.248'))throw new Error(`Claude Code ${version} is too old. Install version 2.1.248 or newer.`);
+      }catch{throw new Error('Claude Code CLI could not report its version. Install or update to 2.1.310 or newer, then verify `claude --version`.');}
+      if(!cliVersionAtLeast(version,'2.1.310'))throw new Error(`Claude Code ${version} is too old. Install version 2.1.310 or newer.`);
       this.cliVersion=version;
     }
     try{
@@ -44,6 +44,15 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
       if(!auth.loggedIn||!['claude.ai','oauth_token'].includes(auth.authMethod??'')||auth.apiProvider!=='firstParty'||auth.apiKeySource&&auth.apiKeySource!=='/login managed key')throw new Error();
     }catch{throw new Error('Claude Code is not signed in with a Claude subscription. Run `claude auth login` without `--console`.');}
     return version;
+  }
+  async testConnection(){
+    const version=await this.checkLogin(),started=Date.now(),controller=new AbortController();this.controllers.add(controller);
+    try{
+      const {text:output,usage}=await this.run('Return exactly this JSON object and nothing else: {"ok":true}','Reply with JSON only.',controller.signal);
+      let valid=false;try{valid=z.object({ok:z.literal(true)}).strict().safeParse(JSON.parse(output)).success;}catch{}
+      if(!valid)throw new Error('Claude Code returned an unexpected test response');
+      return{ok:true as const,provider:'claude-subscription',model:this.config.model??'Claude Code default',latencyMs:Date.now()-started,usage:usage??{input:0,output:0,estimated:true},detail:`Claude Code ${version}; ${usage?`reported usage: ${usage.input} input / ${usage.output} output tokens`:'usage not reported'}`};
+    }finally{this.controllers.delete(controller);}
   }
   async plan(context:PlanningContext):Promise<Plan>{const goal=TaskGoalSchema.parse(context.goal),plan=await this.request('PLAN',context,PlannerOutputSchema,PLAN_FORMAT);return{...plan,goal};}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}
@@ -62,18 +71,18 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
     const started=Date.now();let usage:Usage|undefined,validationFailure=false;
     try{
       await this.checkLogin();
-      const output=await this.run(prompt,systemPrompt,controller.signal);
-      const outputBound=Math.ceil(Buffer.byteLength(output)/4);
-      usage={input:inputBound,output:outputBound,estimated:true};this.budget.record(usage,reservation.id);
-      if(outputBound>reservation.maxOutput)throw new Error('Claude response exceeded the estimated output-token budget');
+      const {text:output,usage:reported}=await this.run(prompt,systemPrompt,controller.signal);
+      const outputBound=reported?.output??Math.ceil(Buffer.byteLength(output)/4);
+      usage=reported&&reported.input<=reservation.inputBound?reported:{input:inputBound,output:outputBound,estimated:true};this.budget.record(usage,reservation.id);
+      if(outputBound>reservation.maxOutput)throw new Error('Claude response exceeded the reserved output-token budget');
       let value:unknown;try{value=JSON.parse(output);}catch{throw new Error('Claude returned invalid JSON');}
       const checked=schema.safeParse(value);
       if(!checked.success){validationFailure=true;throw new Error('Claude response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
-      this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:true});return checked.data;
+      this.calls.push({operation,model:this.name,provider:'claude-subscription',durationMs:Date.now()-started,usage,success:true});return checked.data;
     }catch(error){
       const safeError=error instanceof Error?error.message:'Claude subscription request failed';
       if(!usage){usage={input:inputBound,output:0,estimated:true};this.budget.record(usage,reservation.id);}
-      this.calls.push({operation,model:this.name,durationMs:Date.now()-started,usage,success:false,error:safeError});
+      this.calls.push({operation,model:this.name,provider:'claude-subscription',durationMs:Date.now()-started,usage,success:false,error:safeError});
       if(validationFailure&&!correcting)return this.request(operation,context,schema,format+suffix,true);
       throw error;
     }finally{this.controllers.delete(controller);}
@@ -81,11 +90,13 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
   private async run(prompt:string,systemPrompt:string,signal:AbortSignal){
     const directory=await mkdtemp(join(tmpdir(),'fcu-claude-'));
     try{
-      const args=['-p','--input-format','text','--output-format','json','--restricted','--bare','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}',
+      // --safe-mode drops CLAUDE.md, hooks, plugins and MCP while keeping subscription sign-in;
+      // --bare would also skip OAuth and keychain reads, so subscription auth would fail.
+      const args=['-p','--input-format','text','--output-format','json','--restricted','--safe-mode','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}',
         '--disallowedTools','mcp__*','--no-session-persistence','--max-turns','1','--permission-mode','dontAsk','--no-chrome','--disable-slash-commands',
-        '--append-system-prompt',systemPrompt];
+        '--system-prompt',systemPrompt];
       if(this.config.model)args.push('--model',this.config.model);
-      return await new Promise<string>((resolve,reject)=>{
+      return await new Promise<{text:string;usage?:Usage}>((resolve,reject)=>{
         if(signal.aborted){reject(new Error('Claude request cancelled'));return;}
         const child=spawn(this.config.command??'claude',args,{cwd:directory,env:claudeEnvironment(),stdio:['pipe','pipe','ignore']});
         const terminate=cliProcessTerminator(child);
@@ -102,12 +113,14 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
           else if(signal.aborted)failure=new Error('Claude request cancelled');
           else if(code!==0&&!failure)failure=new Error('Claude Code CLI failed; check `claude auth status` and your subscription limits.');
           if(failure){reject(failure);return;}
-          let result:{is_error?:boolean;result?:unknown;structured_output?:unknown};
+          let result:{is_error?:boolean;result?:unknown;structured_output?:unknown;usage?:{input_tokens?:unknown;output_tokens?:unknown;cache_read_input_tokens?:unknown;cache_creation_input_tokens?:unknown}};
           try{result=JSON.parse(output.trim()) as typeof result;}catch{reject(new Error('Claude Code returned invalid JSON output'));return;}
           if(result.is_error){reject(new Error('Claude Code returned an error'));return;}
           const text=typeof result.result==='string'?result.result:result.structured_output!==undefined?JSON.stringify(result.structured_output):undefined;
           if(!text){reject(new Error('Claude Code returned no response'));return;}
-          resolve(text);
+          const count=(value:unknown)=>Number.isSafeInteger(value)&&(value as number)>=0?value as number:undefined;
+          const tokens=result.usage&&[result.usage.input_tokens,result.usage.cache_read_input_tokens??0,result.usage.cache_creation_input_tokens??0,result.usage.output_tokens].map(count);
+          resolve({text,usage:tokens?.every(value=>value!==undefined)?{input:tokens[0]!+tokens[1]!+tokens[2]!,output:tokens[3]!,cacheHit:tokens[1]!}:undefined});
         });
         child.stdin.on('error',()=>{});child.stdin.end(prompt);
       });

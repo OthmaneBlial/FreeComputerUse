@@ -20,7 +20,7 @@ import {goalCriteria} from './goalCriteria.js';
 
 export interface AgentOptions {
   browser?:BrowserOptions;vault?:Vault;store:TraceStore;provider?:LLMProvider;budget?:TokenBudget;
-  confirmation?:ConfirmationPolicy;downloadDir?:string;maxSteps?:number;maxRepairs?:number;
+  confirmation?:ConfirmationPolicy;downloadDir?:string;maxSteps?:number;maxDurationMs?:number;maxRepairs?:number;
   maxRepeatedStates?:number;maxNavigationLoops?:number;useWorkflows?:boolean;adapters?:SiteAdapter[];
   completionCriteria?:Condition[];
   mode?:'normal'|'ultra';
@@ -120,7 +120,8 @@ export class Agent extends EventEmitter {
     if(this.control.stopped)throw new Error('Create a new agent after stopping a task');
     if(url)checkedHttpURL(url,this.browser.page?.url());
     const startedAt=Date.now();const callStart=this.providerCalls().length;
-    const provider=allowProvider?this.options.provider:undefined;
+    const provider=allowProvider?this.options.provider:undefined;provider?.reset?.();
+    const withinTime=()=>{if(this.options.maxDurationMs&&Date.now()-startedAt>this.options.maxDurationMs)throw new Error('Task time budget reached');};
     const usageStart=this.budget.snapshot();let initial:PageState|undefined,repairs=0,cacheHits=0,planCalls=0;
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);this.active=true;
@@ -161,6 +162,7 @@ export class Agent extends EventEmitter {
           }
         }
         if(!plan){
+          withinTime();
           if(!provider)throw new Error('No matching local strategy/workflow; configure an LLM provider');
           this.event('PLAN','Requesting one action batch');planCalls++;
           plan=await provider.plan(this.context(goal,this.state!,completed,previous));
@@ -173,6 +175,7 @@ export class Agent extends EventEmitter {
           if(revision!==this.control.revision){await this.observe();revision=this.control.revision;}
           if(this.control.replacement){plan=this.control.replacement;this.control.replacement=undefined;actions=[...plan.actions];index=0;trace.plans.push(plan);await this.observe();this.event('HUMAN','Using edited plan',plan);}
           if(trace.actions.length>=(this.options.maxSteps??120))throw new Error('Browser action limit reached');
+          withinTime();
           const before=this.state!;const action=actions[index]!;
           if(this.options.mode!=='ultra'&&/\{\{(?:profile|files)\./.test(JSON.stringify(action))&&!/\b(profile|personal details|my details|credentials|resume|cv|local file)\b/i.test(goal))throw new Error('The user goal does not authorize access to local profile/file aliases');
           const key=before.hash+JSON.stringify(action);const count=(repeated.get(key)??0)+1;repeated.set(key,count);
