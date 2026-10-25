@@ -57,7 +57,7 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
   async plan(context:PlanningContext):Promise<Plan>{const goal=TaskGoalSchema.parse(context.goal),plan=await this.request('PLAN',context,PlannerOutputSchema,PLAN_FORMAT);return{...plan,goal};}
   repair(context:RepairContext):Promise<Repair>{return this.request('REPAIR',context,RepairSchema,REPAIR_FORMAT);}
   classify(goal:string){return this.request('CLASSIFY',{goal},z.object({intent:z.string().max(80)}).strict(),'Return {"intent":short lowercase intent}.');}
-  private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false):Promise<T>{
+  private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false,retried=false):Promise<T>{
     const {page,...task}=context as PlanningContext;
     const suffix=correcting?'\nYour previous JSON failed strict schema validation. Follow the requested schema exactly and use only listed keys.':'';
     const systemPrompt=`${SYSTEM_POLICY}\n${format}${suffix}\nReturn only the requested JSON object.`;
@@ -75,7 +75,7 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
       const outputBound=reported?.output??Math.ceil(Buffer.byteLength(output)/4);
       usage=reported&&reported.input<=reservation.inputBound?reported:{input:inputBound,output:outputBound,estimated:true};this.budget.record(usage,reservation.id);
       if(outputBound>reservation.maxOutput)throw new Error('Claude response exceeded the reserved output-token budget');
-      let value:unknown;try{value=JSON.parse(output);}catch{throw new Error('Claude returned invalid JSON');}
+      let value:unknown;try{value=JSON.parse(output);}catch{validationFailure=true;throw new Error('Claude returned invalid JSON');}
       const checked=schema.safeParse(value);
       if(!checked.success){validationFailure=true;throw new Error('Claude response failed strict action schema validation: '+checked.error.issues.map(i=>i.path.join('.')+': '+i.code).join('; '));}
       this.calls.push({operation,model:this.name,provider:'claude-subscription',durationMs:Date.now()-started,usage,success:true});return checked.data;
@@ -83,7 +83,9 @@ export class ClaudeSubscriptionProvider implements LLMProvider {
       const safeError=error instanceof Error?error.message:'Claude subscription request failed';
       if(!usage){usage={input:inputBound,output:0,estimated:true};this.budget.record(usage,reservation.id);}
       this.calls.push({operation,model:this.name,provider:'claude-subscription',durationMs:Date.now()-started,usage,success:false,error:safeError});
-      if(validationFailure&&!correcting)return this.request(operation,context,schema,format+suffix,true);
+      if(validationFailure&&!correcting)return this.request(operation,context,schema,format+suffix,true,retried);
+      // A CLI call sometimes hangs once; one fresh attempt usually answers in seconds.
+      if(safeError==='Claude Code CLI timed out'&&!retried&&!controller.signal.aborted)return this.request(operation,context,schema,format,correcting,true);
       throw error;
     }finally{this.controllers.delete(controller);}
   }

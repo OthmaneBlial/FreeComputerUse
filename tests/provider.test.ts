@@ -216,6 +216,7 @@ setInterval(()=>{},1000);
     ] as const){
       process.env.FCU_TEST_CLI_VERSION=version;const started=Date.now();await assert.rejects(provider.plan(context),error);
       assert(Date.now()-started<1800,'Provider timeout must not wait for the fake CLI exit');
+      assert.deepEqual(provider.calls.map(call=>call.success),[false,false],'A timed-out call is tried once more');
     }
   }finally{
     if(previousVersion===undefined)delete process.env.FCU_TEST_CLI_VERSION;else process.env.FCU_TEST_CLI_VERSION=previousVersion;
