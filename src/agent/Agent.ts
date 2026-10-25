@@ -191,7 +191,7 @@ export class Agent extends EventEmitter {
           withinTime();
           if(!provider)throw new Error('No matching local strategy/workflow; configure an LLM provider');
           this.event('PLAN','Requesting one action batch');planCalls++;
-          plan=await provider.plan({...this.context(goal,this.state!,completed,previous),...(unmatched.length?{savedSteps:JSON.parse(this.variables.redact(JSON.stringify(unmatched))),savedChecks:JSON.parse(this.variables.redact(JSON.stringify(savedChecks)))}:{})});
+          plan=await provider.plan({...this.context(goal,this.state!,completed,previous),...(this.procedure?{savedChecks:JSON.parse(this.variables.redact(JSON.stringify(savedChecks)))}:{}),...(unmatched.length?{savedSteps:JSON.parse(this.variables.redact(JSON.stringify(unmatched)))}:{})});
         }
         const batchState=this.state!;
         plan=PlanSchema.parse(this.fileParams(plan));trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
@@ -274,8 +274,8 @@ export class Agent extends EventEmitter {
           actions.splice(index,replace,...added);
         }
         if(!plan)continue;
-        // Recomputed on each call, so a completion repair's corrected text counts too.
-        const criteria=()=>{if(replanned)freshTexts=plan!.completion.flatMap(condition=>condition.type==='text_exists'?[condition.value,...condition.alternatives??[]]:[]);
+        // Once the model has planned, its verified success texts count for the saved checks; recomputed so a completion repair's text counts too.
+        const criteria=()=>{if(planCalls>0)freshTexts=plan!.completion.flatMap(condition=>condition.type==='text_exists'?[condition.value,...condition.alternatives??[]]:[]);
           return [...plan!.completion,...(!plan!.continue?[...withTexts(savedChecks,freshTexts),...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];};
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);

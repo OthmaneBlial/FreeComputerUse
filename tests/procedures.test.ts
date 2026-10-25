@@ -263,6 +263,26 @@ expect "Create new release"`);
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('a repair that hands over to new plans still checks the saved success text in its translation',async()=>{
+  const labels={en:['One','Two','Three'],fr:['Un','Deux','Trois']};
+  const server=createServer((req,res)=>{const lang=new URL(req.url??'/','http://x').searchParams.get('lang')==='fr'?'fr':'en';res.writeHead(200,{'content-type':'text/html; charset=utf-8'});
+    res.end(`<p id="log"></p>${labels[lang].map((label,i)=>`<button onclick="log.textContent+='${i+1}';if(log.textContent==='123')document.body.insertAdjacentHTML('beforeend','<p>${lang==='fr'?'Terminé':'All done'}</p>')">${label}</button>`).join('')}`);});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
+  const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);const contexts:unknown[]=[];
+  const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
+  // As Claude did: the first repair drops the saved steps and asks for new plans; the plan only names its own translated text.
+  const provider:LLMProvider={name:'fixture',
+    repair:async context=>RepairSchema.parse((context.failedAction as {type:string}).type==='verification'?{actions:[],completion:[{type:'text_exists',value:'Terminé'}]}:{actions:[],replace:3,completion:[{type:'url_contains',value:'/'}],continue:true}),
+    plan:async context=>{contexts.push(context.savedChecks);return {goal:context.goal,steps:['Count'],actions:labels.fr.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'Terminé'}],continue:false};}};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    const french=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
+    assert.equal(french.status,'completed',french.error??'Task failed');
+    assert.deepEqual(contexts,[[{type:'text_exists',value:'All done'}]],'The planner sees the saved check without saved steps');
+    assert.deepEqual(engine.get(saved.id)!.plan.completion,[{type:'text_exists',value:'All done',alternatives:['Terminé']}]);
+  }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
 test('a model that names a procedure file parameter as a vault file still uploads that file, and cannot replace the saved check',async()=>{
   const server=createServer((_req,res)=>{res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end('<input type="file" aria-label="Attachment" onchange="document.body.insertAdjacentHTML(\'beforeend\',\'<p>Attached \'+this.files[0].name+\'</p>\')">');});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;

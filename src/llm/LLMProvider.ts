@@ -5,7 +5,7 @@ export interface PlanningContext {
   completed:string[];allowedOrigins:string[];phase?:string;
   /** A procedure's remaining saved steps, as guidance when they no longer match the page (labels may be translated). */
   savedSteps?:unknown[];
-  /** The procedure's success checks; a re-plan returns their equivalent on this page. */
+  /** A procedure's success checks; a plan returns their equivalent on this page. */
   savedChecks?:unknown[];
   trustedCompletionCriteria?:unknown[];
 }
