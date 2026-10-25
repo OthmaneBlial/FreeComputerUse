@@ -59,6 +59,20 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 
 The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
 
+## Teach it once, replay it
+
+Show a task in the browser, write it as steps, or keep a run the model completed. FreeComputerUse saves it as a **procedure** with named parameters. A later request in other words, in English or French, finds it:
+
+```text
+Publie la version 1.5 de l'app "Snake Arena" avec ./build/snake-1.5.aab
+```
+
+It reads `app`, `version` and `bundle` from the request, asks for the release notes, and replays the steps locally without a model call. If a button was renamed, the model repairs only that step and the fix is saved as a new version. Publishing, paying, deleting and similar steps still ask for your approval on every run.
+
+- [Teach a procedure](docs/TEACH.md): record, write or keep, then manage, version, export and import.
+- [Google Play releases](docs/GOOGLE_PLAY.md): a full walkthrough on a local Play Console simulator.
+- [Token savings measured on the simulator](docs/BENCHMARKS.md#procedures-and-token-savings).
+
 ## New in 0.2.23
 
 URL query and fragment values named `state`, `nonce`, `csrf`, `xsrf` or `sid` are
@@ -70,16 +84,18 @@ terms remain visible.
 
 ## Choose a model
 
-Use an API key or authenticate through a supported provider CLI. API usage and consumer subscriptions have separate billing and limits.
+Use an API key or a signed-in provider CLI. API usage and consumer subscriptions have separate billing and limits.
 
 | Route | Setup |
 | --- | --- |
-| OpenAI, Grok, DeepSeek, Mistral, Gemini, or OpenRouter | Configure `LLM_PROVIDER=openai-compatible`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` |
-| Anthropic API | Configure `LLM_PROVIDER=anthropic`, `LLM_MODEL`, and `LLM_API_KEY` |
-| ChatGPT plan | Sign in with Codex CLI, then set `LLM_PROVIDER=codex-subscription` |
-| Claude Pro/Max plan | Sign in with Claude Code 2.1.248+, then set `LLM_PROVIDER=claude-subscription` |
+| Claude API | `agent providers set-key anthropic`, or `ANTHROPIC_API_KEY`; default model `claude-opus-5-5` |
+| DeepSeek API | `agent providers set-key deepseek`, or `DEEPSEEK_API_KEY`; default model `deepseek-flash` |
+| OpenAI API | `agent providers set-key openai` and `OPENAI_MODEL` |
+| xAI, Gemini, Mistral, OpenRouter | `LLM_PROVIDER=openai-compatible` with `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` |
+| Claude Pro/Max plan | Sign in with Claude Code 2.1.310+, then `LLM_PROVIDER=claude-subscription` |
+| ChatGPT plan | Sign in with Codex CLI, then `LLM_PROVIDER=codex-subscription` |
 
-Some provider routes have contract tests but no live test. Check the dated [support matrix](docs/SUPPORT_MATRIX.md) and [provider setup guide](docs/PROVIDERS.md) before choosing a route.
+`agent providers test <id>` sends one real request. The dashboard has the same test, a write-only key field and a per-task model menu. Keys go to the macOS Keychain or a private file. Retries, fallback providers and escalation to a stronger model are described in the [provider guide](docs/PROVIDERS.md). The Claude and OpenAI API routes have contract tests but no live test yet.
 
 ## Use with an MCP host
 
@@ -123,6 +139,7 @@ Run the full local checks with `FCU_BROWSER_CHANNEL=chrome npm run validate`. No
 - [Product site and task library](https://othmaneblial.github.io/FreeComputerUse/)
 - [Latest GitHub release](https://github.com/OthmaneBlial/FreeComputerUse/releases/latest)
 - [Useful browser-task examples](docs/USEFUL_EXAMPLES.md)
+- [Install and permissions](docs/INSTALL.md) · [troubleshooting and known limits](docs/TROUBLESHOOTING.md)
 - [Architecture](docs/ARCHITECTURE.md) · [local data](docs/LOCAL_DATA.md) · [local validation](docs/LOCAL_VALIDATION.md)
 - [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 

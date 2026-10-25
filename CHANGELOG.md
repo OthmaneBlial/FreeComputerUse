@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Providers
+
+- Provider registry for the Claude API, DeepSeek, OpenAI, any OpenAI-compatible
+  endpoint, and the Claude Code and Codex CLIs, with a per-task provider and
+  model choice in the CLI and dashboard.
+- Real connection tests (`agent providers test`, dashboard **Test connection**),
+  write-only key storage in the macOS Keychain or a private file, retries with
+  `retry-after`, error hints, Claude prompt caching, refusal handling, fallback
+  providers and escalation to a stronger model.
+- The Claude subscription route runs Claude Code with `--safe-mode` and needs
+  2.1.310 or newer.
+
+### Procedures
+
+- Durable procedures with names, descriptions, typed parameters, versions, run
+  history and success rate; rename, edit, duplicate, restore, delete, export and
+  import from the dashboard and `agent procedures`.
+- Teach mode: record a demonstration, write steps in English or French, or save
+  a completed run. When stuck, a run can pause and record a human demonstration
+  of the failing step.
+- Requests in other words or in French find a procedure and fill in its
+  parameters; only missing values are asked for.
+- Replays try recorded alternative targets first, repair a single changed step
+  with the model, and save the repair as a new version.
+- Local Play Console simulator and a Google Play release tutorial.
+
+### Safety
+
+- More sensitive-action wording (deploy, roll out, release to production, share,
+  invite, change access) in English and French. Approvals show what is on the
+  page.
+- Sign-in pages, "Verify it's you" and 2-Step Verification pages pause the run
+  for the user.
+
 ## 0.2.23 - 2026-09-27
 
 ### Security

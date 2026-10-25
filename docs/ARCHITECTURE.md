@@ -17,8 +17,13 @@ flowchart LR
   POLICY --> EXEC[Playwright executor]
   EXEC --> BROWSER[Local browser]
   BROWSER --> VERIFY[Result verifier]
-  AGENT --> STORE[Local SQLite traces and workflows]
+  AGENT --> STORE[Local SQLite traces and procedures]
   API --> PROFILE[Local profile vault]
+  BROWSER --> REC[Teach recorder]
+  REC --> STORE
+  STORE --> REPLAY[Procedure replay with parameters]
+  REPLAY --> POLICY
+  KEYS[Keychain or private key file] --> PROVIDER
 ```
 
 ## Request path
@@ -40,12 +45,48 @@ flowchart LR
    compatible learned workflows and replays them without another model request,
    while retaining the regular permission checks.
 
+## Providers
+
+`src/llm/providers.ts` holds the provider registry: one entry per route
+(Claude API, DeepSeek, OpenAI, any OpenAI-compatible endpoint, Claude Code and
+Codex CLIs) with its default model, key names and connection test.
+`FlashProvider` speaks the Claude Messages API and Chat Completions, with
+retries, prompt caching for Claude and explicit error hints. The two
+subscription adapters run the signed-in CLIs without local tools. Keys come
+from the environment or `SecretStore` (macOS Keychain, or a 0600 file), never
+from traces or procedures. `ProviderChain` adds fallback and escalation around the selected provider.
+Details: [Providers](PROVIDERS.md).
+
+## Procedures and teaching
+
+A procedure is a workflow row in `history.sqlite` with a name, a description,
+typed parameters (`text`, `file`, `secret`), a start URL, preconditions, a
+completion check, up to ten earlier versions and its run history.
+
+- **Creating one.** `src/teach/Recorder.ts` records trusted clicks, typing,
+  selections, uploads and navigation in the browser as semantic targets (role,
+  name, label, stable id); secret and file values become parameters. Written
+  steps go through `src/teach/steps.ts`. A completed run can also be saved.
+  All three paths end in `WorkflowEngine.saveSteps`, which replaces literal
+  values with `{{params.name}}` and validates the result.
+- **Finding one.** `WorkflowEngine.find` scores a request against the
+  procedure's name, description, keywords and steps, with English and French
+  synonyms, and reads parameter values from the request. The dashboard and
+  CLI ask only for missing values.
+- **Replaying one.** `Agent.runProcedure` validates the values, resolves them
+  locally through `VariableResolver`, and executes the steps without a model.
+  `SelectorEngine` tries the recorded target, then its alternatives. A step
+  that still fails goes to the model for a one-step repair, or, with teach on
+  failure, to a human demonstration. A successful repair is saved as a new
+  version that keeps the old target as an alternative. Sensitive steps still
+  go through the normal approval prompt on every run.
+
 ## Local surfaces and data
 
 - `src/server/index.ts` serves the dashboard only on loopback and checks its
   session cookie, Host, Origin and CSRF token. `src/ui/` contains the browser UI.
 - `ProfileStore` stores explicitly configured aliases; `TraceStore` stores run
-  history and learned workflows in SQLite. Browser profiles and downloads use
+  history, learned workflows and procedures in SQLite. Browser profiles and downloads use
   the same configured data directory. Details, retention and deletion are in
   [Local data](LOCAL_DATA.md).
 - API mode sends the page context needed to plan to the selected provider.
