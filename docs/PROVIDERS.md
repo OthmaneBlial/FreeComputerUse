@@ -123,7 +123,7 @@ browser task.
 | --- | --- |
 | `deepseek`, `deepseek-flash` | Passed in 938 ms; 64 input and 5 output tokens reported |
 | `claude-subscription`, Claude Code 2.1.310 | Passed with `claude-opus-5-5`; 599 input and 9 output tokens reported by the CLI. A full Play simulator benchmark trial was correct in 9 of 9 runs with 20 model calls |
-| `codex-subscription`, Codex CLI 0.164.0 | Passed in 4,561 ms; usage estimated. In the Play simulator benchmark about one call in five waited 2.5 minutes or more; with `FCU_CLI_TIMEOUT_MS=300000` the first run, a replay and a minor UI change were correct |
+| `codex-subscription`, Codex CLI 0.164.0 | Passed in 4,561 ms; usage estimated. In the Play simulator benchmark about one call in five waited 2.5 minutes or more; with `FCU_CLI_TIMEOUT_MS=300000` all nine benchmark runs were correct, with 24 model calls |
 | `deepseek`, vision fallback | A canvas-only START button task completed: 5 calls, 9,325 input and 216 output tokens; the screenshot repair returned the point that worked |
 | `anthropic` (API key) | **Not tested live**: no key was available. Covered by request-contract tests (headers, caching, retries, refusals) against a local server. |
 | `openai` (API key) | **Not tested live**: covered by request-contract tests only. |

@@ -21,6 +21,147 @@
           "error": "Codex CLI timed out"
         }
       ]
+    },
+    {
+      "date": "2026-10-25T15:53:21.044Z",
+      "provider": "Codex subscription",
+      "simulator": "fixtures/playConsole.ts (local, not Google software)",
+      "rows": [
+        {
+          "run": "1. Exploration with the model",
+          "ui": "English",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 12,
+          "inputTokens": 109808,
+          "outputTokens": 1002,
+          "estimatedCostUSD": null,
+          "usageEstimated": true,
+          "durationMs": 1105106,
+          "approvals": 2,
+          "repairs": 0
+        },
+        {
+          "run": "2. Replay, new values",
+          "ui": "English",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2576,
+          "approvals": 2,
+          "repairs": 0,
+          "procedureVersion": 1
+        },
+        {
+          "run": "3. Replay after a minor UI change",
+          "ui": "English, variant 2",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 3,
+          "inputTokens": 27484,
+          "outputTokens": 223,
+          "estimatedCostUSD": null,
+          "usageEstimated": true,
+          "durationMs": 28647,
+          "approvals": 2,
+          "repairs": 2,
+          "procedureVersion": 2
+        },
+        {
+          "run": "4. Replay again",
+          "ui": "English, variant 2",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2540,
+          "approvals": 2,
+          "repairs": 0,
+          "procedureVersion": 2
+        },
+        {
+          "run": "5. Replay on a French UI",
+          "ui": "French",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 9,
+          "inputTokens": 82579,
+          "outputTokens": 713,
+          "estimatedCostUSD": null,
+          "usageEstimated": true,
+          "durationMs": 1165154,
+          "approvals": 3,
+          "repairs": 1,
+          "procedureVersion": 3
+        },
+        {
+          "run": "6. Replay again",
+          "ui": "French",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2876,
+          "approvals": 3,
+          "repairs": 0,
+          "procedureVersion": 3
+        },
+        {
+          "run": "7. Back to the original UI",
+          "ui": "English",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2951,
+          "approvals": 2,
+          "repairs": 0,
+          "procedureVersion": 3
+        },
+        {
+          "run": "8. French again",
+          "ui": "French",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2757,
+          "approvals": 3,
+          "repairs": 0,
+          "procedureVersion": 3
+        },
+        {
+          "run": "9. English again",
+          "ui": "English",
+          "status": "completed",
+          "verified": true,
+          "llmCalls": 0,
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "estimatedCostUSD": null,
+          "usageEstimated": false,
+          "durationMs": 2768,
+          "approvals": 2,
+          "repairs": 0,
+          "procedureVersion": 3
+        }
+      ]
     }
   ]
 }

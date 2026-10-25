@@ -86,10 +86,19 @@ in 5 to 9 s, but about one call in five waited 2.5 minutes or more. Reasoning
 effort was `none` and token counts were normal, so the wait was on the service
 side, and the retry of a stalled call waited too.
 
-With `FCU_CLI_TIMEOUT_MS=300000` and a 30-minute task limit, runs 1 to 4 were
-correct. The first run took 12 model calls (109,808 input and 1,002 output
-tokens, as Codex CLI counts them), the replay none, and the minor UI change 3.
-The French runs of this trial were still running when this was written.
+With `FCU_CLI_TIMEOUT_MS=300000` and a 30-minute task limit, one trial
+(`gpt-6.1-sol`, reasoning effort `none`):
+
+| Run | Correct | Model calls | Input + output tokens |
+| --- | :---: | ---: | ---: |
+| 1. First run, the model explores | Yes | 12 | 110,810 |
+| 3. Replay after a minor UI change | Yes | 3 | 27,707 |
+| 5. Replay on a French interface | Yes | 9 | 83,292 |
+| 2, 4, 6, 7, 8 and 9. Every other replay | Yes | 0 | 0 |
+
+All nine runs were correct, with 24 model calls in total. Codex CLI reports
+more input tokens than DeepSeek for the same task, because its count includes
+the CLI's own instructions.
 
 ### What the numbers show
 
@@ -122,8 +131,8 @@ Earlier trials on older code that day also had one DeepSeek run stopped by the
 repeated-action guard after the release was already in review. It was reported
 as failed, not as done. That did not recur in the trials above.
 
-Limits: one task on one simulator. Three DeepSeek trials and one Claude trial
-are a small sample. The times come from a laptop and include the simulator's
+Limits: one task on one simulator. Three DeepSeek trials, one Claude trial and
+one Codex trial are a small sample. The times come from a laptop and include the simulator's
 1.2 s bundle processing. On the real Play Console, only the signed-out start has
 been checked (see [Google Play](GOOGLE_PLAY.md)).
 
