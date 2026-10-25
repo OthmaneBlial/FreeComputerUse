@@ -235,14 +235,16 @@ export class Agent extends EventEmitter {
           if(repairs>1)context.page+='\nACCESSIBILITY\n'+this.variables.redact(await this.observer.accessibility(this.browser.page));
           if(repairs>2){const scope=await this.browser.page.locator('form').count()===1?'form':await this.browser.page.locator('main').count()===1?'main':'body';context.page+='\nTARGETED HTML\n'+this.variables.redact(await this.observer.fragment(this.browser.page,scope)).slice(0,3000);}
           const repaired=RepairSchema.parse(await provider.repair({...context,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)}));
-          if(repaired.replace<1||!repaired.actions.length||repaired.replace>actions.length-index)throw new Error('Repair attempted to replace actions outside the pending batch');
+          // The failed action never stays, and only pending actions can be replaced. An empty repair (e.g. the step was a duplicate of
+          // one already done) drops it; the schema then requires completion conditions, which are verified below.
+          const replace=Math.min(Math.max(1,repaired.replace),actions.length-index);
           if(repaired.completion)plan.completion=repaired.completion;
           if(repaired.continue!==undefined)plan.continue=repaired.continue;
           // A one-for-one replacement keeps the old target as a fallback, e.g. for the other UI language.
           const [replacement]=repaired.actions;
-          if(repaired.replace===1&&repaired.actions.length===1&&replacement&&replacement.type===action.type&&'target'in action&&typeof action.target==='object'&&'target'in replacement&&replacement.target)
+          if(replace===1&&repaired.actions.length===1&&replacement&&replacement.type===action.type&&'target'in action&&typeof action.target==='object'&&'target'in replacement&&replacement.target)
             replacement.alternatives=[action.target,...(action.alternatives??[])].filter(item=>JSON.stringify(item)!==JSON.stringify(replacement.target)).slice(0,6);
-          actions.splice(index,repaired.replace,...repaired.actions);
+          actions.splice(index,replace,...repaired.actions);
         }
         const criteria=()=>[...plan!.completion,...(!plan!.continue?[...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);

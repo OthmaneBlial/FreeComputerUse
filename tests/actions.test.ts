@@ -22,6 +22,17 @@ test('local variables never expose values in aliases and deny arbitrary uploads'
   assert.throws(()=>resolver.file('/etc/passwd'),/explicit/);
 });
 
+test('an upload aimed at a visible button attaches the file through the file chooser',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-chooser-'));const browser=await new Browser({}).launch();
+  try{
+    const bundle=join(dir,'app.aab');await writeFile(bundle,'versionCode=1');
+    const executor=new Executor(browser,new Observer(),new VariableResolver({profile:{},files:{bundle}}),new Control(),{downloadDir:dir});
+    await browser.page.setContent('<input type="file" id="file" hidden><button onclick="file.click()">Upload</button><p id="picked"></p><script>file.onchange=()=>picked.textContent=file.files[0].name</script>');
+    const result=await executor.run({type:'upload',target:{role:'button',name:'Upload'},file:'{{files.bundle}}'});
+    assert(result.success,result.error??'');assert.equal(await browser.page.locator('#picked').textContent(),'app.aab');
+  }finally{await browser.close();await rm(dir,{recursive:true,force:true});}
+});
+
 test('executor fills, selects, verifies, uploads, downloads, navigates and controls tabs',async()=>{
   const fixture=await startFixtures();const dir=await mkdtemp(join(tmpdir(),'fcu-actions-'));
   const browser=await new Browser({allowedOrigins:[fixture.url]}).launch();

@@ -477,6 +477,17 @@ test('download goals cannot complete without creating a browser download',async(
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('an empty repair drops a failed duplicate step and the run completes when its checks hold',async()=>{
+  const fixture=await startFixtures(),store=new TraceStore(':memory:');let repairs=0;
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairs++;return{actions:[],replace:1,completion:[{type:'text_exists',value:'Northstar'}]};}};
+  const agent=new Agent({store,provider,mode:'ultra',browser:{allowedOrigins:[fixture.url]}});
+  try{
+    const plan=PlanSchema.parse({goal:'Read',steps:['Read'],actions:[{type:'extract',key:'text',format:'text'},{type:'click',target:{role:'button',name:'Send changes for review'},timeoutMs:100}],completion:[{type:'text_exists',value:'Northstar'}],continue:false});
+    const trace=await agent.run('Read this page',fixture.url,plan);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(repairs,1);
+  }finally{await agent.close();store.close();await fixture.close();}
+});
+
 test('completion-only repair preserves successful actions; failed replay never invokes a provider',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let repairs=0;
   const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairs++;return{actions:[],replace:0,completion:[{type:'text_exists',value:'Northstar'}]};}};

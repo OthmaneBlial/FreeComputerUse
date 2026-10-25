@@ -160,7 +160,9 @@ export class Executor {
           const file=this.variables.file(action.file);
           if(!(await stat(file)).isFile())throw new Error('Upload alias is not a regular file');
           // Hidden native file controls have no pointer target.
-          if(await locator!.isVisible())await interaction.perform(locator!,'upload',()=>locator!.setInputFiles(file,{timeout}),interactionOptions);
+          // A visible button or drop zone opens the file chooser; only a file input takes files directly.
+          if(await locator!.isVisible()){const input=await locator!.evaluate(el=>el instanceof HTMLInputElement&&el.type==='file');
+            await interaction.perform(locator!,'upload',input?()=>locator!.setInputFiles(file,{timeout}):async()=>{const [chooser]=await Promise.all([page.waitForEvent('filechooser',{timeout}),locator!.click({timeout})]);await chooser.setFiles(file);},interactionOptions);}
           else {await assertApproved?.();await locator!.setInputFiles(file,{timeout});}break;
         }
         case 'download':{
