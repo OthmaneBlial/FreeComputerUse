@@ -14,7 +14,12 @@ Later requests reuse the procedure. "Deploy version 1.5 of app Snake Arena with
 differs. It reads the values it can from the request, asks only for the missing
 ones, and replays without calling the model. The model is called only if a step
 no longer matches the page. A successful repair is saved as a new version, and
-the old target is kept as a fallback.
+the old target is kept as a fallback. If most steps stop matching, for example
+because the interface is in another language, the agent plans the rest of the
+task from the current page in one request, and the procedure's success check
+still has to pass. When the new version has the same steps as the old one, each
+step keeps both targets, so the procedure then runs on both interfaces without
+the model.
 
 ## 1. Show it
 

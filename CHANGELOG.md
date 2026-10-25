@@ -28,6 +28,18 @@
   with the model, and save the repair as a new version.
 - Local Play Console simulator and a Google Play release tutorial.
 
+### Vision and repairs
+
+- Opt-in vision fallback (`FCU_VISION=1`): late repairs send a viewport
+  screenshot with form fields masked, and the model can click a point. Points
+  are never saved into procedures or learned workflows.
+- Uploads aimed at a button that opens the file chooser now work.
+- A repair that restates the following steps no longer runs them twice, and a
+  repair that drops a duplicate step lets the completion checks decide.
+- A procedure replay with two broken steps plans the rest from the current page
+  instead of repairing step by step, and still requires the procedure's checks.
+  A new version with the same steps keeps the old targets as alternatives.
+
 ### Safety
 
 - More sensitive-action wording (deploy, roll out, release to production, share,

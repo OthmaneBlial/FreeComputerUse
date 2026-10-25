@@ -83,7 +83,8 @@ Recording or Input Monitoring permission on macOS, and no equivalent elsewhere.
 | Files you upload | Paths you give as a `{{files.alias}}` profile entry or a file parameter | Only those files can be attached. Their paths are never sent to the model. |
 
 What leaves your machine: the task and a compressed text description of the
-page go to the provider you chose. Screenshots are not sent. See
+page go to the provider you chose. Screenshots are not sent unless you set
+`FCU_VISION=1` ([vision fallback](PROVIDERS.md#vision-fallback)). See
 [Local data](LOCAL_DATA.md) for storage and deletion, and the
 [threat model](THREAT_MODEL.md).
 

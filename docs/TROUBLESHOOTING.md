@@ -42,9 +42,11 @@ observe, plan, act, verify and repair event.
 - **Provider evidence.** The Anthropic API and OpenAI API routes are covered by
   request-contract tests against a local server and have not been tested live
   with a real key. Codex CLI usage is estimated. See [Providers](PROVIDERS.md#verified-on-25-october-2026).
-- **No vision fallback.** The model only sees a text description of the page.
-  Controls drawn on a canvas or without accessible text are hard to target.
-  Screenshots are never sent.
+- **Vision is a last resort and opt-in.** By default the model only sees a text
+  description of the page. With `FCU_VISION=1`, the third and later repairs in a
+  task add a viewport screenshot and the model can click a point. Steps that
+  needed a point are not saved into procedures or learned workflows, because a
+  point can hit something else next time. Only the visible viewport is sent.
 - **Text checks take one text.** `wait for` and `expect` steps do not accept `|`
   alternatives, so a procedure that must work in two interface languages needs
   checks that hold in both, or one procedure per language.

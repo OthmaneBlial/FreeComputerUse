@@ -75,10 +75,13 @@ completion check, up to ten earlier versions and its run history.
   CLI ask only for missing values.
 - **Replaying one.** `Agent.runProcedure` validates the values, resolves them
   locally through `VariableResolver`, and executes the steps without a model.
-  `SelectorEngine` tries the recorded target, then its alternatives. A step
+  `SelectorEngine` tries the recorded target, then its alternatives. With
+  `FCU_VISION=1`, late repairs add a masked viewport screenshot and may answer
+  with a point target that is never saved. A step
   that still fails goes to the model for a one-step repair, or, with teach on
-  failure, to a human demonstration. A successful repair is saved as a new
-  version that keeps the old target as an alternative. Sensitive steps still
+  failure, to a human demonstration. After two repairs, the rest is planned
+  from the current page in one request. A successful run is saved as a new
+  version that keeps old targets as alternatives. Sensitive steps still
   go through the normal approval prompt on every run.
 
 ## Local surfaces and data

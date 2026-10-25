@@ -75,6 +75,22 @@ only to that default provider. A key in the environment wins over a stored key.
   `--bare` would skip the sign-in, which is why older versions of this route
   reported "Not logged in".
 
+## Vision fallback
+
+Off by default: the model gets a text description of the page and no images.
+With `FCU_VISION=1`, a step that is still failing after two repairs is
+repaired with a JPEG of the visible viewport attached. Inputs, text areas,
+selects and editable regions are masked in the image, so typed values and
+profile data are not sent as pixels. The model can then answer with a point
+target `{"x":…,"y":…}`. The point resolves to the element under it, so
+site rules and sensitive-action approvals still apply. A click lands on that
+exact spot, which makes buttons drawn on a canvas usable.
+
+Image input is sent to `anthropic`, `deepseek` and `openai`. The model must accept
+images: `deepseek-flash` does, `deepseek-v4-pro` does not. CLI subscription routes and
+`openai-compatible` never receive a screenshot. A step that needed a point is not
+saved into a procedure or a learned workflow.
+
 ## Endpoints for `openai-compatible`
 
 | Service | `LLM_BASE_URL` |
@@ -99,6 +115,7 @@ browser task.
 | `deepseek`, `deepseek-flash` | Passed in 938 ms; 64 input and 5 output tokens reported |
 | `claude-subscription`, Claude Code 2.1.310 | Passed with `claude-opus-5-5`; 599 input and 9 output tokens reported by the CLI |
 | `codex-subscription`, Codex CLI 0.164.0 | Passed in 4,561 ms; usage estimated |
+| `deepseek`, vision fallback | A canvas-only START button task completed: 5 calls, 9,325 input and 216 output tokens; the screenshot repair returned the point that worked |
 | `anthropic` (API key) | **Not tested live**: no key was available. Covered by request-contract tests (headers, caching, retries, refusals) against a local server. |
 | `openai` (API key) | **Not tested live**: covered by request-contract tests only. |
 

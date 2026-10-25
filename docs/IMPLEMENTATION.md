@@ -69,8 +69,10 @@ cookies to validate a restart without another simulated login.
 Observation exposes overview/controls/regions and bounded visible text/tables.
 Batch transitions and repairs can use DOM diffs. Repeated failures escalate to
 accessibility and a sanitized component HTML fragment. The UI preview and explicit
-CLI screenshot are local. Images are not sent to the provider. Vision control,
-canvas execution, multi-model routing and named external site adapters are planned.
+CLI screenshot are local. With `FCU_VISION=1`, the third and later repairs in a
+task also send a viewport screenshot with form fields masked, and the model may
+answer with a point target (see [Providers](PROVIDERS.md#vision-fallback)). Fallback
+providers and escalation are in `ProviderChain`. Named external site adapters are planned.
 
 The dashboard executes mouse movement over multiple real Playwright mouse events,
 types short text progressively, and scrolls in increments. Trusted pointer telemetry

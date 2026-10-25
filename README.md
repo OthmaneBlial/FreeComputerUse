@@ -57,7 +57,7 @@ One recorded synthetic task followed six pages and saved a checked incident brie
 3. Run actions locally with Playwright. Direct navigation to a new site asks for approval.
 4. Check the result, repair bounded failures, and reuse a compatible workflow when its completion conditions still hold.
 
-The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent.
+The model cannot run shell commands or arbitrary JavaScript. Browser profiles, execution, history, and downloads stay on your machine. Your task and selected page context go to the provider you choose; screenshots are not sent unless you turn on the [vision fallback](docs/PROVIDERS.md#vision-fallback).
 
 ## Teach it once, replay it
 
@@ -103,7 +103,7 @@ Run `agent mcp` to expose four bounded tools over local `stdio`: start, inspect,
 
 ## Privacy and security
 
-- Browser execution, profiles, history, and downloads stay local. The selected task and page context go to your model provider. Screenshots are not sent.
+- Browser execution, profiles, history, and downloads stay local. The selected task and page context go to your model provider. Screenshots are not sent unless you set `FCU_VISION=1`; then last-resort repairs include a viewport screenshot with form fields masked.
 - Normal mode asks before moving to a new site and blocks connections to private and reserved addresses. Ultra mode is opt-in and skips those origin checks.
 - Sensitive actions have a separate approval step. Detection relies on heuristics and cannot identify every deceptive page.
 - Local data is not encrypted and does not expire automatically. See [data storage and deletion](docs/LOCAL_DATA.md) and the [security boundaries](SECURITY.md) before using personal data.
