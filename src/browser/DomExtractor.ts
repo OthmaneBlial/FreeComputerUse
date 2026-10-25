@@ -157,7 +157,7 @@ export class DomExtractor {
     }
     if (pieces.length < frames.length) state.warnings.push('Some frames could not be inspected');
     if (/ignore (all |your |previous )?instructions|send (all |user )?data|system prompt/i.test(state.text)) state.warnings.push('Possible prompt injection in untrusted page content');
-    if (/captcha|verify you are human|sign in to continue/i.test([state.title,state.text,...state.elements.map(e=>e.name)].join(' '))) state.warnings.push('Human authentication or security challenge may be required');
+    if (/captcha|verify you are human|sign\s+in\s+to\s+continue|verify it.?s you|(?:2|two)-step verification/i.test([state.title,state.text,...state.elements.map(e=>e.name)].join(' '))) state.warnings.push('Human authentication or security challenge may be required');
     state.hash=stateHash(state);
     return state;
   }

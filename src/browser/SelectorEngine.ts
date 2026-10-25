@@ -21,7 +21,7 @@ export class SelectorEngine {
     const list:{strategy:string;locator:Locator}[]=[];
     if(t.role)list.push({strategy:'role',locator:root.getByRole(t.role as Parameters<Page['getByRole']>[0],t.name?{name:t.name,exact:true}:{})});
     if(t.label)list.push({strategy:'label',locator:root.getByLabel(t.label,{exact:true})});
-    else if(t.name&&['textbox','combobox','spinbutton','upload'].includes(t.role??''))list.push({strategy:'label',locator:root.getByLabel(t.name,{exact:true})});
+    else if(t.name&&(!t.role||['textbox','combobox','spinbutton','upload'].includes(t.role)))list.push({strategy:'label',locator:root.getByLabel(t.name,{exact:true})});
     if(t.placeholder)list.push({strategy:'placeholder',locator:root.getByPlaceholder(t.placeholder,{exact:true})});
     if(t.testId)list.push({strategy:'testId',locator:root.getByTestId(t.testId)});
     if(t.id)list.push({strategy:'id',locator:root.locator(`[id=${attr(t.id)}]`)});

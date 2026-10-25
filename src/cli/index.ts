@@ -8,7 +8,8 @@ import { Agent } from '../agent/Agent.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
 import { VariableResolver } from '../profile/VariableResolver.js';
-import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
+import { WorkflowEngine,type Parameter } from '../workflows/WorkflowEngine.js';
+import { parseSteps } from '../teach/steps.js';
 import { Browser } from '../browser/Browser.js';
 import { Observer } from '../browser/Observer.js';
 import { PRESETS,PROVIDER_IDS,ProviderIdSchema,providerStatuses } from '../llm/providers.js';
@@ -30,7 +31,7 @@ async function makeAgent(url:string,options:RunOptions){
       mode:options.ultra?'ultra':'normal',
       confirmation:policySchema.parse(options.confirmation??'sensitive'),downloadDir:join(config.dataDir,'downloads'),
       completionCriteria:[...(options.expectText?[{type:'text_exists' as const,value:options.expectText}]:[]),...(options.expectUrl?[{type:'url_contains' as const,value:options.expectUrl}]:[])],
-      maxSteps:z.coerce.number().int().positive().parse(options.maxSteps??120),maxRepairs:z.coerce.number().int().nonnegative().parse(options.maxRepairs??8),
+      maxSteps:z.coerce.number().int().positive().parse(options.maxSteps??120),maxDurationMs:config.maxDurationMs??undefined,maxRepairs:z.coerce.number().int().nonnegative().parse(options.maxRepairs??8),
       browser:{headless:!options.headed,profileDir:options.ephemeral?undefined:join(config.dataDir,'browser'),allowedOrigins:[new URL(url).origin,...options.allowOrigin??[]],allowExternal:options.allowExternal}});
     return{agent,store};
   }catch(error){store.close();throw error;}
@@ -100,6 +101,62 @@ runFlags(program.command('replay <id>').option('--url <url>','Override starting 
   try{showTrace(await agent.replay(trace,options.url));}finally{await agent.close();store.close();}
 });
 program.command('history').option('--limit <n>','Maximum rows','30').action(options=>{const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));try{console.log(new VariableResolver().redact(JSON.stringify(store.history(z.coerce.number().int().min(1).max(1000).parse(options.limit)),null,2)));}finally{store.close();}});
+const collect=(value:string,old:string[])=>[...old,value];
+const pairs=(items:string[])=>Object.fromEntries(items.map(item=>{const at=item.indexOf('=');if(at<1)throw new Error(`Use name=value, not ${item}`);return[item.slice(0,at),item.slice(at+1)];}));
+function withProcedures<T>(work:(engine:WorkflowEngine)=>T):T{const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));try{return work(new WorkflowEngine(store));}finally{store.close();}}
+const procedures=program.command('procedures').description('Saved procedures: list, find, run, teach, write, edit, export and import');
+procedures.action(()=>withProcedures(engine=>{
+  const list=engine.list();if(!list.length)console.log('No procedures yet. Teach one with `agent procedures teach <url> --name "…"`.');
+  for(const item of list)console.log(`${item.id}  ${item.name}\n    ${item.domain} · ${item.source} · v${item.version} · ${item.steps} steps · ${item.runs?`${item.completed}/${item.runs} runs succeeded`:'not run yet'}${item.parameters.length?' · asks for '+item.parameters.map(param=>param.name).join(', '):''}`);
+}));
+procedures.command('show <id>').description('Show steps, parameters, versions and recent runs').action((id:string)=>withProcedures(engine=>{const workflow=engine.get(id);if(!workflow)throw new Error('Procedure not found');console.log(JSON.stringify({...workflow,summary:engine.summary(id),runs:engine.runs(id)},null,2));}));
+procedures.command('find <request>').description('Find the procedure for a request and the values it can read from it').option('--url <url>','Only procedures for this site').action((request:string,options:{url?:string})=>withProcedures(engine=>{
+  const matches=engine.find(request,options.url);if(!matches.length){console.log('No saved procedure matches this request.');process.exitCode=1;}
+  for(const match of matches.slice(0,5))console.log(`${match.workflow.id}  ${engine.label(match.workflow)}  (match ${Math.round(match.score*100)}%)\n    values: ${JSON.stringify(match.values)}${match.missing.length?`\n    missing: ${match.missing.map(param=>param.name).join(', ')}`:''}`);
+}));
+runFlags(procedures.command('run <procedure>').description('Run a procedure by id, or by a request such as "Deploy version 1.4 of app X with ./app.aab"')
+  .option('--param <name=value>','Parameter value (repeatable)',collect,[]).option('--url <url>','Start on another page of the same site')).action(async(target:string,options:RunOptions&{param:string[];url?:string})=>{
+  const found=withProcedures(engine=>{const workflow=engine.get(target);if(workflow)return{workflow,values:{} as Record<string,string>};const match=engine.find(target,options.url)[0];if(!match)throw new Error('No saved procedure matches this request; see `agent procedures`');return match;});
+  const values={...found.values,...pairs(options.param)},params=found.workflow.parameters??[];
+  const missing=params.filter(param=>param.required&&!values[param.name]);
+  if(missing.length){
+    if(!stdin.isTTY)throw new Error(`Missing parameter(s): ${missing.map(param=>param.name).join(', ')}. Pass them with --param name=value`);
+    const reader=createInterface({input:stdin,output:stdout});
+    try{for(const param of missing)values[param.name]=(await reader.question(`${param.name}${param.kind==='file'?' (file path)':''}${param.description?` — ${param.description}`:''}: `)).trim();}finally{reader.close();}
+  }
+  const {agent,store}=await makeAgent(options.url??found.workflow.startUrl??found.workflow.origin+found.workflow.path,options);connectEvents(agent,!!options.debug);
+  const interrupt=()=>agent.control.stop();process.once('SIGINT',interrupt);
+  console.log(`Procedure: ${found.workflow.name??found.workflow.plan.goal} (v${found.workflow.version??1}). The model is only called if a step must be repaired.`);
+  try{showTrace(await agent.runProcedure(found.workflow.id,values,options.url));}finally{process.off('SIGINT',interrupt);await agent.close();store.close();}
+});
+runFlags(procedures.command('teach <url>').description('Record what you do in a browser window and save it as a procedure').requiredOption('--name <name>','Procedure name')
+  .option('--description <text>','What it does, to find it later').option('--param <name=value>','A value you type that should change between runs (repeatable)',collect,[])).action(async(url:string,options:RunOptions&{name:string;description?:string;param:string[]})=>{
+  if(!stdin.isTTY)throw new Error('Teaching needs a terminal; use `agent ui` for the dashboard');
+  const reader=createInterface({input:stdin,output:stdout});
+  const {agent,store}=await makeAgent(url,{...options,headed:true}).catch(error=>{reader.close();throw error;});connectEvents(agent,!!options.debug,reader);
+  agent.on('event',event=>{if(event.phase==='TEACH')console.log(`[TEACH] ${event.message}`);});
+  try{
+    await agent.startTeaching(url);await reader.question('Do the task in the browser window, then press Enter here to save it. ');
+    const recording=agent.finishTeaching(),declared:(Parameter&{value?:string})[]=Object.entries(pairs(options.param)).map(([name,value])=>({name,value,kind:'text',required:true}));
+    const saved=new WorkflowEngine(store).saveSteps({name:options.name,description:options.description,startUrl:recording.startUrl,actions:recording.actions,parameters:[...declared,...recording.parameters],expectText:options.expectText},'taught',{structure:recording.structure});
+    console.log(`Saved ${saved.id} “${saved.name}” with ${saved.plan.actions.length} steps${saved.parameters?.length?`; asks for ${saved.parameters.map(param=>param.name).join(', ')}`:''}.`);
+  }finally{reader.close();await agent.close();store.close();}
+});
+procedures.command('create').description('Save a procedure written as steps in a text file').requiredOption('--name <name>','Procedure name').requiredOption('--steps <file>','Steps file, one step per line')
+  .option('--description <text>','What it does').option('--param <name=value>','Replace a literal value with a parameter (repeatable)',collect,[]).action(async(options:{name:string;steps:string;description?:string;param:string[]})=>{
+  const parsed=parseSteps(await readFile(resolve(options.steps),'utf8'),options.name);if(!parsed.startUrl)throw new Error('Start the steps with: open <url>');
+  const declared=Object.entries(pairs(options.param)).map(([name,value])=>({name,value,kind:'text' as const,required:true}));
+  const saved=withProcedures(engine=>engine.saveSteps({name:options.name,description:options.description,startUrl:parsed.startUrl!,actions:parsed.plan.actions,completion:parsed.plan.completion,parameters:[...declared,...parsed.parameters]},'taught'));
+  console.log(`Saved ${saved.id} “${saved.name}”${saved.parameters?.length?`; asks for ${saved.parameters.map(param=>param.name).join(', ')}`:''}.`);
+});
+procedures.command('rename <id> <name>').action((id:string,name:string)=>withProcedures(engine=>console.log(`Renamed to “${engine.rename(id,name).name}”.`)));
+procedures.command('duplicate <id>').action((id:string)=>withProcedures(engine=>console.log(`Copied to ${engine.duplicate(id).id}.`)));
+procedures.command('delete <id>').action((id:string)=>withProcedures(engine=>{if(!engine.remove(id))throw new Error('Procedure not found');console.log('Deleted the procedure and its run history.');}));
+procedures.command('restore <id> <version>').description('Bring back the steps of an earlier version as a new version').action((id:string,version:string)=>withProcedures(engine=>console.log(`Now at version ${engine.restore(id,z.coerce.number().int().min(1).parse(version)).version}.`)));
+procedures.command('export <id>').description('Write a portable copy without run history or values').option('--out <file>','Output file').action(async(id:string,options:{out?:string})=>{
+  const data=JSON.stringify(withProcedures(engine=>engine.export(id)),null,2);if(options.out){await writeFile(resolve(options.out),data+'\n');console.log(`Exported to ${resolve(options.out)}.`);}else console.log(data);
+});
+procedures.command('import <file>').action(async(file:string)=>{const data=JSON.parse(await readFile(resolve(file),'utf8'));const saved=withProcedures(engine=>engine.import(data));console.log(`Imported ${saved.id} “${saved.name}”.`);});
 program.command('workflows').option('--show <id>','Show a learned semantic workflow').action(options=>{const config=runtimeConfig();ensureDataDirectory(config.dataDir);const store=new TraceStore(join(config.dataDir,'history.sqlite'));try{const workflows=new WorkflowEngine(store);console.log(JSON.stringify(options.show?workflows.get(options.show)??'Not found':workflows.list(),null,2));}finally{store.close();}});
 program.command('config').option('--profile <file>','Import a profile/files JSON into the local vault').action(async(options:{profile?:string})=>{
   const config=runtimeConfig();ensureDataDirectory(config.dataDir);const profile=new ProfileStore(join(config.dataDir,'profile.json'));

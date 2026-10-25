@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {request as httpRequest} from 'node:http';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {Browser} from '../src/browser/Browser.js';
@@ -284,4 +284,66 @@ test('dashboard marks private-network navigation as a security block',{timeout:3
     assert(session.dashboard.getAgent()?.events.some(event=>event.phase==='BLOCKED'));
     assert.match(await session.browser.page.locator('#control-state').innerText(),/security policy/i);
   }finally{await session.close();}
+});
+
+test('dashboard stores a key write-only, writes a procedure, runs it from a French request with approvals, then edits, exports and deletes it',{timeout:120000},async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fcu-ui-procedures-')),saved={dir:process.env.FCU_DATA_DIR,store:process.env.FCU_SECRET_STORE,key:process.env.DEEPSEEK_API_KEY};
+  process.env.FCU_DATA_DIR=join(dir,'data');process.env.FCU_SECRET_STORE='file';delete process.env.DEEPSEEK_API_KEY;
+  const provider:LLMProvider={name:'no-model-fixture',plan:async()=>{throw new Error('The procedure must not need the model');},repair:async()=>{throw new Error('The procedure must not need the model');}};
+  const fixture=await startFixtures(),dashboard=await startServer({port:0,quiet:true,provider}),browser=await new Browser({allowedOrigins:[dashboard.url]}).launch(),page=browser.page;
+  try{
+    await browser.navigate(dashboard.url);
+    await page.getByRole('button',{name:'Providers and keys ↗'}).click();
+    await page.getByLabel('DeepSeek API API key').fill('test-only-ui-key-123456');
+    await page.locator('#provider-list section',{hasText:'DeepSeek API'}).getByRole('button',{name:'Save key'}).click();
+    await page.getByText('DeepSeek API key saved locally.').waitFor();
+    await page.locator('#provider-list section',{hasText:'DeepSeek API'}).getByText(/Configured · deepseek-flash · Key from file/).waitFor();
+    assert(!(await page.content()).includes('test-only-ui-key-123456'),'The page never shows a stored key');
+    assert(!JSON.stringify(await page.evaluate(()=>fetch('/api/providers').then(response=>response.json()))).includes('test-only-ui-key-123456'));
+    await page.locator('#provider-list section',{hasText:'DeepSeek API'}).getByRole('button',{name:'Remove stored key'}).click();
+    await page.getByText('DeepSeek API key removed.').waitFor();
+    await page.locator('#providers-dialog').getByRole('button',{name:'Close providers'}).click();
+
+    await page.getByRole('button',{name:'Write steps'}).click();
+    await page.getByLabel('Name',{exact:true}).fill('Publish a Play production release');
+    await page.getByLabel('What it does (helps find it later)').fill('Upload an app bundle and send a production release for review');
+    await page.getByLabel('Steps, one per line').fill([`open ${fixture.url}/play/console`,'click "View app: {{params.app}}"','click button "Test and release"','click "Production"','click button "Create new release"',
+      'upload {{params.bundle}} to "Upload app bundle"','wait for "({{params.version}}) · Ready" (timeout 15s)','type "{{params.notes}}" into field "Release notes"','click "Next"','click "Save and publish"','click "Send changes for review"','expect "In review"'].join('\n'));
+    await page.getByRole('button',{name:'Save procedure'}).click();
+    await page.getByText('Saved “Publish a Play production release”').waitFor();
+
+    const bundle=join(dir,'snake-1.5.aab');await writeFile(bundle,'versionCode=15\nversionName=1.5\n');
+    await page.locator('#goal').fill(`Déploie la version 1.5 de l'app "Snake Arena" avec ${bundle}`);
+    await page.getByRole('button',{name:'Run task',exact:true}).click();
+    await page.getByText('A saved procedure matches your request. Fill in: notes.').waitFor();
+    assert.equal(await page.locator('#param-app').inputValue(),'Snake Arena');assert.equal(await page.locator('#param-version').inputValue(),'1.5');assert.equal(await page.locator('#param-bundle').inputValue(),bundle);
+    await page.locator('#param-notes').fill('Corrections');
+    await page.getByRole('button',{name:'Run procedure',exact:true}).click();
+    const reasons:string[]=[];
+    for(let attempt=0;attempt<200&&!(await page.locator('#control-state').textContent())?.includes('Task verified and completed');attempt++){
+      if(await page.locator('#approval').isVisible()){reasons.push((await page.locator('#approval-reason').textContent())??'');await page.locator('#approve').click();await page.locator('#approval').waitFor({state:'hidden'}).catch(()=>{});}
+      else await page.waitForTimeout(150);
+    }
+    const finalState=await page.evaluate(()=>fetch('/api/state').then(response=>response.json()) as Promise<{trace?:{status:string;error?:string};events:{phase:string;message:string}[]}>);
+    assert.equal(finalState.trace?.status,'completed',`${finalState.trace?.error} | ${await page.locator('#notice').textContent()} | ${finalState.events.slice(-5).map(event=>event.phase+': '+event.message).join(' / ')}`);
+    assert.equal(reasons.filter(reason=>/irreversible/i.test(reason)).length,2,'Publishing and sending each asked for approval');
+    assert(fixture.play.apps[0]!.releases.some(release=>release.versionCode===15&&release.status==='in_review'));
+
+    await page.getByRole('button',{name:/^Procedures/}).click();
+    await page.locator('#workflow-list').getByText(/1\/1 runs succeeded/).waitFor();
+    await page.getByRole('button',{name:'View / edit'}).click();await page.locator('#procedure-dialog').waitFor();
+    const edited=JSON.parse(await page.locator('#procedure-json').inputValue());edited.name='Play release';
+    await page.locator('#procedure-json').fill(JSON.stringify(edited));
+    await page.getByRole('button',{name:'Save as a new version'}).click();
+    await page.locator('#procedure-meta').getByText(/Version 2/).waitFor();
+    await page.locator('#procedure-dialog').getByRole('button',{name:'Close'}).click();
+    const href=await page.getByRole('link',{name:'Export'}).getAttribute('href');
+    const exported=await page.evaluate(url=>fetch(url).then(response=>response.text()),href!);
+    assert.equal(JSON.parse(exported).procedure.name,'Play release');assert(!exported.includes(dir),'Exports carry no file paths');
+    await page.getByRole('button',{name:'Delete'}).click();await page.getByRole('button',{name:'Confirm delete'}).click();
+    await page.getByText('Teach a procedure or complete a task to save the first one.').waitFor();
+  }finally{
+    await browser.close();await dashboard.close();await fixture.close();await rm(dir,{recursive:true,force:true});
+    for(const [name,value] of [['FCU_DATA_DIR',saved.dir],['FCU_SECRET_STORE',saved.store],['DEEPSEEK_API_KEY',saved.key]] as const)if(value===undefined)delete process.env[name];else process.env[name]=value;
+  }
 });

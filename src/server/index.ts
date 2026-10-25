@@ -8,20 +8,33 @@ import { checkedHttpURL } from '../browser/Browser.js';
 import { TraceStore } from '../history/TraceStore.js';
 import { ProfileStore } from '../profile/ProfileStore.js';
 import { VariableResolver } from '../profile/VariableResolver.js';
-import { WorkflowEngine } from '../workflows/WorkflowEngine.js';
+import { WorkflowEngine,ParameterSchema,type Parameter } from '../workflows/WorkflowEngine.js';
 import { ensureDataDirectory,runtimeConfig } from '../config.js';
-import { PlanSchema,TaskGoalSchema } from '../actions/schema.js';
+import { PlanSchema,TaskGoalSchema,type Action,type Condition } from '../actions/schema.js';
 import type { LLMProvider } from '../llm/LLMProvider.js';
+import { PROVIDER_IDS,PRESETS,ProviderIdSchema,providerStatuses } from '../llm/providers.js';
+import { secretStore } from '../profile/SecretStore.js';
+import { parseSteps } from '../teach/steps.js';
+import type { Recording } from '../teach/Recorder.js';
 
 const browserURL=z.url().refine(value=>{try{checkedHttpURL(value);return true;}catch{return false;}},'Only HTTP(S) destinations without embedded credentials are supported');
 const SitePermission=z.object({origin:z.url().refine(value=>{const url=new URL(value);return url.origin===value&&!url.username&&!url.password;},'Expected a canonical site origin')}).strict();
-const RunRequest=z.object({goal:TaskGoalSchema,url:browserURL,allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),mode:z.enum(['normal','ultra']).default('normal')}).strict();
+const RunSettings={allowedOrigins:z.array(browserURL).max(30).default([]),confirmation:z.enum(['sensitive','always','never']).default('sensitive'),mode:z.enum(['normal','ultra']).default('normal'),
+  provider:ProviderIdSchema.optional(),model:z.string().min(1).max(200).optional(),teachOnFailure:z.boolean().default(false)};
+const RunRequest=z.object({goal:TaskGoalSchema,url:browserURL,expectText:z.string().max(2000).optional(),expectUrl:z.string().max(2000).optional(),useWorkflows:z.boolean().default(true),...RunSettings}).strict();
+const ProcedureRun=z.object({id:z.string().min(1).max(40),values:z.record(z.string(),z.string().max(4000)).default({}),url:browserURL.optional(),...RunSettings}).strict();
+const Id=z.object({id:z.string().min(1).max(40)}).strict();
+// Values typed while teaching become parameters by name, e.g. {"app":"Snake Arena"}; values themselves are never stored.
+const SaveTeaching=z.object({name:z.string().min(1).max(120),description:z.string().max(1000).default(''),keywords:z.array(z.string().min(1).max(40)).max(30).default([]),
+  parameters:z.array(ParameterSchema.and(z.object({value:z.string().max(4000).optional()}))).max(20).default([]),runId:z.string().max(100).optional(),steps:z.string().max(20000).optional()}).strict();
 const Manual=z.discriminatedUnion('type',[
   z.object({type:z.literal('click'),x:z.number().min(0).max(10000),y:z.number().min(0).max(10000)}).strict(),
   z.object({type:z.literal('type'),value:z.string().max(10000)}).strict(),
   z.object({type:z.literal('press'),value:z.string().max(50)}).strict(),
   z.object({type:z.literal('scroll'),y:z.number().min(-10000).max(10000)}).strict(),
   z.object({type:z.literal('navigate'),url:browserURL}).strict(),
+  // A headless browser shows no file chooser: click the upload control and attach a file from the local vault.
+  z.object({type:z.literal('upload'),x:z.number().min(0).max(10000),y:z.number().min(0).max(10000),file:z.string().regex(/^\{\{files\.[\w-]+\}\}$/)}).strict(),
 ]);
 async function body(req:IncomingMessage):Promise<unknown>{
   const chunks:Buffer[]=[];let bytes=0;for await(const chunk of req){const part=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);bytes+=part.length;if(bytes>65536)throw new Error('Request too large');chunks.push(part);}
@@ -37,6 +50,24 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
   const previous=store.history(1)[0],savedTrace=previous?store.get(String(previous.id)):undefined;
   const restored=savedTrace?.status==='running'?undefined:savedTrace;
   const listeners=new Set<ServerResponse>();let origin='';
+  const procedures=new WorkflowEngine(store);let recording:(Recording&{startUrl:string;structure:string})|undefined;
+  type Settings={allowedOrigins:string[];confirmation:'sensitive'|'always'|'never';mode:'normal'|'ultra';provider?:z.infer<typeof ProviderIdSchema>;model?:string;teachOnFailure:boolean};
+  const runOptions=async(settings:Settings,start:string,extra:Partial<Omit<AgentOptions,'store'>>={})=>{
+    const fresh=runtimeConfig({provider:settings.provider,model:settings.model});
+    if(settings.provider&&!fresh.provider&&!options.provider)throw new Error(`${PRESETS[settings.provider].label} is not configured`);
+    return{provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),confirmation:settings.confirmation,mode:settings.mode,teachOnFailure:settings.teachOnFailure,
+      maxSteps:fresh.maxSteps??undefined,maxDurationMs:fresh.maxDurationMs??undefined,downloadDir:join(config.dataDir,'downloads'),
+      browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(start).origin,...settings.allowedOrigins.map(url=>new URL(url).origin)]},...extra} satisfies Omit<AgentOptions,'store'>;
+  };
+  const ready=async(settings:Omit<AgentOptions,'store'>)=>{
+    if(agent){await agent.prepareForNextRun(settings);return agent;}
+    const created=new Agent({store,...settings});agent=created;
+    created.on('event',event=>{for(const listener of listeners)listener.write(`data: ${JSON.stringify(event)}\n\n`);});
+    created.browser.interaction.on('pointer',pointer=>{for(const listener of listeners)listener.write(`event: pointer\ndata: ${JSON.stringify({runId:created.trace?.id,pointer})}\n\n`);});
+    return created;
+  };
+  const begin=(running:Agent,task:Promise<unknown>)=>{pending=task.catch(error=>running.event('ERROR',error instanceof Error?error.message:'Task failed')).finally(()=>{pending=undefined;});};
+  const idle=()=>{if(agent?.active||pending)throw new Error('A task is already running');if(agent?.recorder.active)throw new Error('Finish teaching first');};
   const server=createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
@@ -59,8 +90,9 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
       }
       if(req.method==='GET'&&path==='/api/state'){
         send(200,{active:agent?.active??false,paused:agent?.control.paused??false,pending:agent?.control.pending,
-          trace:agent?.trace?redactLocalData({...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}):restored?redactLocalData(restored):undefined,approvedSites:agent?.approvedSites.map(redactLocal)??[],state:agent?.state?{url:redactLocal(agent.state.url),title:redactLocal(agent.state.title),hash:agent.state.hash,warnings:agent.state.warnings.map(redactLocal),elements:agent.state.elements.length}:undefined,
-          pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?redactLocal(agent.browser.page.url()):undefined,events:agent?.events.map(event=>redactLocalData(event))??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12).map(row=>redactLocalData(row)),workflows:new WorkflowEngine(store).list()});return;
+          teaching:agent?.recorder.active??false,recorded:agent?.recorder.count??0,taskLimits:{maxSteps:config.maxSteps,maxDurationMs:config.maxDurationMs},
+          trace:agent?.trace?redactLocalData({...agent.trace,metrics:agent.active?{...agent.budget.snapshot(agent.trace.actions.filter(a=>a.success).length),browserActions:agent.trace.actions.filter(a=>a.success).length}:agent.trace.metrics}):!agent&&restored?redactLocalData(restored):undefined,approvedSites:agent?.approvedSites.map(redactLocal)??[],state:agent?.state?{url:redactLocal(agent.state.url),title:redactLocal(agent.state.title),hash:agent.state.hash,warnings:agent.state.warnings.map(redactLocal),elements:agent.state.elements.length}:undefined,
+          pointer:agent?.browser.interaction.snapshot(),browserUrl:agent?.browser.page?redactLocal(agent.browser.page.url()):undefined,events:agent?.events.map(event=>redactLocalData(event))??[],model:options.provider?.name??config.provider?.name??'Local workflows only',configured:!!(options.provider??config.provider),limits:config.budget.limits,history:store.history(12).map(row=>redactLocalData(row)),workflows:procedures.list()});return;
       }
       if(req.method==='GET'&&path==='/api/events'){
         res.writeHead(200,{'Content-Type':'text/event-stream','Connection':'keep-alive'});res.write(': connected\n\n');listeners.add(res);req.on('close',()=>listeners.delete(res));return;
@@ -87,24 +119,83 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
         await profiles.save(await body(req));send(200,{saved:true});return;
       }
       if(req.method==='POST'&&['/api/run','/api/replay'].includes(path)){
-        if(agent?.active||pending)throw new Error('A task is already running');
+        idle();
         const input=await body(req);
         const replay=path==='/api/replay'?store.get(z.object({id:z.string()}).strict().parse(input).id):undefined;
         if(path==='/api/replay'&&!replay)throw new Error('Run not found');
         const request=replay?RunRequest.parse({goal:replay.goal,url:replay.url}):RunRequest.parse(input);
-        const fresh=runtimeConfig(),runOptions={provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),useWorkflows:request.useWorkflows,confirmation:request.confirmation,mode:request.mode,
-          completionCriteria:[...(request.expectText?[{type:'text_exists' as const,value:request.expectText}]:[]),...(request.expectUrl?[{type:'url_contains' as const,value:request.expectUrl}]:[])],
-          downloadDir:join(config.dataDir,'downloads'),browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(request.url).origin,...request.allowedOrigins.map(url=>new URL(url).origin)]}} satisfies Omit<AgentOptions,'store'>;
-        if(agent)await agent.prepareForNextRun(runOptions);
-        else{
-          agent=new Agent({store,...runOptions});
-          agent.on('event',event=>{for(const listener of listeners)listener.write(`data: ${JSON.stringify(event)}\n\n`);});
-          const running=agent;
-          running.browser.interaction.on('pointer',pointer=>{for(const listener of listeners)listener.write(`event: pointer\ndata: ${JSON.stringify({runId:running.trace?.id,pointer})}\n\n`);});
-        }
-        const running=agent;
-        pending=(replay?running.replay(replay):running.run(request.goal,request.url)).catch(error=>running.event('ERROR',error instanceof Error?error.message:'Task failed')).finally(()=>{pending=undefined;});
+        const running=await ready(await runOptions(request,request.url,{useWorkflows:request.useWorkflows,
+          completionCriteria:[...(request.expectText?[{type:'text_exists' as const,value:request.expectText}]:[]),...(request.expectUrl?[{type:'url_contains' as const,value:request.expectUrl}]:[])]}));
+        begin(running,replay?running.replay(replay):running.run(request.goal,request.url));
         send(202,{started:true});return;
+      }
+      if(req.method==='GET'&&path==='/api/providers'){send(200,{providers:providerStatuses(process.env,runtimeConfig().secrets)});return;}
+      if(req.method==='POST'&&path==='/api/providers/test'){
+        const input=z.object({provider:ProviderIdSchema,model:z.string().min(1).max(200).optional()}).strict().parse(await body(req));
+        const provider=runtimeConfig(input).provider;if(!provider?.testConnection)throw new Error(`${PRESETS[input.provider].label} is not configured`);
+        send(200,await provider.testConnection());return;
+      }
+      if(req.method==='POST'&&path==='/api/providers/key'){
+        // Write-only: keys are stored, never returned.
+        const input=z.object({provider:ProviderIdSchema,key:z.string().max(600).optional(),remove:z.boolean().optional()}).strict().parse(await body(req));
+        if(PRESETS[input.provider].route!=='api'||!PRESETS[input.provider].keyEnv)throw new Error('This provider signs in through its own CLI');
+        const secrets=secretStore(config.dataDir);
+        if(input.remove)secrets.delete(input.provider);else secrets.set(input.provider,(input.key??'').trim());
+        send(200,{saved:!input.remove,removed:!!input.remove,store:secrets.kind});return;
+      }
+      if(req.method==='GET'&&path==='/api/procedures'){send(200,{procedures:procedures.list()});return;}
+      if(req.method==='GET'&&path==='/api/procedure'){
+        const id=z.string().min(1).max(40).parse(new URL(req.url??'/',origin).searchParams.get('id')),workflow=procedures.get(id);if(!workflow)throw new Error('Procedure not found');
+        send(200,{procedure:workflow,runs:procedures.runs(id),summary:procedures.summary(id)});return;
+      }
+      if(req.method==='GET'&&path==='/api/procedure/export'){
+        const id=z.string().min(1).max(40).parse(new URL(req.url??'/',origin).searchParams.get('id')),exported=procedures.export(id);
+        res.writeHead(200,{'Content-Type':'application/json','Content-Disposition':`attachment; filename="${exported.procedure.name.replace(/[^\w-]+/g,'-').slice(0,60)||'procedure'}.fcu.json"`});res.end(JSON.stringify(exported,null,2));return;
+      }
+      if(req.method==='POST'&&path==='/api/procedures/find'){
+        const input=z.object({goal:TaskGoalSchema,url:browserURL.optional()}).strict().parse(await body(req));
+        send(200,{matches:procedures.find(input.goal,input.url).slice(0,5).map(match=>({id:match.workflow.id,name:procedures.label(match.workflow),score:match.score,values:match.values,parameters:match.workflow.parameters??[],missing:match.missing.map(param=>param.name)}))});return;
+      }
+      if(req.method==='POST'&&path==='/api/procedures/run'){
+        idle();
+        const request=ProcedureRun.parse(await body(req)),workflow=procedures.get(request.id);if(!workflow)throw new Error('Procedure not found');
+        const running=await ready(await runOptions(request,request.url??procedures.startUrl(workflow)));
+        begin(running,running.runProcedure(request.id,request.values,request.url));
+        send(202,{started:true});return;
+      }
+      if(req.method==='POST'&&path==='/api/teach/start'){
+        idle();
+        const input=z.object({url:browserURL,...RunSettings}).strict().parse(await body(req));
+        const running=await ready(await runOptions(input,input.url));recording=undefined;
+        begin(running,running.startTeaching(input.url));
+        send(202,{started:true});return;
+      }
+      if(req.method==='POST'&&path==='/api/teach/stop'){
+        if(!agent?.recorder.active)throw new Error('Nothing is being recorded');
+        recording=agent.finishTeaching();send(200,{actions:recording.actions,parameters:recording.parameters,startUrl:redactLocal(recording.startUrl)});return;
+      }
+      if(req.method==='POST'&&path==='/api/procedures/create'){
+        const input=SaveTeaching.and(z.object({expectText:z.string().max(2000).optional()})).parse(await body(req));
+        let actions:Action[],startUrl:string,structure='',source:'taught'|'learned'='taught',completion:Condition[]=[],found:Parameter[]=[];
+        if(input.steps){const parsed=parseSteps(input.steps,input.name);if(!parsed.startUrl)throw new Error('Start the steps with: open <url>');({actions,completion}=parsed.plan);startUrl=parsed.startUrl;found=parsed.parameters;}
+        else if(input.runId){const trace=store.get(input.runId);if(trace?.status!=='completed')throw new Error('Only a completed run can become a procedure');actions=trace.actions.filter(result=>result.success).map(result=>result.action);startUrl=trace.url;source='learned';completion=trace.completion;}
+        else{if(!recording)throw new Error('Teach the procedure first');({actions,startUrl,structure}=recording);found=recording.parameters;}
+        const parameters=[...input.parameters,...found.filter(param=>!input.parameters.some(item=>item.name===param.name))];
+        const created=procedures.saveSteps({...input,startUrl,actions,completion,parameters},source,{structure,learnedFrom:input.runId});
+        if(!input.steps&&!input.runId)recording=undefined;
+        send(200,{procedure:created});return;
+      }
+      if(req.method==='POST'&&path.startsWith('/api/procedures/')){
+        const command=path.slice('/api/procedures/'.length),input=await body(req);
+        if(command==='import'){send(200,{procedure:procedures.import(input)});return;}
+        const {id}=z.object({id:z.string().min(1).max(40)}).loose().parse(input);
+        if(command==='rename'){send(200,{procedure:procedures.rename(id,z.object({id:z.string(),name:z.string().min(1).max(120)}).strict().parse(input).name)});return;}
+        // update() validates the merged procedure strictly.
+        if(command==='update'){const {id:_id,...patch}=input as Record<string,unknown>;send(200,{procedure:procedures.update(id,patch,'Edited in the dashboard')});return;}
+        if(command==='duplicate'){Id.parse(input);send(200,{procedure:procedures.duplicate(id)});return;}
+        if(command==='delete'){Id.parse(input);send(200,{deleted:procedures.remove(id)});return;}
+        if(command==='restore'){send(200,{procedure:procedures.restore(id,z.object({id:z.string(),version:z.number().int().min(1)}).strict().parse(input).version)});return;}
+        throw new Error('Unknown procedure command');
       }
       if(req.method==='POST'&&path.startsWith('/api/control/')){
         if(!agent)throw new Error('No browser task yet');
@@ -123,6 +214,10 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
           if(action.type==='press')await page.keyboard.press(action.value);
           if(action.type==='scroll')await agent.browser.interaction.scroll(action.y,manualOptions);
           if(action.type==='navigate')await agent.browser.navigate(action.url);
+          if(action.type==='upload'){
+            const file=agent.variables.file(action.file),chooser=page.waitForEvent('filechooser',{timeout:4000});
+            await agent.browser.interaction.manualClick(action.x,action.y,manualOptions);await (await chooser).setFiles(file);
+          }
           await agent.observe();
         }else throw new Error('Unknown control');send(200,{ok:true});return;
       }
