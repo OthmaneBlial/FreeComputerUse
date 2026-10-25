@@ -69,7 +69,7 @@ export class Executor {
     try {
       await this.control.checkpoint();
       let locator:Locator|undefined;
-      if('target'in action&&action.target){const selected=await this.observer.selectors.resolve(this.browser.page,action.target,action.timeoutMs,action.type==='extract');locator=selected.locator;strategy=selected.strategy;}
+      if('target'in action&&action.target){const selected=await this.observer.selectors.resolve(this.browser.page,action.target,action.timeoutMs,action.type==='extract',action.alternatives);locator=selected.locator;strategy=selected.strategy;}
       action=await this.compiler.normalize(action,locator);
       receiptAction=this.semantic(action);
       const reason=await sensitiveReason(action,locator);

@@ -369,3 +369,23 @@ test('an open modal exposes its controls and excludes the blocked background',as
     assert.deepEqual(state.elements.map(e=>e.name),['Close Journey details']);assert(state.text.includes('Regional route evidence'));assert(!state.text.includes('Background data'));
   }finally{await browser.close();}
 });
+
+test('selectors tolerate unknown roles, small label changes and recorded alternatives without guessing',async()=>{
+  const browser=await new Browser().launch();
+  try{
+    await browser.page.setContent('<a href="#v">View app</a><button>Create new release</button><button>Save</button><button>Save draft</button><label for="notes">Release notes</label><textarea id="notes"></textarea><button data-testid="upload">Upload</button>');
+    const selectors=new Observer().selectors,page=browser.page;
+    assert.equal((await selectors.resolve(page,{name:'View app'},300)).strategy,'name','A taught step may omit the role');
+    assert.equal((await selectors.resolve(page,{role:'button',name:'Create new release'},300)).strategy,'role');
+    await page.locator('button').nth(0).evaluate(el=>{el.textContent='Create  new release!';});
+    assert.equal((await selectors.resolve(page,{role:'button',name:'create new release'},300)).strategy,'normalized','Case, spacing and punctuation changes still match');
+    await page.locator('label').evaluate(el=>{el.textContent='Release Notes:';});
+    assert.equal((await selectors.resolve(page,{label:'Release notes'},300)).strategy,'normalized');
+    assert.equal((await selectors.resolve(page,{role:'button',name:'Upload file'},300,false,[{testId:'upload'}])).strategy,'alternative-testId');
+    await assert.rejects(selectors.resolve(page,{role:'button',name:'Publish'},300,false,[{role:'button',name:'Missing'}]),/Target missing or ambiguous/,'No match is never guessed');
+    assert.equal((await selectors.resolve(page,{role:'button',name:'Save'},300)).strategy,'role','Loose matching never replaces an exact unique match');
+    await page.evaluate(()=>document.body.insertAdjacentHTML('beforeend','<button>Delete</button><button>delete!</button>'));
+    await assert.rejects(selectors.resolve(page,{role:'button',name:'DELETE'},300),/ambiguous/,'Two loose matches are ambiguous');
+    assert.throws(()=>ActionSchema.parse({type:'click',target:{name:'x'},alternatives:new Array(7).fill({name:'y'})}));
+  }finally{await browser.close();}
+});

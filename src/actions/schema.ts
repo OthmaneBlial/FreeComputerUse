@@ -33,6 +33,8 @@ const meta = {
   sensitive: z.boolean().optional(),
   verify: z.array(ConditionSchema).max(12).optional(),
   timeoutMs: z.number().int().min(100).max(30000).optional(),
+  // Other ways to find the same control, kept from earlier runs or demonstrations.
+  alternatives: z.array(SemanticTargetSchema).max(6).optional(),
 };
 export const ActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('switchTab'), index: z.number().int().min(0).max(100), ...meta }).strict(),
