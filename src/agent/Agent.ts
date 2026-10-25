@@ -34,6 +34,10 @@ export interface AgentOptions {
   teachOnFailure?:boolean;
 }
 export interface AgentEvent {phase:string;message:string;time:number;data?:unknown}
+/** Success texts also accept equivalent texts, e.g. the same status in another interface language. */
+function withTexts(checks:Condition[],texts:string[]):Condition[]{
+  return checks.map(condition=>condition.type!=='text_exists'||!texts.length?condition:{...condition,alternatives:[...new Set([...condition.alternatives??[],...texts])].filter(value=>value!==condition.value).slice(0,6)});
+}
 export class Agent extends EventEmitter {
   readonly browser:Browser;readonly observer=new Observer();readonly control=new Control();readonly recorder=new Recorder();
   readonly variables:VariableResolver;readonly executor:Executor;readonly workflows:WorkflowEngine;
@@ -140,7 +144,9 @@ export class Agent extends EventEmitter {
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);this.active=true;
     const repeated=new Map<string,number>(),repeatRecoveries=new Set<string>(),navigations=new Map<string,number>(),completed:string[]=[];
-    let revision=this.control.revision,completionReplans=0,replanned=false,replacedChecks:Condition[]=[];
+    let revision=this.control.revision,completionReplans=0,replanned=false,unmatched:Action[]=[];
+    // A procedure's success checks are the user's: repairs cannot replace them, and a re-plan can only add equivalent texts.
+    const savedChecks=this.procedure?.plan.completion??[];let freshTexts:string[]=[];
     try{
       if(!this.browser.context)await this.browser.launch();
       this.watchLastPageClose();
@@ -185,7 +191,7 @@ export class Agent extends EventEmitter {
           withinTime();
           if(!provider)throw new Error('No matching local strategy/workflow; configure an LLM provider');
           this.event('PLAN','Requesting one action batch');planCalls++;
-          plan=await provider.plan(this.context(goal,this.state!,completed,previous));
+          plan=await provider.plan({...this.context(goal,this.state!,completed,previous),...(unmatched.length?{savedSteps:JSON.parse(this.variables.redact(JSON.stringify(unmatched))),savedChecks:JSON.parse(this.variables.redact(JSON.stringify(savedChecks)))}:{})});
         }
         const batchState=this.state!;
         plan=PlanSchema.parse(this.fileParams(plan));trace.plans.push(plan);this.event('PLAN','Validated plan',plan);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);
@@ -235,7 +241,8 @@ export class Agent extends EventEmitter {
           // Several saved steps no longer match (e.g. another interface language): one fresh plan from here costs less than a repair per step.
           // The new plan's checks decide, since the saved success text may be in the other language; the saved checks are merged on save.
           if(this.procedure&&!replanned&&repairs>=2){
-            replanned=true;replacedChecks=plan.completion;previous=batchState;plan=undefined;
+            replanned=true;previous=batchState;plan=undefined;
+            unmatched=actions.slice(index);
             this.event('PLAN','The saved steps no longer match this page; planning the rest from here');break;
           }
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
@@ -267,7 +274,8 @@ export class Agent extends EventEmitter {
           actions.splice(index,replace,...added);
         }
         if(!plan)continue;
-        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
+        if(replanned)freshTexts=plan.completion.flatMap(condition=>condition.type==='text_exists'?[condition.value,...condition.alternatives??[]]:[]);
+        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...withTexts(savedChecks,freshTexts),...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);
         if(!verification.success){
@@ -299,7 +307,7 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs,replacedChecks);
+      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs,freshTexts);
       else if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
       this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
@@ -340,7 +348,7 @@ export class Agent extends EventEmitter {
     if(steps.length)this.event('TEACH',`Learned ${steps.length} demonstrated step(s)`,steps);
     return steps;
   }
-  private finishProcedure(workflow:Workflow,safe:Trace,raw:Trace,repairs:number,kept:Condition[]){
+  private finishProcedure(workflow:Workflow,safe:Trace,raw:Trace,repairs:number,texts:string[]){
     const demonstrated=safe.actions.some(result=>result.strategy==='human-demonstration'),changed=repairs>0||demonstrated;
     try{this.workflows.recordRun(workflow.id,safe,changed);}catch{this.event('CACHE','Procedure run history could not be saved');}
     if(safe.status!=='completed'||!changed)return;
@@ -353,11 +361,8 @@ export class Agent extends EventEmitter {
         const others=[...(step.alternatives??[]),prev.target,...(prev.alternatives??[])].filter(target=>key(target)!==key(step.target));
         if(others.length)step.alternatives=[...new Map(others.map(target=>[key(target),target])).values()].slice(0,6);
       });
-      // After a re-plan, the saved success text gains the text this run verified as an alternative (e.g. its translation).
-      const latest=raw.plans.at(-1)?.completion??workflow.plan.completion,fresh=latest.filter(condition=>condition.type==='text_exists');
-      const merged=!kept.length?latest:kept.map(condition=>condition.type!=='text_exists'||fresh.length!==1?condition:{...condition,
-        alternatives:[...new Set([...condition.alternatives??[],fresh[0]!.value,...fresh[0]!.alternatives??[]])].filter(value=>value!==condition.value).slice(0,6)});
-      const completion=parameterize(merged,values);
+      // The saved checks stay; after a re-plan, their texts gain the equivalent texts this run verified (e.g. a translation).
+      const completion=parameterize(withTexts(workflow.plan.completion,texts),values);
       const parameters=[...workflow.parameters??[],...this.demonstrated.filter(param=>!workflow.parameters?.some(known=>known.name===param.name))];
       const updated=this.workflows.update(workflow.id,{plan:{...workflow.plan,actions,completion},parameters},`${demonstrated?'Demonstrated':'Repaired'} during ${safe.id}`,'repaired');
       this.event('CACHE',`Saved procedure version ${updated.version}`);

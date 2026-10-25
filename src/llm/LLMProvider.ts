@@ -3,6 +3,10 @@ import type { Usage } from '../agent/TokenBudget.js';
 export interface PlanningContext {
   goal:string;page:string;aliases:{profile:string[];files:string[];params?:string[]};
   completed:string[];allowedOrigins:string[];phase?:string;
+  /** A procedure's remaining saved steps, as guidance when they no longer match the page (labels may be translated). */
+  savedSteps?:unknown[];
+  /** The procedure's success checks; a re-plan returns their equivalent on this page. */
+  savedChecks?:unknown[];
   trustedCompletionCriteria?:unknown[];
 }
 export interface RepairContext extends PlanningContext {

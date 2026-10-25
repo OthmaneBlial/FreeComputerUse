@@ -198,7 +198,7 @@ test('a replay whose steps mostly broke re-plans once and saves a version, with 
   const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
   const provider:LLMProvider={name:'fixture',
     repair:async context=>{repairs++;const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
-    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'Terminé'}],continue:false};}};
+    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);assert.deepEqual(context.savedSteps,[{type:'click',target:{role:'button',name:'Three'}}],'The planner sees the saved steps not done yet');assert.deepEqual(context.savedChecks,[{type:'text_exists',value:'All done'}]);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'Terminé'}],continue:false};}};
   const agent=new Agent({store,provider,mode:'ultra'});  try{
     const french=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
     assert.equal(french.status,'completed',french.error??'Task failed');assert.deepEqual([repairs,plans],[2,1],'Two repairs, then one plan for the rest');
@@ -212,17 +212,19 @@ test('a replay whose steps mostly broke re-plans once and saves a version, with 
   }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
-test('a model that names a procedure file parameter as a vault file still uploads that file',async()=>{
+test('a model that names a procedure file parameter as a vault file still uploads that file, and cannot replace the saved check',async()=>{
   const server=createServer((_req,res)=>{res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end('<input type="file" aria-label="Attachment" onchange="document.body.insertAdjacentHTML(\'beforeend\',\'<p>Attached \'+this.files[0].name+\'</p>\')">');});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
   const directory=await mkdtemp(join(tmpdir(),'fcu-file-param-')),doc=join(directory,'notes.txt');await writeFile(doc,'notes');
   const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);
   const saved=engine.create({name:'Attach notes',startUrl:origin+'/',parameters:[{name:'doc',kind:'file',required:true}],plan:{goal:'Attach',steps:['Attach'],actions:[{type:'upload',target:{label:'Old attachment'},file:'{{params.doc}}',timeoutMs:100}],completion:[{type:'text_exists',value:'Attached notes.txt'}],continue:false}},'taught');
-  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>RepairSchema.parse({actions:[{type:'upload',target:{label:'Attachment'},file:'{{files.doc}}'}],replace:1})};
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>RepairSchema.parse({actions:[{type:'upload',target:{label:'Attachment'},file:'{{files.doc}}'}],replace:1,completion:[{type:'url_contains',value:'/'}]})};
   const agent=new Agent({store,provider});agent.control.on('approval',()=>agent.control.approve());
   try{
     const trace=await agent.runProcedure(saved.id,{doc},origin+'/');
     assert.equal(trace.status,'completed',trace.error??'Task failed');
     assert(JSON.stringify(trace.actions.at(-1)!.action).includes('{{params.doc}}'));
+    assert(trace.completion.some(condition=>condition.type==='text_exists'&&condition.value==='Attached notes.txt'),'The saved check was still verified');
+    const repaired=engine.get(saved.id)!;assert.equal(repaired.version,2);assert.deepEqual(repaired.plan.completion,[{type:'text_exists',value:'Attached notes.txt'}],'A repair cannot weaken the saved check');
   }finally{await agent.close();store.close();await rm(directory,{recursive:true,force:true});await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
