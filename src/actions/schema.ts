@@ -7,7 +7,10 @@ export const SemanticTargetSchema = z.object({
   placeholder: text.optional(), testId: text.optional(), id: text.optional(),
   attributeName: text.optional(), text: text.optional(), css: text.optional(),
   frame: z.number().int().min(0).optional(),
-}).strict().refine(t => Object.keys(t).some(k => k !== 'frame'), 'Empty target');
+  // Vision fallback only: CSS pixels in the attached viewport screenshot.
+  x: z.number().min(0).max(20000).optional(), y: z.number().min(0).max(20000).optional(),
+}).strict().refine(t => Object.keys(t).some(k => k !== 'frame'), 'Empty target')
+  .refine(t => (t.x === undefined) === (t.y === undefined), 'A point target needs both x and y');
 export const TargetSchema = z.union([text, SemanticTargetSchema]);
 export type SemanticTarget = z.infer<typeof SemanticTargetSchema>;
 export type Target = z.infer<typeof TargetSchema>;

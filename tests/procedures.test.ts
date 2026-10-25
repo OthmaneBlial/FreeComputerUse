@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp,rm,writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Agent } from '../src/agent/Agent.js';
@@ -186,4 +187,26 @@ test('a taught Play release survives restart, replays with new parameters, stops
       assert.equal(summary.runs,6);assert.equal(summary.completed,4);
     }finally{await agent.close();store.close();}
   }finally{await fixture.close();await rm(directory,{recursive:true,force:true});}
+});
+
+test('a replay whose steps mostly broke re-plans once, keeps the procedure checks, and saves a version that runs on both interfaces',async()=>{
+  const labels={en:['One','Two','Three'],fr:['Un','Deux','Trois']};
+  const server=createServer((req,res)=>{const lang=new URL(req.url??'/','http://x').searchParams.get('lang')==='fr'?'fr':'en';res.writeHead(200,{'content-type':'text/html'});
+    res.end(`<p id="log"></p>${labels[lang].map((label,i)=>`<button onclick="log.textContent+='${i+1}';if(log.textContent==='123')document.body.insertAdjacentHTML('beforeend','<p>All done</p>')">${label}</button>`).join('')}`);});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
+  const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);let plans=0,repairs=0;
+  const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
+  const provider:LLMProvider={name:'fixture',
+    repair:async context=>{repairs++;const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
+    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'3'}],continue:false};}};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    const french=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
+    assert.equal(french.status,'completed',french.error??'Task failed');assert.deepEqual([repairs,plans],[2,1],'Two repairs, then one plan for the rest');
+    assert(french.completion.some(condition=>condition.type==='text_exists'&&condition.value==='All done'),'The procedure check was still required');
+    const version=engine.get(saved.id)!;assert.equal(version.version,2);
+    assert.deepEqual(version.plan.actions.map(action=>'alternatives'in action?action.alternatives:undefined),labels.en.map(name=>[{role:'button',name}]),'Each French step keeps its English target');
+    const english=await agent.runProcedure(saved.id,{},origin+'/');
+    assert.equal(english.status,'completed',english.error??'Task failed');assert.equal(english.metrics.llmCalls,0);assert.deepEqual([repairs,plans],[2,1]);
+  }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

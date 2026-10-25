@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Locator, Page, Frame } from 'playwright';
 import type { Target, SemanticTarget } from '../actions/schema.js';
 import type { PageElement } from './types.js';
@@ -54,6 +55,12 @@ export class SelectorEngine {
     const t=this.descriptor(target), observed=this.element(target);
     const root=page.frames()[t.frame??0];
     if(!root)throw new Error('Target frame no longer exists');
+    // A screenshot point becomes the element under it, so the usual action policy checks still see a real element.
+    if(t.x!==undefined&&t.y!==undefined){
+      const token=randomUUID();
+      if(!await page.evaluate(([x,y,token])=>{const el=document.elementFromPoint(x,y);el?.setAttribute('data-fcu-point',token);return !!el;},[t.x,t.y,token] as const))throw new Error('No element at that point');
+      return{locator:page.locator(`[data-fcu-point="${token}"]`),strategy:'point'};
+    }
     const deadline=Date.now()+timeoutMs;
     const others=alternatives.map(alternative=>this.descriptor(alternative)).map(alternative=>({target:alternative,root:page.frames()[alternative.frame??0]})).filter((item):item is {target:SemanticTarget;root:Frame}=>!!item.root);
     while(true) {

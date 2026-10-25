@@ -56,7 +56,7 @@ export async function startServer(options:{port?:number;headed?:boolean;quiet?:b
     const fresh=runtimeConfig({provider:settings.provider,model:settings.model});
     if(settings.provider&&!fresh.provider&&!options.provider)throw new Error(`${PRESETS[settings.provider].label} is not configured`);
     return{provider:options.provider??fresh.provider,budget:fresh.budget,vault:await profiles.load(),confirmation:settings.confirmation,mode:settings.mode,teachOnFailure:settings.teachOnFailure,
-      maxSteps:fresh.maxSteps??undefined,maxDurationMs:fresh.maxDurationMs??undefined,downloadDir:join(config.dataDir,'downloads'),
+      maxSteps:fresh.maxSteps??undefined,maxDurationMs:fresh.maxDurationMs??undefined,vision:fresh.vision,downloadDir:join(config.dataDir,'downloads'),
       browser:{visualInteraction:true,headless:!options.headed,profileDir:join(config.dataDir,'browser'),allowedOrigins:[new URL(start).origin,...settings.allowedOrigins.map(url=>new URL(url).origin)]},...extra} satisfies Omit<AgentOptions,'store'>;
   };
   const ready=async(settings:Omit<AgentOptions,'store'>)=>{

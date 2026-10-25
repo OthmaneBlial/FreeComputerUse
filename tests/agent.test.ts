@@ -477,6 +477,40 @@ test('download goals cannot complete without creating a browser download',async(
   }finally{await agent.close();store.close();await fixture.close();}
 });
 
+test('with vision on, a last-resort repair sees a masked screenshot and can click a canvas point; the point is never learned',async()=>{
+  const store=new TraceStore(':memory:');const seen:(string|undefined)[]=[];
+  const provider:LLMProvider={name:'fixture',vision:true,plan:async()=>{throw new Error('Unexpected plan');},repair:async context=>{seen.push(context.screenshot);
+    return{actions:[{type:'click',target:context.screenshot?{x:150,y:40}:{role:'button',name:'Still missing '+seen.length}}],replace:1};}};
+  const agent=new Agent({store,provider,mode:'ultra',vision:true,maxRepairs:3});
+  try{
+    await agent.browser.launch();
+    await agent.browser.page.setContent(`<input value="private-value"><canvas width="200" height="80" style="position:fixed;left:0;top:0"></canvas><p id="out">Waiting</p><script>
+      const c=document.querySelector('canvas'),g=c.getContext('2d');g.fillRect(120,20,60,40);
+      c.onclick=e=>{if(e.offsetX>120&&e.offsetX<180&&e.offsetY>20&&e.offsetY<60)document.getElementById('out').textContent='Drawn button pressed';};</script>`);
+    const plan=PlanSchema.parse({goal:'Press the drawn button',steps:['Press'],actions:[{type:'click',target:{role:'button',name:'Go'},timeoutMs:100}],completion:[{type:'text_exists',value:'Drawn button pressed'}],continue:false});
+    const trace=await agent.run('Press the drawn button',undefined,plan);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');
+    assert.deepEqual(seen.map(Boolean),[false,false,true],'Only the third repair carries a screenshot');
+    assert(Buffer.from(seen[2]!,'base64').subarray(0,2).equals(Buffer.from([0xff,0xd8])),'The screenshot is a JPEG');
+    assert.equal(agent.workflows.list().length,0,'A run that needed a point is not learned');
+  }finally{await agent.close();store.close();}
+});
+
+test('a repair that restates the following steps runs them once and keeps the old target as an alternative',async()=>{
+  const store=new TraceStore(':memory:');
+  const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>({actions:[{type:'click',target:{role:'button',name:'Review release'}},{type:'click',target:{role:'button',name:'Save'}},{type:'click',target:{role:'button',name:'Send'}}],replace:1})};
+  const agent=new Agent({store,provider,mode:'ultra'});
+  try{
+    await agent.browser.launch();
+    await agent.browser.page.setContent('<p id="log"></p><button onclick="log.textContent+=\'R\'">Review release</button><button onclick="log.textContent+=\'S\'">Save</button><button onclick="log.textContent+=\'D\'">Send</button>');
+    const plan=PlanSchema.parse({goal:'Send',steps:['Send'],actions:[{type:'click',target:{role:'button',name:'Next'},timeoutMs:100},{type:'click',target:{role:'button',name:'Save'}},{type:'click',target:{role:'button',name:'Send'}}],completion:[{type:'text_exists',value:'RSD'}],continue:false});
+    const trace=await agent.run('Send the release',undefined,plan);
+    assert.equal(trace.status,'completed',trace.error??'Task failed');assert.equal(await agent.browser.page.locator('#log').textContent(),'RSD');
+    const review=trace.actions.find(result=>result.success&&JSON.stringify(result.action).includes('Review release'))!.action as {alternatives?:unknown[]};
+    assert.deepEqual(review.alternatives,[{role:'button',name:'Next'}]);
+  }finally{await agent.close();store.close();}
+});
+
 test('an empty repair drops a failed duplicate step and the run completes when its checks hold',async()=>{
   const fixture=await startFixtures(),store=new TraceStore(':memory:');let repairs=0;
   const provider:LLMProvider={name:'fixture',plan:async()=>{throw new Error('Unexpected plan');},repair:async()=>{repairs++;return{actions:[],replace:1,completion:[{type:'text_exists',value:'Northstar'}]};}};

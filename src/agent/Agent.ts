@@ -25,6 +25,8 @@ import {goalCriteria} from './goalCriteria.js';
 export interface AgentOptions {
   browser?:BrowserOptions;vault?:Vault;store:TraceStore;provider?:LLMProvider;budget?:TokenBudget;
   confirmation?:ConfirmationPolicy;downloadDir?:string;maxSteps?:number;maxDurationMs?:number;maxRepairs?:number;
+  /** Last-resort repairs may include a masked viewport screenshot (FCU_VISION=1). */
+  vision?:boolean;
   maxRepeatedStates?:number;maxNavigationLoops?:number;useWorkflows?:boolean;adapters?:SiteAdapter[];
   completionCriteria?:Condition[];
   mode?:'normal'|'ultra';
@@ -138,7 +140,7 @@ export class Agent extends EventEmitter {
     const trace:Trace={version:1,id:`run-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,6)}`,goal:this.variables.redact(goal),url:this.variables.redact(url??this.browser.page?.url()??''),status:'running',startedAt,durationMs:0,plans:[],actions:[],completion:[],calls:[],metrics:{}};
     this.trace=trace;this.options.store.save(trace);this.active=true;
     const repeated=new Map<string,number>(),repeatRecoveries=new Set<string>(),navigations=new Map<string,number>(),completed:string[]=[];
-    let revision=this.control.revision,completionReplans=0;
+    let revision=this.control.revision,completionReplans=0,replanned=false,procedureChecks:Condition[]=[];
     try{
       if(!this.browser.context)await this.browser.launch();
       this.watchLastPageClose();
@@ -230,23 +232,41 @@ export class Agent extends EventEmitter {
             for(const step of shown)trace.actions.push({action:step,startedAt:Date.now(),durationMs:0,success:true,strategy:'human-demonstration'});
             actions.splice(index,1);this.trace=this.safeTrace(trace);this.options.store.save(this.trace);await this.observe();continue;
           }
+          // Several saved steps no longer match (e.g. another interface language): one fresh plan from here costs less than a repair per step.
+          if(this.procedure&&!replanned&&repairs>=2){
+            replanned=true;procedureChecks=plan.completion;previous=batchState;plan=undefined;
+            this.event('PLAN','The saved steps no longer match this page; planning the rest from here');break;
+          }
           repairs++;this.event('REPAIR','Repairing only the failed portion',{failedAction:result.action,error:result.error});
           const context=this.context(goal,after,completed,before);
           if(repairs>1)context.page+='\nACCESSIBILITY\n'+this.variables.redact(await this.observer.accessibility(this.browser.page));
           if(repairs>2){const scope=await this.browser.page.locator('form').count()===1?'form':await this.browser.page.locator('main').count()===1?'main':'body';context.page+='\nTARGETED HTML\n'+this.variables.redact(await this.observer.fragment(this.browser.page,scope)).slice(0,3000);}
-          const repaired=RepairSchema.parse(await provider.repair({...context,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)}));
+          let screenshot:string|undefined;
+          if(repairs>2&&this.options.vision&&provider.vision){
+            // Typed values are masked; profile values never leave the machine as pixels either.
+            const page=this.browser.page,size=page.viewportSize();
+            screenshot=(await page.screenshot({type:'jpeg',quality:60,scale:'css',mask:[page.locator('input,textarea,select,[contenteditable]')]})).toString('base64');
+            context.page+=`\nSCREENSHOT attached: the visible viewport${size?`, ${size.width}x${size.height} CSS pixels`:''}, field contents masked. Only if no DOM target works, use a target {"x":number,"y":number} in those pixels.`;
+            this.event('REPAIR','Sending a masked screenshot of the viewport with this repair');
+          }
+          const repaired=RepairSchema.parse(await provider.repair({...context,screenshot,failedAction:result.action,error:result.error??'Action failed',remaining:actions.slice(index,index+12)}));
           // The failed action never stays, and only pending actions can be replaced. An empty repair (e.g. the step was a duplicate of
           // one already done) drops it; the schema then requires completion conditions, which are verified below.
           const replace=Math.min(Math.max(1,repaired.replace),actions.length-index);
           if(repaired.completion)plan.completion=repaired.completion;
           if(repaired.continue!==undefined)plan.continue=repaired.continue;
+          // Models often restate the steps that follow; keep the pending originals (with their checks) instead of running them twice.
+          const next=actions.slice(index+replace),bare=(step:Action)=>JSON.stringify({...step,sensitive:undefined,alternatives:undefined,timeoutMs:undefined});
+          let added=repaired.actions;
+          for(let k=Math.min(added.length-1,next.length);k>0;k--)if(added.slice(-k).every((step,i)=>bare(step)===bare(next[i]!))){added=added.slice(0,-k);break;}
           // A one-for-one replacement keeps the old target as a fallback, e.g. for the other UI language.
-          const [replacement]=repaired.actions;
-          if(replace===1&&repaired.actions.length===1&&replacement&&replacement.type===action.type&&'target'in action&&typeof action.target==='object'&&'target'in replacement&&replacement.target)
+          const [replacement]=added;
+          if(replace===1&&added.length===1&&replacement&&replacement.type===action.type&&'target'in action&&typeof action.target==='object'&&'target'in replacement&&replacement.target)
             replacement.alternatives=[action.target,...(action.alternatives??[])].filter(item=>JSON.stringify(item)!==JSON.stringify(replacement.target)).slice(0,6);
-          actions.splice(index,replace,...repaired.actions);
+          actions.splice(index,replace,...added);
         }
-        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
+        if(!plan)continue;
+        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...procedureChecks,...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);
         if(!verification.success){
@@ -278,7 +298,7 @@ export class Agent extends EventEmitter {
         repairs,workflowCacheHits:cacheHits,planBatches:planCalls,compressionReduction:initial?this.observer.compressor.compress(initial).reduction:null,selectorSuccessRate:trace.actions.filter(a=>a.strategy).length?trace.actions.filter(a=>a.strategy&&a.success).length/trace.actions.filter(a=>a.strategy).length:null,
         usageEstimated:trace.calls.some(c=>c.usage.estimated),provider:this.options.provider?.name??'none',mode:this.options.mode??'normal',approvedSites:[...this.permittedSites]};
       const safe=this.safeTrace(trace);this.trace=safe;this.options.store.save(safe);
-      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs);
+      if(this.procedure)this.finishProcedure(this.procedure,safe,trace,repairs,procedureChecks);
       else if(safe.status==='completed'&&initial){try{this.workflows.learn(safe,initial);}catch{this.event('CACHE','Task completed, but workflow could not be saved');}}
       this.event(safe.status==='completed'?'DONE':'STOP',`Task ${safe.status}`,safe.metrics);
     }
@@ -314,13 +334,21 @@ export class Agent extends EventEmitter {
     if(steps.length)this.event('TEACH',`Learned ${steps.length} demonstrated step(s)`,steps);
     return steps;
   }
-  private finishProcedure(workflow:Workflow,safe:Trace,raw:Trace,repairs:number){
+  private finishProcedure(workflow:Workflow,safe:Trace,raw:Trace,repairs:number,kept:Condition[]){
     const demonstrated=safe.actions.some(result=>result.strategy==='human-demonstration'),changed=repairs>0||demonstrated;
     try{this.workflows.recordRun(workflow.id,safe,changed);}catch{this.event('CACHE','Procedure run history could not be saved');}
     if(safe.status!=='completed'||!changed)return;
     try{
       const values=this.textParams(),actions=parameterize(safe.actions.filter(result=>result.success).map(result=>result.action),values);
-      const completion=parameterize(raw.plans.at(-1)?.completion??workflow.plan.completion,values);
+      // A new version with the same shape keeps each old target as an alternative, so it still runs on the other interface.
+      const old=workflow.plan.actions,key=(target:unknown)=>JSON.stringify(target);
+      if(old.length===actions.length&&old.every((step,i)=>step.type===actions[i]!.type))actions.forEach((step,i)=>{
+        const prev=old[i]!;if(!('target'in step)||typeof step.target!=='object'||!('target'in prev)||typeof prev.target!=='object')return;
+        const others=[...(step.alternatives??[]),prev.target,...(prev.alternatives??[])].filter(target=>key(target)!==key(step.target));
+        if(others.length)step.alternatives=[...new Map(others.map(target=>[key(target),target])).values()].slice(0,6);
+      });
+      // After a re-plan, the procedure's own checks stay alongside the new plan's.
+      const completion=[...new Map(parameterize([...kept,...(raw.plans.at(-1)?.completion??workflow.plan.completion)],values).map(condition=>[key(condition),condition])).values()].slice(0,12);
       const parameters=[...workflow.parameters??[],...this.demonstrated.filter(param=>!workflow.parameters?.some(known=>known.name===param.name))];
       const updated=this.workflows.update(workflow.id,{plan:{...workflow.plan,actions,completion},parameters},`${demonstrated?'Demonstrated':'Repaired'} during ${safe.id}`,'repaired');
       this.event('CACHE',`Saved procedure version ${updated.version}`);

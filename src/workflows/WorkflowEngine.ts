@@ -29,7 +29,7 @@ export const ProcedureSchema=z.object({
   const declared=new Set(procedure.parameters.map(param=>param.name));
   if(declared.size!==procedure.parameters.length)context.addIssue({code:'custom',path:['parameters'],message:'Parameter names must be unique'});
   for(const used of JSON.stringify(procedure.plan).matchAll(/\{\{\s*params\.([\w-]+)\s*\}\}/g))if(!declared.has(used[1]!))context.addIssue({code:'custom',path:['plan'],message:`Undeclared parameter ${used[1]}`});
-  if(procedure.plan.actions.some(containsRef))context.addIssue({code:'custom',path:['plan'],message:'Procedures need semantic targets, not page references'});
+  if(procedure.plan.actions.some(containsRef))context.addIssue({code:'custom',path:['plan'],message:'Procedures need semantic targets, not page references or screenshot points'});
 });
 export type ProcedureInput=z.input<typeof ProcedureSchema>;
 export const ProcedureFileSchema=z.object({format:z.literal('fcu-procedure'),version:z.literal(1),procedure:ProcedureSchema}).strict();
@@ -192,6 +192,8 @@ export class WorkflowEngine {
 }
 export function containsRef(action:Action|Condition){
   if('target'in action&&typeof action.target==='string')return true;
+  // A screenshot point resolves to whatever is there next time, so it is never saved for replay.
+  if('target'in action&&typeof action.target==='object'&&action.target.x!==undefined)return true;
   if('condition'in action&&containsRef(action.condition))return true;
   if('verify'in action&&action.verify?.some(containsRef))return true;
   return false;

@@ -5,7 +5,7 @@ import { SYSTEM_POLICY,PLAN_FORMAT,REPAIR_FORMAT,untrusted } from './prompts.js'
 import { TokenBudget,type Usage } from '../agent/TokenBudget.js';
 import { normalizeProviderOutput,providerOutputSchema } from './structuredOutput.js';
 export type Effort='low'|'medium'|'high'|'xhigh'|'max';
-export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';maxOutputTokensParam?:'max_tokens'|'max_completion_tokens';timeoutMs?:number;maxRetries?:number;effort?:Effort;outputTokens?:number;provider?:string}
+export interface ProviderConfig {key:string;model:string;baseURL:string;protocol?:'openai-chat'|'anthropic';format?:'json_schema'|'json_object';maxOutputTokensParam?:'max_tokens'|'max_completion_tokens';timeoutMs?:number;maxRetries?:number;effort?:Effort;outputTokens?:number;provider?:string;vision?:boolean}
 export interface ConnectionResult {ok:true;provider:string;model:string;latencyMs:number;usage:Usage;detail:string}
 const RETRYABLE=new Set([408,409,429,500,502,503,504,529]);
 const HINTS:Record<number,string>={400:'the provider rejected the request; check the model name and response format',401:'authentication failed; check the API key',402:'billing problem; check the account credit',403:'permission denied for this key or model',404:'model or endpoint not found; check the model name and base URL',408:'request timed out',409:'request conflict',413:'request too large',422:'the provider could not process the request',429:'rate limited; wait and try again',500:'provider error',502:'provider gateway error',503:'provider unavailable',504:'provider gateway timeout',529:'provider overloaded; try again shortly'};
@@ -54,8 +54,11 @@ function pause(ms:number,signal:AbortSignal){
     signal.addEventListener('abort',abort,{once:true});
   });
 }
+// Claude bills about width x height / 750 tokens per image; a 1280x800 viewport is about 1,400.
+const IMAGE_TOKENS=2000;
 export class FlashProvider implements LLMProvider {
   readonly name:string;
+  get vision(){return this.config.vision===true;}
   readonly calls:LLMCall[]=[];
   private controllers=new Set<AbortController>();
   cancel(){for(const controller of this.controllers)controller.abort();}
@@ -78,7 +81,7 @@ export class FlashProvider implements LLMProvider {
     return{ok:true,provider:this.config.provider??(this.config.protocol==='anthropic'?'anthropic':'openai-compatible'),model:this.config.model,latencyMs:Date.now()-started,usage:call.usage,detail:`${call.usage.estimated?'Estimated':'Reported'} usage: ${call.usage.input} input / ${call.usage.output} output tokens`};
   }
   private async request<T>(operation:string,context:object,schema:z.ZodType<T>,format:string,correcting=false,policy=SYSTEM_POLICY):Promise<T>{
-    const {page,...task}=context as PlanningContext;
+    const {page,screenshot,...task}=context as RepairContext;
     const anthropic=this.config.protocol==='anthropic';
     const system=policy+'\n'+format+(this.config.format==='json_schema'?'\nJSON schema output requires every property. Use null for unused optional values. Encode records fields as [{key,css,attribute}].':'');
     const messages=[{role:'system',content:system},
@@ -86,14 +89,18 @@ export class FlashProvider implements LLMProvider {
     const response_format=this.config.format==='json_schema'?{type:'json_schema',json_schema:{name:operation.toLowerCase(),schema:providerOutputSchema(schema),strict:false}}:{type:'json_object'};
     const fallbacks=anthropic&&FALLBACK_MODELS.test(this.config.model)&&new URL(this.config.baseURL).hostname==='api.anthropic.com';
     // The policy prefix is identical on every call, so Claude can serve it from the prompt cache.
-    const makeBody=(max_tokens:number):Record<string,unknown>=>anthropic?{
-      model:this.config.model,system:[{type:'text',text:system,cache_control:{type:'ephemeral'}}],messages:[{role:'user',content:messages[1]!.content}],max_tokens,
+    // Vision fallback: the screenshot goes beside the text in each API's image format.
+    const content=(text:string,withImage:boolean,image=withImage?screenshot:undefined):unknown=>!image?text:anthropic?[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:image}},{type:'text',text}]
+      :[{type:'text',text},{type:'image_url',image_url:{url:`data:image/jpeg;base64,${image}`}}];
+    const makeBody=(max_tokens:number,withImage=true):Record<string,unknown>=>anthropic?{
+      model:this.config.model,system:[{type:'text',text:system,cache_control:{type:'ephemeral'}}],messages:[{role:'user',content:content(messages[1]!.content,withImage)}],max_tokens,
       ...(this.config.effort?{output_config:{effort:this.config.effort}}:{}),...(fallbacks?{fallbacks:'default'}:{}),
-    }:{model:this.config.model,messages,response_format,[this.config.maxOutputTokensParam??'max_tokens']:max_tokens,...(new URL(this.config.baseURL).hostname==='api.deepseek.com'?{temperature:0,thinking:{type:'disabled'}}:{})};
+    }:{model:this.config.model,messages:[messages[0],{role:'user',content:content(messages[1]!.content,withImage)}],response_format,[this.config.maxOutputTokensParam??'max_tokens']:max_tokens,...(new URL(this.config.baseURL).hostname==='api.deepseek.com'?{temperature:0,thinking:{type:'disabled'}}:{})};
     // Current Claude models think before answering; thinking tokens count against max_tokens.
     const requestedOutput=operation==='CLASSIFY'||operation==='PING'?(anthropic?1024:100):this.config.outputTokens??(anthropic?8000:1800);
     // UTF-8 byte count is a deliberately conservative token admission bound.
-    const bound=()=>Buffer.byteLength(JSON.stringify(makeBody(requestedOutput)))+256;
+    // Image bytes are not tokens: a viewport screenshot is bounded by a fixed estimate instead.
+    const bound=()=>Buffer.byteLength(JSON.stringify(makeBody(requestedOutput,false)))+256+(screenshot?IMAGE_TOKENS:0);
     const available=this.budget.limits.maxInputTokens===null?Infinity:this.budget.limits.maxInputTokens-this.budget.input-this.budget.pendingInput;
     // Preserve the goal, policy, repair contract and user criteria. Reduce only
     // optional webpage data when the next conservative reservation will not fit.

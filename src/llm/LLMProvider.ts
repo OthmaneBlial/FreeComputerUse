@@ -7,10 +7,14 @@ export interface PlanningContext {
 }
 export interface RepairContext extends PlanningContext {
   failedAction:unknown;error:string;remaining:unknown[];failedConditions?:unknown[];
+  /** Base64 JPEG of the viewport, only with FCU_VISION=1 and a provider that accepts images. */
+  screenshot?:string;
 }
 export interface ConnectionTest {ok:true;provider:string;model:string;latencyMs:number;usage:Usage;detail:string}
 export interface LLMProvider {
   readonly name:string;
+  /** Accepts a screenshot in repair requests. */
+  readonly vision?:boolean;
   cancel?():void;
   /** Called by the agent at the start of each task. */
   reset?():void;

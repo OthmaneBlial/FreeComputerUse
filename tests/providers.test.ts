@@ -127,3 +127,24 @@ test('provider chain falls back on provider failures and escalates repeated repa
   assert.equal(resolveProvider(new TokenBudget(),{LLM_PROVIDER:'deepseek',DEEPSEEK_API_KEY:'deepseek-key-1234'})?.name,'deepseek-flash');
   assert.equal(resolveProvider(new TokenBudget(),{LLM_PROVIDER:'deepseek',DEEPSEEK_API_KEY:'deepseek-key-1234'},undefined,{provider:'anthropic'}),undefined);
 });
+
+test('a repair screenshot goes as an image block in both API formats and is budgeted as an image, not as text',async()=>{
+  const bodies:Record<string,unknown>[]=[],repair={actions:[{type:'click',target:{x:150,y:40}}],replace:1};
+  const server=await serve((req,res,body)=>{bodies.push(JSON.parse(body));if(req.url?.endsWith('/messages')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({stop_reason:'end_turn',usage:{input_tokens:1500,output_tokens:20},content:[{type:'text',text:JSON.stringify(repair)}]}));}else ok(res,repair);});
+  const screenshot=Buffer.alloc(150_000,7).toString('base64'),failing:RepairContext={...context,failedAction:{type:'click',target:{role:'button',name:'Go'}},error:'Target missing',remaining:[],screenshot};
+  // 200 KB of base64 would not fit a 20,000-token limit if it were counted as text.
+  const limits={maxLLMCalls:null,maxInputTokens:20_000,maxOutputTokens:null};
+  try{
+    const chat=new FlashProvider({key:'test-only',model:'fixture',baseURL:server.url,vision:true},new TokenBudget(limits));
+    assert.deepEqual((await chat.repair(failing)).actions[0],{type:'click',target:{x:150,y:40}});
+    const claude=new FlashProvider({key:'test-only',model:'claude-fixture',baseURL:server.url+'/v1',protocol:'anthropic',format:'json_object',vision:true},new TokenBudget(limits));
+    await claude.repair(failing);
+    const [openai,anthropic]=bodies as {messages:{content:unknown}[]}[];
+    const chatContent=openai!.messages[1]!.content as {type:string;image_url?:{url:string};text?:string}[];
+    assert.equal(chatContent[1]?.image_url?.url,`data:image/jpeg;base64,${screenshot}`);assert(!chatContent[0]?.text?.includes(screenshot),'The image is not repeated in the text');
+    const claudeContent=anthropic!.messages[0]!.content as {type:string;source?:{type:string;media_type:string;data:string}}[];
+    assert.deepEqual(claudeContent[0],{type:'image',source:{type:'base64',media_type:'image/jpeg',data:screenshot}});
+    const plain=new FlashProvider({key:'test-only',model:'fixture',baseURL:server.url},new TokenBudget());
+    assert.equal(plain.vision,false);assert.equal(new ProviderChain(plain).vision,false);
+  }finally{await server.close();}
+});

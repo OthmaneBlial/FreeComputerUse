@@ -44,7 +44,7 @@ export function runtimeConfig(selection:ProviderSelection={}){
   const budget=new TokenBudget({maxLLMCalls:optionalCap('FCU_MAX_LLM_CALLS'),maxInputTokens:optionalCap('FCU_MAX_INPUT_TOKENS'),maxOutputTokens:optionalCap('FCU_MAX_OUTPUT_TOKENS')},priced?prices:undefined);
   const secrets=secretsFor(dataDir);
   const provider=resolveProvider(budget,process.env,secrets,selection);
-  return{dataDir,budget,provider,providerId,secrets,maxSteps:optionalCap('FCU_MAX_STEPS'),maxDurationMs:optionalCap('FCU_MAX_DURATION_MS')};
+  return{dataDir,budget,provider,providerId,secrets,maxSteps:optionalCap('FCU_MAX_STEPS'),maxDurationMs:optionalCap('FCU_MAX_DURATION_MS'),vision:process.env.FCU_VISION==='1'};
 }
 // The file store lives in the private data directory, which may not exist yet before first launch.
 function secretsFor(dataDir:string){try{return secretStore(dataDir);}catch{return undefined;}}

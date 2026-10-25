@@ -131,7 +131,11 @@ export class Executor {
             if(both[0].status==='rejected')throw both[0].reason;
             if(both[1].status==='rejected')throw both[1].reason;
             await both[0].value.waitForLoadState('domcontentloaded',{timeout});this.browser.page=both[0].value;
-          }else await locator!.click({timeout});
+          }else{
+            // A screenshot point clicks that exact spot, e.g. on a canvas, not the element's centre.
+            const target='target'in action?action.target:undefined,point=typeof target==='object'&&target.x!==undefined&&target.y!==undefined?{x:target.x,y:target.y}:undefined,box=point&&await locator!.boundingBox();
+            await locator!.click({timeout,...(point&&box?{position:{x:point.x-box.x,y:point.y-box.y}}:{})});
+          }
           },interactionOptions);
           const observed=await downloadEvent;
           if(observed){data=await this.storeDownload(observed);receiptAction=this.semantic(ActionSchema.parse({...action,type:'download'}));}

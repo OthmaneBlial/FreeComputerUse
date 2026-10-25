@@ -14,7 +14,7 @@ export const ProviderIdSchema=z.enum(PROVIDER_IDS);
 interface Preset {label:string;route:'api'|'cli';keyEnv?:string;modelEnv:string;defaultModel?:string;baseURL?:string;protocol?:'anthropic'|'openai-chat';commandEnv?:string;command?:string;vision:boolean;usage:'reported'|'estimated'}
 export const PRESETS:Record<ProviderId,Preset>={
   anthropic:{label:'Claude API',route:'api',keyEnv:'ANTHROPIC_API_KEY',modelEnv:'ANTHROPIC_MODEL',defaultModel:'claude-opus-5-5',baseURL:'https://api.anthropic.com/v1',protocol:'anthropic',vision:true,usage:'reported'},
-  deepseek:{label:'DeepSeek API',route:'api',keyEnv:'DEEPSEEK_API_KEY',modelEnv:'DEEPSEEK_MODEL',defaultModel:'deepseek-flash',baseURL:'https://api.deepseek.com',protocol:'openai-chat',vision:false,usage:'reported'},
+  deepseek:{label:'DeepSeek API',route:'api',keyEnv:'DEEPSEEK_API_KEY',modelEnv:'DEEPSEEK_MODEL',defaultModel:'deepseek-flash',baseURL:'https://api.deepseek.com',protocol:'openai-chat',vision:true,usage:'reported'},
   openai:{label:'OpenAI API',route:'api',keyEnv:'OPENAI_API_KEY',modelEnv:'OPENAI_MODEL',baseURL:'https://api.openai.com/v1',protocol:'openai-chat',vision:true,usage:'reported'},
   'openai-compatible':{label:'OpenAI-compatible API',route:'api',modelEnv:'LLM_MODEL',defaultModel:'deepseek-flash',baseURL:'https://api.deepseek.com',protocol:'openai-chat',vision:false,usage:'reported'},
   'claude-subscription':{label:'Claude subscription (Claude Code CLI)',route:'cli',modelEnv:'CLAUDE_MODEL',commandEnv:'CLAUDE_CLI_PATH',command:'claude',vision:false,usage:'estimated'},
@@ -67,7 +67,7 @@ export function createProvider(id:ProviderId,budget:TokenBudget,env:NodeJS.Proce
   const maxOutputTokensParam:'max_tokens'|'max_completion_tokens'|undefined=configuredTokenParam==='max_tokens'||configuredTokenParam==='max_completion_tokens'?configuredTokenParam:new URL(value.baseURL).hostname==='api.openai.com'?'max_completion_tokens':undefined;
   const effort=env.LLM_EFFORT?EffortSchema.parse(env.LLM_EFFORT) as Effort:undefined;
   const format=value.primary&&env.LLM_RESPONSE_FORMAT==='json_schema'?'json_schema':'json_object';
-  return new FlashProvider({key:value.key,model:value.model,protocol:preset.protocol,baseURL:value.baseURL,format,maxOutputTokensParam,effort:preset.protocol==='anthropic'?effort:undefined,provider:id},budget);
+  return new FlashProvider({key:value.key,model:value.model,protocol:preset.protocol,baseURL:value.baseURL,format,maxOutputTokensParam,effort:preset.protocol==='anthropic'?effort:undefined,provider:id,vision:preset.vision},budget);
 }
 
 const ESCALATE_AFTER_REPAIRS=2;
@@ -78,13 +78,14 @@ export class ProviderChain implements LLMProvider {
   private repairs=0;escalated=false;
   constructor(readonly primary:LLMProvider,readonly fallbacks:LLMProvider[]=[],readonly escalation?:LLMProvider){}
   get name(){return this.escalated&&this.escalation?this.escalation.name:this.primary.name;}
+  get vision(){return this.all.some(provider=>provider.vision);}
   private get all(){return [this.primary,...this.fallbacks,...(this.escalation?[this.escalation]:[])];}
   reset(){this.repairs=0;this.escalated=false;for(const provider of this.all)provider.reset?.();}
   cancel(){for(const provider of this.all)provider.cancel?.();}
   plan(context:PlanningContext){return this.invoke(provider=>provider.plan(context));}
   repair(context:RepairContext){
     if(this.escalation&&++this.repairs>=ESCALATE_AFTER_REPAIRS)this.escalated=true;
-    return this.invoke(provider=>provider.repair(context));
+    return this.invoke(provider=>provider.repair(provider.vision?context:{...context,screenshot:undefined}));
   }
   testConnection(){return (this.primary.testConnection?.()??Promise.reject(new Error('This provider has no connection test')));}
   private async invoke<T>(operation:(provider:LLMProvider)=>Promise<T>):Promise<T>{
