@@ -355,13 +355,18 @@ export class Agent extends EventEmitter {
     if(safe.status!=='completed'||!changed)return;
     try{
       const values=this.textParams(),actions=parameterize(safe.actions.filter(result=>result.success).map(result=>result.action),values);
-      // A new version with the same shape keeps each old target as an alternative, so it still runs on the other interface.
-      const old=workflow.plan.actions,key=(target:unknown)=>JSON.stringify(target);
-      if(old.length===actions.length&&old.every((step,i)=>step.type===actions[i]!.type))actions.forEach((step,i)=>{
-        const prev=old[i]!;if(!('target'in step)||typeof step.target!=='object'||!('target'in prev)||typeof prev.target!=='object')return;
+      // Each new step keeps the target of the old step it matches as an alternative, so it still runs on the other interface.
+      // Steps match by type and role in order (longest common subsequence), so an extra wait or a missing step does not stop the merge.
+      const old=workflow.plan.actions,key=(target:unknown)=>JSON.stringify(target),n=old.length,m=actions.length;
+      const sig=(step:Action)=>step.type+('target'in step&&typeof step.target==='object'?`:${step.target.role??''}`:'');
+      const lcs=Array.from({length:n+1},()=>new Array<number>(m+1).fill(0));
+      for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)lcs[i]![j]=sig(old[i]!)===sig(actions[j]!)?lcs[i+1]![j+1]!+1:Math.max(lcs[i+1]![j]!,lcs[i]![j+1]!);
+      for(let i=0,j=0;i<n&&j<m;){
+        if(sig(old[i]!)!==sig(actions[j]!)){if(lcs[i+1]![j]!>=lcs[i]![j+1]!)i++;else j++;continue;}
+        const prev=old[i++]!,step=actions[j++]!;if(!('target'in step)||typeof step.target!=='object'||!('target'in prev)||typeof prev.target!=='object')continue;
         const others=[...(step.alternatives??[]),prev.target,...(prev.alternatives??[])].filter(target=>key(target)!==key(step.target));
         if(others.length)step.alternatives=[...new Map(others.map(target=>[key(target),target])).values()].slice(0,6);
-      });
+      }
       // The saved checks stay; after a re-plan, their texts gain the equivalent texts this run verified (e.g. a translation).
       const completion=parameterize(withTexts(workflow.plan.completion,texts),values);
       const parameters=[...workflow.parameters??[],...this.demonstrated.filter(param=>!workflow.parameters?.some(known=>known.name===param.name))];
