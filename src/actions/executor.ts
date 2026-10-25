@@ -61,14 +61,19 @@ export class Executor {
     this.browser.downloads.push({path,filename});
     return {path,filename};
   }
+  /** Says why a step timed out when the page shows it: a disabled control, or the page's own error message. */
+  private async explain(locator?:Locator){
+    const disabled=await locator?.isDisabled({timeout:500}).catch(()=>false);
+    const alerts=(await this.browser.page.locator('[role=alert]').filter({visible:true}).allInnerTexts().catch(()=>[])).map(text=>text.replace(/\s+/g,' ').trim()).filter(Boolean).join(' ').slice(0,300);
+    return [disabled?'The control is disabled.':'',alerts?`The page says: ${alerts}`:''].filter(Boolean).join(' ');
+  }
   async run(input:Action):Promise<ActionResult> {
     let action=ActionSchema.parse(input);const startedAt=Date.now();
     let strategy:string|undefined,executed=false,navigationUncertain=false,receiptAction=action;
-    let pageBefore:Page|undefined;
+    let pageBefore:Page|undefined,locator:Locator|undefined;
     let assertApproved:(()=>Promise<void>)|undefined,disposeApproved:(()=>Promise<void>)|undefined;
     try {
       await this.control.checkpoint();
-      let locator:Locator|undefined;
       if('target'in action&&action.target){const selected=await this.observer.selectors.resolve(this.browser.page,action.target,action.timeoutMs,action.type==='extract',action.alternatives);locator=selected.locator;strategy=selected.strategy;}
       action=await this.compiler.normalize(action,locator);
       receiptAction=this.semantic(action);
@@ -296,7 +301,8 @@ export class Executor {
       return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:true,strategy,data};
     }catch(error){
       const blockedBeforeNavigation=error instanceof SecurityBoundaryError&&['navigate','openTab'].includes(action.type)&&this.browser.page===pageBefore;
-      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact(error instanceof Error?error.message:'Browser action failed'),uncertain:executed&&((navigationUncertain&&!blockedBeforeNavigation)||['click','doubleClick','press','submit','download','type'].includes(action.type))};
+      const message=error instanceof Error?error.message:'Browser action failed',hint=/Timeout \d+ms exceeded/.test(message)?await this.explain(locator):'';
+      return {action:receiptAction,startedAt,durationMs:Date.now()-startedAt,success:false,strategy,error:this.variables.redact([message,hint].filter(Boolean).join(' ')),uncertain:executed&&((navigationUncertain&&!blockedBeforeNavigation)||['click','doubleClick','press','submit','download','type'].includes(action.type))};
     }finally{await disposeApproved?.();}
   }
 }

@@ -26,7 +26,9 @@
   parameters; only missing values are asked for.
 - Replays try recorded alternative targets first, repair a single changed step
   with the model, and save the repair as a new version.
-- Local Play Console simulator and a Google Play release tutorial.
+- Local Play Console simulator and a Google Play release tutorial. The
+  simulator can ask for a developer account first (`?accounts=2`) and block a
+  submission with a policy error (`?blocked=1`).
 
 ### Vision and repairs
 
@@ -34,6 +36,8 @@
   screenshot with form fields masked, and the model can click a point. Points
   are never saved into procedures or learned workflows.
 - Uploads aimed at a button that opens the file chooser now work.
+- A step that times out says whether the control was disabled and quotes the
+  page's error message.
 - A repair that restates the following steps no longer runs them twice, and a
   repair that drops a duplicate step lets the completion checks decide.
 - A procedure replay with two broken steps plans the rest from the current page

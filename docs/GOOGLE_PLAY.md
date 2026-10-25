@@ -25,8 +25,16 @@ What it will and will not do:
 The repository includes a small Play Console look-alike at
 `fixtures/playConsole.ts`. It is not Google software and does not copy Google's
 markup. It reproduces the release flow, including bundle processing, review and
-the confirmation dialog, with English and French text and a variant with
-renamed buttons.
+the confirmation dialog. Add these to the address to change it:
+
+| Add | What changes |
+| --- | --- |
+| `?lang=fr` | French text |
+| `?variant=2` | Renamed buttons, a new id and a banner |
+| `?accounts=2` | A developer account must be chosen first |
+| `?blocked=1` | A Data safety error blocks the submission |
+
+Combine them with `&`, as in `?lang=fr&accounts=2`.
 
 ```sh
 npm run fixtures        # serves http://127.0.0.1:3000
@@ -130,6 +138,18 @@ sensitive step is rejected and the run stops.
    gate after the review step.
 4. Run it from a request. Check the summary in the approval prompt, especially
    the version code, the track and the release notes.
+
+**Several developer accounts.** If the console asks you to choose an account,
+make that choice a step with a parameter, such as
+`click "{{params.account}}"`, so each request names the account. Or teach from
+the app list of one account. Its address contains the account id, so replays
+always open that account.
+
+**Blocking errors.** When the console refuses a submission, for example because
+a policy form is incomplete, the step fails and nothing is sent. The error says
+why and quotes the console, as in "The control is disabled. The page says: Fix
+this error before you send changes for review: complete the Data safety form in
+App content." Fix it in the console, then run the procedure again.
 
 When the session expires, the run pauses on the sign-in page. Sign in yourself
 and press **Resume agent**. If the console shows a new screen, such as a policy

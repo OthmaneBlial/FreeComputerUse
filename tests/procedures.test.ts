@@ -214,6 +214,34 @@ test('a replay whose steps mostly broke re-plans once and saves a version, with 
   }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 
+test('on the Play simulator a procedure picks the developer account from a parameter, and a compliance error fails the run with nothing in review',{timeout:180000},async()=>{
+  const fixture=await startFixtures(),directory=await mkdtemp(join(tmpdir(),'fcu-play-accounts-')),store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);
+  const parsed=parseSteps(`click "{{params.account}}"
+click "View app: {{params.app}}"
+click button "Test and release"
+click "Production"
+click button "Create new release"
+upload {{params.bundle}} to "Upload app bundle"
+wait for "({{params.version}}) · Ready" (timeout 20s)
+type "{{params.notes}}" into field "Release notes"
+click "Next"
+click "Save and publish" (sensitive)
+click "Send changes for review"
+expect "({{params.version}}) · In review"`);
+  const saved=engine.create({name:'Publish a Play release',startUrl:`${fixture.url}/play/console?accounts=2`,parameters:parsed.parameters,plan:parsed.plan},'taught');
+  const agent=new Agent({store,browser:{headless:true,allowedOrigins:[fixture.url]}});let approvals=0;agent.control.on('approval',(pending:{action:unknown})=>{if(typeof pending.action==='string')approvals++;agent.control.approve();});
+  const [snake,budget]=fixture.play.apps;
+  try{
+    const tools=await agent.runProcedure(saved.id,{account:'Example Tools',app:'Budget Buddy',bundle:await bundle(directory,8,'2.2'),version:'2.2',notes:'Sync fix'});
+    assert.equal(tools.status,'completed',tools.error??'Task failed');assert.equal(tools.metrics.llmCalls,0);
+    assert.deepEqual(budget!.releases.at(-1),{versionCode:8,versionName:'2.2',notes:'Sync fix',status:'in_review'},'The release went to the app of the chosen account');
+    assert.equal(snake!.releases.length,1);assert.equal(approvals,2,'Both submission steps asked');
+    const blocked=await agent.runProcedure(saved.id,{account:'Example Games',app:'Snake Arena',bundle:await bundle(directory,14,'1.4'),version:'1.4',notes:'New levels'},`${fixture.url}/play/console?accounts=2&blocked=1`);
+    assert.equal(blocked.status,'failed');
+    assert.match(blocked.error??'',/The control is disabled\. The page says: Fix this error .*Data safety form/,'The failure says why');assert(!snake!.releases.some(item=>item.status==='in_review'),'Nothing was sent for review');
+  }finally{await agent.close();store.close();await fixture.close();await rm(directory,{recursive:true,force:true});}
+});
+
 test('a model that names a procedure file parameter as a vault file still uploads that file, and cannot replace the saved check',async()=>{
   const server=createServer((_req,res)=>{res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end('<input type="file" aria-label="Attachment" onchange="document.body.insertAdjacentHTML(\'beforeend\',\'<p>Attached \'+this.files[0].name+\'</p>\')">');});
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${(server.address() as {port:number}).port}`;

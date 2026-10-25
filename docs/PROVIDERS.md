@@ -74,6 +74,12 @@ only to that default provider. A key in the environment wins over a stored key.
   disables local tools, hooks, plugins and MCP but keeps your sign-in.
   `--bare` would skip the sign-in, which is why older versions of this route
   reported "Not logged in".
+- Anthropic's computer use tool is not used. It works from screenshots and
+  returns screen coordinates to control a whole desktop. FreeComputerUse drives
+  only its own browser and plans from the page's accessibility tree. That costs
+  fewer tokens, works the same with every provider and can be replayed without
+  the model. Screenshots with point clicks are an opt-in fallback, described
+  next.
 
 ## Vision fallback
 

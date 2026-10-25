@@ -24,6 +24,7 @@ observe, plan, act, verify and repair event.
 | `Destination resolves to a private or reserved address` | Private network addresses are blocked. For a site on your own network you trust, pass `--allow-external`. |
 | The run pauses on a sign-in, CAPTCHA or "Verify it's you" page | Expected. Press **Take control**, complete it yourself, then **Resume agent**. The agent never fills these in. |
 | `Human approval needs a terminal or the local UI; action rejected.` | A sensitive step needed approval without an interactive terminal. Use `agent ui`, or run in a terminal. |
+| A step fails with `Timeout … The control is disabled. The page says: …` | The site refused the step, for example because a form is incomplete. Nothing was submitted. Fix what the quoted message asks for on the site, then run again. |
 | An upload does nothing while teaching | Choose the file in the menu under the preview first, then click the upload control. Files come from the local profile (**Local profile**). |
 
 ## Procedures
@@ -56,6 +57,9 @@ observe, plan, act, verify and repair event.
   uploads, Enter in a field and address-bar navigation. It does not record
   drag and drop, hovering, other keys or canvas drawing. Write those steps, or
   let the model plan them.
+- **No separate web search.** The agent finds out how to do something only by
+  browsing allowed sites, for example a documentation page you approve. It has
+  no search API. When it is stuck, it asks you to show the step.
 - **Request matching** is word-based, with English and French synonyms. Other
   languages need request words on the parameters, or an id with
   `agent procedures run <id>`.
