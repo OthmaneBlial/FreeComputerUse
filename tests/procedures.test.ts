@@ -197,18 +197,19 @@ test('a replay whose steps mostly broke re-plans once and saves a version, with 
   const store=new TraceStore(':memory:'),engine=new WorkflowEngine(store);let plans=0,repairs=0;
   const saved=engine.create({name:'Count to three',startUrl:origin+'/',plan:{goal:'Count',steps:['Count'],actions:labels.en.map(name=>({type:'click' as const,target:{role:'button',name}})),completion:[{type:'text_exists',value:'All done'}],continue:false}},'taught');
   const provider:LLMProvider={name:'fixture',
-    repair:async context=>{repairs++;const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
-    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);assert.deepEqual(context.savedSteps,[{type:'click',target:{role:'button',name:'Three'}}],'The planner sees the saved steps not done yet');assert.deepEqual(context.savedChecks,[{type:'text_exists',value:'All done'}]);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'Terminé'}],continue:false};}};
+    repair:async context=>{repairs++;if(context.failedAction.type==='verification')return RepairSchema.parse({actions:[],completion:[{type:'text_exists',value:'Terminé'}]});
+      const failed=(context.failedAction as {target:{name:string}}).target.name;return RepairSchema.parse({actions:[{type:'click',target:{role:'button',name:labels.fr[labels.en.indexOf(failed)]}}],replace:1});},
+    plan:async context=>{plans++;assert.match(context.completed.join(' '),/Deux/);assert.deepEqual(context.savedSteps,[{type:'click',target:{role:'button',name:'Three'}}],'The planner sees the saved steps not done yet');assert.deepEqual(context.savedChecks,[{type:'text_exists',value:'All done'}]);return {goal:context.goal,steps:['Finish'],actions:[{type:'click',target:{role:'button',name:'Trois'}}],completion:[{type:'text_exists',value:'All done'}],continue:false};}};
   const agent=new Agent({store,provider,mode:'ultra'});  try{
     const french=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
-    assert.equal(french.status,'completed',french.error??'Task failed');assert.deepEqual([repairs,plans],[2,1],'Two repairs, then one plan for the rest');
+    assert.equal(french.status,'completed',french.error??'Task failed');assert.deepEqual([repairs,plans],[3,1],'Two step repairs, one plan for the rest that copied the English check, then one completion repair');
     const version=engine.get(saved.id)!;assert.equal(version.version,2);
     assert.deepEqual(version.plan.completion,[{type:'text_exists',value:'All done',alternatives:['Terminé']}],'The English check gains the verified French text');
     assert.deepEqual(version.plan.actions.map(action=>'alternatives'in action?action.alternatives:undefined),labels.en.map(name=>[{role:'button',name}]),'Each French step keeps its English target');
     const english=await agent.runProcedure(saved.id,{},origin+'/');
     assert.equal(english.status,'completed',english.error??'Task failed');assert.equal(english.metrics.llmCalls,0);
     const again=await agent.runProcedure(saved.id,{},origin+'/?lang=fr');
-    assert.equal(again.status,'completed',again.error??'Task failed');assert.equal(again.metrics.llmCalls,0);assert.deepEqual([repairs,plans],[2,1]);
+    assert.equal(again.status,'completed',again.error??'Task failed');assert.equal(again.metrics.llmCalls,0);assert.deepEqual([repairs,plans],[3,1]);
   }finally{await agent.close();store.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
 

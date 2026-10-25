@@ -274,8 +274,9 @@ export class Agent extends EventEmitter {
           actions.splice(index,replace,...added);
         }
         if(!plan)continue;
-        if(replanned)freshTexts=plan.completion.flatMap(condition=>condition.type==='text_exists'?[condition.value,...condition.alternatives??[]]:[]);
-        const criteria=()=>[...plan!.completion,...(!plan!.continue?[...withTexts(savedChecks,freshTexts),...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];
+        // Recomputed on each call, so a completion repair's corrected text counts too.
+        const criteria=()=>{if(replanned)freshTexts=plan!.completion.flatMap(condition=>condition.type==='text_exists'?[condition.value,...condition.alternatives??[]]:[]);
+          return [...plan!.completion,...(!plan!.continue?[...withTexts(savedChecks,freshTexts),...this.options.completionCriteria??[],...goalCriteria(goal)]:[])];};
         let verification=await this.executor.verifier.check(criteria(),4000,startedAt);
         this.event('VERIFY',verification.success?'Batch completion verified':'Completion conditions failed',verification);
         if(!verification.success){
